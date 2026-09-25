@@ -1,6 +1,6 @@
 # Filmvisarna Cinema
 
-A modern cinema booking application built with React, TypeScript, Express, and SQLite.
+A modern cinema booking application built with React, TypeScript, Express, and PostgreSQL.
 
 ---
 
@@ -15,7 +15,7 @@ A modern cinema booking application built with React, TypeScript, Express, and S
 ### Backend
 - **Runtime & Language:** Node.js (ES Modules) + TypeScript
 - **Framework:** Express 5
-- **Database:** SQLite with `better-sqlite3` (WAL mode enabled)
+- **Database:** PostgreSQL via `pg` (`node-postgres` with connection pool)
 - **Runner:** `tsx` for hot-reload development
 
 ---
@@ -26,9 +26,9 @@ A modern cinema booking application built with React, TypeScript, Express, and S
 filmvisarna-cinema/
 ├── Backend/
 │   ├── src/
-│   │   ├── db.ts             # SQLite database setup & table initialization
+│   │   ├── db.ts             # PostgreSQL pool setup, table initialization & auto-seeding
 │   │   └── server.ts         # Express server & API routes
-│   ├── cinema.db             # SQLite database file (gitignored)
+│   ├── .env.example          # Example environment configuration for database
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -47,6 +47,7 @@ filmvisarna-cinema/
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts        # Vite configuration with SCSS & API proxy
+├── docker-compose.yml        # Local PostgreSQL container service
 └── README.md
 ```
 
@@ -57,16 +58,36 @@ filmvisarna-cinema/
 ### Prerequisites
 - Node.js (v18 or higher recommended)
 - npm
+- Docker (optional for local DB, or use a shared cloud DB like Neon / Supabase)
 
-### 1. Backend Setup
+### 1. Database Setup
+
+You have two options for the database:
+
+#### Option A: Local Docker (Recommended for local offline development)
+Start the PostgreSQL container from the project root:
+```bash
+docker compose up -d
+```
+This spins up PostgreSQL on `localhost:5432` with username `postgres`, password `postgrespassword`, and database `filmvisarna`.
+
+#### Option B: Shared Cloud Database (Recommended for team collaboration)
+If your team creates a free database on [Neon.tech](https://neon.tech) or [Supabase](https://supabase.com), copy the connection URL into `Backend/.env`:
+```env
+DATABASE_URL=postgresql://user:password@ep-xyz.region.aws.neon.tech/filmvisarna?sslmode=require
+```
+Every team member connecting to the same `DATABASE_URL` will share the same movies and bookings automatically!
+
+### 2. Backend Setup
 ```bash
 cd Backend
 npm install
+cp .env.example .env    # Configure your DATABASE_URL if needed
 npm run dev
 ```
-The backend server runs on `http://localhost:3000`.
+The backend server runs on `http://localhost:3000`. On first run, it automatically creates the `movies` table and seeds sample movie data.
 
-### 2. Frontend Setup
+### 3. Frontend Setup
 In a new terminal window:
 ```bash
 cd Frontend
@@ -83,7 +104,7 @@ Vite automatically proxies `/api` requests to the backend (`http://localhost:300
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Health check endpoint |
-| `GET` | `/api/movies` | Get all movies from the database |
+| `GET` | `/api/movies` | Get all movies from PostgreSQL |
 
 ---
 
