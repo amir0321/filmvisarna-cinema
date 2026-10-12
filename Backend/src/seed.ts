@@ -167,3 +167,12 @@ async function runSeed() {
     throw error;
   }
 }
+// Start the seed process
+runSeed()
+  .catch((error) => {
+    console.error("Seed process failed:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await pool.end();
+  });
