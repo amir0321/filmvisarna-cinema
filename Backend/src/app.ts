@@ -1,7 +1,6 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { config } from "./config";
 import { pool } from "./db";
 import { authRouter } from "./routes/auth";
 
