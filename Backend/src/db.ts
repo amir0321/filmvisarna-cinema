@@ -31,30 +31,6 @@ export async function initDb() {
   try {
     const client = await pool.connect();
     console.log("🐘 PostgreSQL connected successfully!");
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS movies (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        genre VARCHAR(100),
-        duration INTEGER,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    const checkCount = await client.query("SELECT COUNT(*) FROM movie");
-    if (parseInt(checkCount.rows[0].count, 10) === 0) {
-      console.log("Seeding initial movie data...");
-      await client.query(`
-        INSERT INTO movie (title, genre, duration) VALUES
-        ('Inception', 'Sci-Fi / Action', 148),
-        ('Interstellar', 'Sci-Fi / Adventure', 169),
-        ('Dune: Part Two', 'Sci-Fi / Adventure', 166),
-        ('The Dark Knight', 'Action / Crime', 152);
-      `);
-      console.log("Initial movies seeded!");
-    }
-
     client.release();
   } catch (error) {
     console.error("Failed to connect to PostgreSQL database:", error);
