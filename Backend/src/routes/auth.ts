@@ -28,6 +28,8 @@ const registerBody = z.object({
   lastName: z.string().trim().min(1).max(100).optional(),
 });
 
+const loginBody = z.object({ email, password: z.string().min(1).max(72) });
+
 const user_columns = `id, email, first_name AS "firstName", last_name AS "lastName", role`;
 
 // Register a new user - POST /api/auth/register
@@ -50,4 +52,31 @@ authRouter.post("/register", async (req, res) => {
     }
     throw error;
   }
+});
+
+// Log in an existing user - POST /api/auth/login
+authRouter.post("/login", async (req, res) => {
+  const body = loginBody.parse(req.body);
+
+  const [row] = await query<{ id: number; passwordHash: string }>(
+    `SELECT ${user_columns}, password_hash AS "passwordHash" FROM app_user WHERE email = lower($1)`,
+    [body.email],
+  );
+
+  const ok = await bcrypt.compare(
+    body.password,
+    row?.passwordHash ?? dummy_hash,
+  );
+  if (!row || !ok) throw new HttpError(401, "Wrong email or password");
+
+  const { passwordHash: _omit, ...user } = row;
+  res.json({ token: signToken(row.id), user });
+});
+
+authRouter.get("/me", requireAuth, async (req, res) => {
+  const [user] = await query(
+    `SELECT ${user_columns} FROM app_user WHERE id = $1`,
+    [req.user!.id],
+  );
+  res.json(user);
 });
