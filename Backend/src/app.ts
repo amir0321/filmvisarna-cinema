@@ -1,19 +1,19 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { pool } from "./db";
+import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
 
 export const app = express();
+
 app.use(helmet());
-app.use(cors({ origin: "http://localhost:5173" }));
-app.use(express.json());
+app.use(cors({ origin: config.corsOrigin }));
+app.use(express.json({ limit: "100kb" }));
 
 const api = express.Router();
-
-api.get("/health", async (_req, res) => {
-  await pool.query("SELECT 1");
-  res.json({ status: "ok" });
+api.get("/health", (_req, res) => {
+  res.json({ status: "ok", message: "Filmvisarna API is running" });
 });
+api.use("/auth", authRouter);
 
-api.use("/api/auth", authRouter);
+app.use("/api", api);
