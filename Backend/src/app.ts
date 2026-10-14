@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
+import { screeningsRouter } from "./routes/screenings.js";
 
 export const app = express();
 
@@ -15,5 +16,5 @@ api.get("/health", (_req, res) => {
   res.json({ status: "ok", message: "Filmvisarna API is running" });
 });
 api.use("/auth", authRouter);
-
+api.use("/screenings", screeningsRouter);
 app.use("/api", api);
