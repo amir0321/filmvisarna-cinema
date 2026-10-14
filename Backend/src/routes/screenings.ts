@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { config } from "../config.js";
 import { query, withTransaction } from "../utils/dbHelpers.js";
+import { dateRange } from "../utils/dates.js";
 import { HttpError, parseId } from "../utils/httpErorr";
 import { requireAdmin } from "../middleware/auth.js";
 
@@ -35,12 +36,93 @@ const listQuery = filters
   });
 
 interface ScreeningFilters {
-  from?: Date;
-  to?: Date;
+  from?: string;
+  to?: string;
   movieId?: number;
   cinemaId?: number;
   age?: number;
 }
+
+/** Upcoming screenings only */
+async function listScreenings(f: ScreeningFilters) {
+  return query(
+    `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
+            m.id AS "movieId", m.title AS "movieTitle", m.poster_url AS "posterUrl",
+            m.age_rating AS "ageRating", (${AGE_LIMIT}) AS "ageLimit",
+            c.id AS "cinemaId", c.name AS "cinema"
+     FROM screening_times st
+     JOIN movie m  ON m.id = st.movie_id
+     JOIN cinema c ON c.id = st.cinema_id
+     WHERE st.starts_at > now()
+       AND ($1::int  IS NULL OR st.movie_id  = $1)
+       AND ($2::int  IS NULL OR st.cinema_id = $2)
+       AND ($3::date IS NULL OR (st.starts_at AT TIME ZONE $5)::date >= $3::date)
+       AND ($4::date IS NULL OR (st.starts_at AT TIME ZONE $5)::date <= $4::date)
+       AND ($6::int  IS NULL OR (${AGE_LIMIT}) <= $6)
+     ORDER BY st.starts_at`,
+    [
+      f.movieId ?? null,
+      f.cinemaId ?? null,
+      f.from ?? null,
+      f.to ?? null,
+      config.timezone,
+      f.age ?? null,
+    ],
+  );
+}
+
+// GET /api/screenings?when=today|tomorrow|weekend&movieId=...&cinemaId=...&age=...
+screeningsRouter.get("/", async (req, res) => {
+  const q = listQuery.parse(req.query);
+  const range = q.when
+    ? dateRange(q.when, config.timezone)
+    : q.date
+      ? { from: q.date, to: q.date }
+      : {};
+  res.json(
+    await listScreenings({
+      ...range,
+      movieId: q.movieId,
+      cinemaId: q.cinemaId,
+      age: q.age,
+    }),
+  );
+});
+
+// GET /api/screenings/today?age=11   (only today's screenings that have not started yet)
+screeningsRouter.get("/today", async (req, res) => {
+  const q = filters.parse(req.query);
+  res.json(
+    await listScreenings({ ...dateRange("today", config.timezone), ...q }),
+  );
+});
+
+// GET /api/screenings/:id/seats  (every seat in the cinema, marked taken or free)
+screeningsRouter.get("/:id/seats", async (req, res) => {
+  const id = parseId(req.params.id);
+
+  const [screening] = await query(
+    `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
+            m.title AS "movieTitle", c.id AS "cinemaId", c.name AS "cinema"
+     FROM screening_times st
+     JOIN movie m  ON m.id = st.movie_id
+     JOIN cinema c ON c.id = st.cinema_id
+     WHERE st.id = $1`,
+    [id],
+  );
+  if (!screening) throw new HttpError(404, "Screening not found");
+
+  const seats = await query(
+    `SELECT s.id, s.row_label AS "row", s.seat_number AS "number",
+            (t.seat_id IS NOT NULL) AS taken
+     FROM seat s
+     LEFT JOIN ticket t ON t.seat_id = s.id AND t.screening_id = $1
+     WHERE s.cinema_id = $2
+     ORDER BY s.row_label, s.seat_number`,
+    [id, screening.cinemaId],
+  );
+  res.json({ screening, seats });
+});
 
 // POST /api/admin/screenings   (pick movie, cinema and start time)
 const createScreeningBody = z.object({
