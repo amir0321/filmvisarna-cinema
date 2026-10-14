@@ -1,4 +1,5 @@
 import { pool } from "./db.js";
+import bcrypt from "bcryptjs";
 
 // Mock data for cinema halls
 const cinemas = [{ name: "Stora Salongen" }, { name: "Lilla Salongen" }];
@@ -154,12 +155,49 @@ async function seedMenuItems() {
   console.log("Cinema kiosk menu items seeded successfully.");
 }
 
+// Seed standard test users
+async function seedUsers() {
+  const users = [
+    {
+      email: "testuser1@example.com",
+      firstName: "Test",
+      lastName: "User One",
+    },
+    {
+      email: "testuser2@example.com",
+      firstName: "Test",
+      lastName: "User Two",
+    },
+  ];
+
+  const testPassword = process.env.SEED_USER_PASSWORD;
+
+  if (!testPassword || testPassword.length < 8) {
+    throw new Error("SEED_USER_PASSWORD must be at least 8 characters.");
+  }
+
+  const passwordHash = await bcrypt.hash(testPassword, 12);
+
+  for (const user of users) {
+    await pool.query(
+      `INSERT INTO app_user
+       (email, password_hash, first_name, last_name, role)
+       VALUES ($1, $2, $3, $4, 'user')
+       ON CONFLICT (email) DO NOTHING`,
+      [user.email, passwordHash, user.firstName, user.lastName],
+    );
+  }
+
+  console.log("Standard test users seeded successfully.");
+}
+
 // Run all seed functions
 async function runSeed() {
   try {
     await seedCinemasAndSeats();
     await seedMovies();
     await seedMenuItems();
+    await seedUsers();
 
     console.log("All seed operations completed successfully.");
   } catch (error) {
