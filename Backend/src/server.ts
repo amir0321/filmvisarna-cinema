@@ -1,6 +1,7 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import pool, { initDb } from './db.js'
+import {bookings} from './routes/booking.js'
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.get('/api/movies', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch movies' })
   }
 })
+app.use ('/api/bookings', bookings)
 
 initDb()
   .then(() => {
