@@ -1,0 +1,7 @@
+$kind: collection
+name: Auth
+variables:
+  - key: bearer_token_14y0
+    secret: true
+  - key: json_web_token_1bay
+    secret: true
