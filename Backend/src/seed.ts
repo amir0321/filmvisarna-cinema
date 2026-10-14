@@ -206,7 +206,7 @@ async function runSeed() {
   }
 }
 // Start the seed process
-runSeed()
+(process.argv.includes("--users-only") ? seedUsers() : runSeed())
   .catch((error) => {
     console.error("Seed process failed:", error);
     process.exitCode = 1;
