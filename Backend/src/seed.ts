@@ -75,33 +75,33 @@ async function seedCinemasAndSeats() {
 
 // Mock data for movies
 const movies = [
-  { title: "Stjärnornas Krig: Arvet", duration: 165, age_rating: "15" },
-  { title: "Djupet", duration: 132, age_rating: "15" },
-  { title: "Väktarnas Dal", duration: 118, age_rating: "11" },
-  { title: "Sommaren Vi Försvann", duration: 104, age_rating: "Alla" },
-  { title: "Järnhjärtat", duration: 128, age_rating: "15" },
+  { title: "Stjärnornas Krig: Arvet", duration_minutes: 165, age_rating: "15" },
+  { title: "Djupet", duration_minutes: 132, age_rating: "15" },
+  { title: "Väktarnas Dal", duration_minutes: 118, age_rating: "11" },
+  { title: "Sommaren Vi Försvann", duration_minutes: 104, age_rating: "Alla" },
+  { title: "Järnhjärtat", duration_minutes: 128, age_rating: "15" },
   {
     title: "Lille Björnens Stora Äventyr",
-    duration: 88,
+    duration_minutes: 88,
     age_rating: "Alla",
   },
-  { title: "Nattens Arkitekt", duration: 121, age_rating: "15" },
-  { title: "Röd Sand", duration: 142, age_rating: "15" },
+  { title: "Nattens Arkitekt", duration_minutes: 121, age_rating: "15" },
+  { title: "Röd Sand", duration_minutes: 142, age_rating: "15" },
 ];
 
 // Insert movies without creating duplicates
 async function seedMovies() {
   for (const movie of movies) {
     const existingMovie = await pool.query(
-      "SELECT id FROM movies WHERE title = $1",
+      "SELECT id FROM movie WHERE title = $1",
       [movie.title],
     );
 
     if (existingMovie.rows.length === 0) {
       await pool.query(
-        `INSERT INTO movies (title, duration, age_rating)
+        `INSERT INTO movie (title, duration_minutes, age_rating)
          VALUES ($1, $2, $3)`,
-        [movie.title, movie.duration, movie.age_rating],
+        [movie.title, movie.duration_minutes, movie.age_rating],
       );
     }
   }
@@ -138,7 +138,7 @@ const menuItems = [
 async function seedMenuItems() {
   for (const item of menuItems) {
     await pool.query(
-      `INSERT INTO item
+      `INSERT INTO menu_item
        (name, description, category, price, is_combo)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (name)
@@ -154,36 +154,12 @@ async function seedMenuItems() {
   console.log("Cinema kiosk menu items seeded successfully.");
 }
 
-async function seedScreenings() {
-  const count = await pool.query('SELECT COUNT(*) FROM screening')
-  if (Number(count.rows[0].count) > 0) return
-
-  const movieIds = (await pool.query('SELECT id FROM movies ORDER BY id')).rows.map(r => r.id)
-  const cinemaIds = (await pool.query('SELECT id FROM cinema ORDER BY id')).rows.map(r => r.id)
-
-  let n = 0
-  for (let day = 1; day <= 8; day++) {
-    for (const cinemaId of cinemaIds) {
-      for (const time of ['16:00', '19:00']) {
-        await pool.query(
-          `INSERT INTO screening (movie_id, cinema_id, starts_at)
-           VALUES ($1, $2, (current_date + $3::int) + $4::time)`,
-          [movieIds[n % movieIds.length], cinemaId, day, time])
-        n++
-      }
-    }
-  }
-  console.log('Screenings seeded successfully');
-}
-
-
 // Run all seed functions
 async function runSeed() {
   try {
     await seedCinemasAndSeats();
     await seedMovies();
     await seedMenuItems();
-    await seedScreenings();
 
     console.log("All seed operations completed successfully.");
   } catch (error) {
