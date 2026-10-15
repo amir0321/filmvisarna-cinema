@@ -1,8 +1,12 @@
 import cors from "cors";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
+import { ZodError } from "zod";
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
+import { screeningsRouter } from "./routes/screenings.js";
+import { moviesRouter } from "./routes/movies";
+import { HttpError } from "./utils/httpErorr";
 
 export const app = express();
 
@@ -15,5 +19,31 @@ api.get("/health", (_req, res) => {
   res.json({ status: "ok", message: "Filmvisarna API is running" });
 });
 api.use("/auth", authRouter);
+api.use("/screenings", screeningsRouter);
+api.use("/movies", moviesRouter);
 
 app.use("/api", api);
+
+app.use((_req, res) => {
+  res.status(404).json({ success: false, error: "Sidan hittades inte" });
+});
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ success: false, error: err.message });
+    return;
+  }
+
+  if (err instanceof ZodError) {
+    const details = err.issues.map(
+      (issue) => `${issue.path.join(".")}: ${issue.message}`,
+    );
+    res
+      .status(400)
+      .json({ success: false, error: "Valideringsfel", details });
+    return;
+  }
+
+  console.error("Unhandled error:", err);
+  res.status(500).json({ success: false, error: "Internt serverfel" });
+});

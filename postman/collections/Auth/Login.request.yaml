@@ -1,0 +1,12 @@
+$kind: http-request
+name: Login
+url: http://localhost:3000/api/auth/login
+method: POST
+body:
+  type: json
+  content: |-
+    {
+      "email": "admin@filmvisarna.se",
+      "password": "AdminLösen123"
+    }
+order: 542768022570850
