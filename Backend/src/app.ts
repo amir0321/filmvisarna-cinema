@@ -7,6 +7,7 @@ import { authRouter } from "./routes/auth";
 import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
 import { HttpError } from "./utils/httpErorr";
+import { bookingsRouter } from "./routes/bookings.js";
 
 export const app = express();
 
@@ -21,6 +22,7 @@ api.get("/health", (_req, res) => {
 api.use("/auth", authRouter);
 api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
+api.use("/bookings", bookingsRouter);
 
 app.use("/api", api);
 
@@ -38,9 +40,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const details = err.issues.map(
       (issue) => `${issue.path.join(".")}: ${issue.message}`,
     );
-    res
-      .status(400)
-      .json({ success: false, error: "Valideringsfel", details });
+    res.status(400).json({ success: false, error: "Valideringsfel", details });
     return;
   }
 
