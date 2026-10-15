@@ -298,3 +298,50 @@ export async function createBooking(
     client.release();
   }
 }
+
+export interface CancelBookingResult {
+  id: number;
+  reference: string;
+  status: string;
+}
+
+export async function cancelBooking(
+  bookingId: number,
+  userId: number,
+): Promise<CancelBookingResult> {
+  const { rows } = await pool.query(
+    `SELECT b.id, b.booking_reference AS "reference", b.status, s.starts_at
+     FROM booking b
+     JOIN screening s ON s.id = b.screening_id
+     WHERE b.id = $1 AND b.user_id = $2`,
+    [bookingId, userId],
+  );
+
+  if (rows.length === 0) {
+    throw new HttpError(404, "Booking not found");
+  }
+
+  const booking = rows[0];
+
+  if (booking.status === "cancelled") {
+    throw new HttpError(400, "Booking is already cancelled");
+  }
+
+  if (new Date(booking.starts_at) <= new Date()) {
+    throw new HttpError(
+      400,
+      "Cannot cancel a booking for a screening that has already started",
+    );
+  }
+
+  const updated = await pool.query(
+    `UPDATE booking
+     SET status = 'cancelled'
+     WHERE id = $1
+     RETURNING id, booking_reference AS "reference", status`,
+    [bookingId],
+  );
+
+  return updated.rows[0];
+}
+

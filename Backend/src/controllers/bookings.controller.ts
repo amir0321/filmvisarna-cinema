@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import {
+  cancelBooking,
   createBooking,
   getBookingByReference,
   getUserBookings,
 } from "../services/bookings.service.js";
+import { parseId } from "../utils/httpErorr.js";
 
 const createBookingSchema = z.object({
   screeningId: z.number().int().positive("Ogiltigt visnings-id."),
@@ -69,4 +71,14 @@ export async function postBooking(req: Request, res: Response) {
   );
 
   res.status(201).json(result);
+}
+
+export async function deleteBooking(req: Request, res: Response): Promise<void> {
+  const bookingId = parseId(req.params.id, "booking ID");
+  const booking = await cancelBooking(bookingId, req.user!.id);
+  res.json({
+    success: true,
+    message: "Booking cancelled successfully",
+    booking,
+  });
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { optionalAuth, requireAdmin, requireAuth } from "../middleware/auth.js";
 import {
+  deleteBooking,
   getMyBookings,
   lookupBooking,
   postBooking,
@@ -16,3 +17,6 @@ bookingsRouter.get("/lookup", requireAdmin, lookupBooking);
 
 // Skapa ny bokning (Gäst eller Medlem)
 bookingsRouter.post("/", optionalAuth, postBooking);
+
+// Avboka en bokning (Inloggad medlem)
+bookingsRouter.delete("/:id", requireAuth, deleteBooking);
