@@ -309,39 +309,54 @@ export async function cancelBooking(
   bookingId: number,
   userId: number,
 ): Promise<CancelBookingResult> {
-  const { rows } = await pool.query(
-    `SELECT b.id, b.booking_reference AS "reference", b.status, s.starts_at
-     FROM booking b
-     JOIN screening s ON s.id = b.screening_id
-     WHERE b.id = $1 AND b.user_id = $2`,
-    [bookingId, userId],
-  );
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  if (rows.length === 0) {
-    throw new HttpError(404, "Booking not found");
-  }
-
-  const booking = rows[0];
-
-  if (booking.status === "cancelled") {
-    throw new HttpError(400, "Booking is already cancelled");
-  }
-
-  if (new Date(booking.starts_at) <= new Date()) {
-    throw new HttpError(
-      400,
-      "Cannot cancel a booking for a screening that has already started",
+    const { rows } = await client.query(
+      `SELECT b.id, b.booking_reference AS "reference", b.status, s.starts_at
+       FROM booking b
+       JOIN screening s ON s.id = b.screening_id
+       WHERE b.id = $1 AND b.user_id = $2
+       FOR UPDATE OF b`,
+      [bookingId, userId],
     );
+
+    if (rows.length === 0) {
+      throw new HttpError(404, "Booking not found");
+    }
+
+    const booking = rows[0];
+
+    if (booking.status === "cancelled") {
+      throw new HttpError(400, "Booking is already cancelled");
+    }
+
+    if (new Date(booking.starts_at) <= new Date()) {
+      throw new HttpError(
+        400,
+        "Cannot cancel a booking for a screening that has already started",
+      );
+    }
+
+    // Free the seats so they become available to book again
+    await client.query("DELETE FROM ticket WHERE booking_id = $1", [bookingId]);
+
+    const updated = await client.query(
+      `UPDATE booking
+       SET status = 'cancelled'
+       WHERE id = $1
+       RETURNING id, booking_reference AS "reference", status`,
+      [bookingId],
+    );
+
+    await client.query("COMMIT");
+    return updated.rows[0];
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
   }
-
-  const updated = await pool.query(
-    `UPDATE booking
-     SET status = 'cancelled'
-     WHERE id = $1
-     RETURNING id, booking_reference AS "reference", status`,
-    [bookingId],
-  );
-
-  return updated.rows[0];
 }
 
