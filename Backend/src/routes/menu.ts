@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { query, Queryable } from "../utils/dbHelpers";
 
 export const menuRouter = Router();
 
@@ -19,3 +20,13 @@ export function menuQuery(where: string) {
     WHERE ${where}
     ORDER BY mi.is_combo, mi.category, mi.name`;
 }
+
+export async function fetchMenuItem(db: Queryable, id: number) {
+  const { rows } = await db.query(menuQuery("mi.id = $1"), [id]);
+  return rows[0];
+}
+
+// GET /api/menu  (available food, drinks and combos)
+menuRouter.get("/", async (_req, res) => {
+  res.json(await query(menuQuery("mi.is_available")));
+});
