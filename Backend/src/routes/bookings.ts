@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAdmin, requireAuth } from "../middleware/auth";
 import { Queryable } from "../utils/dbHelpers";
 import { HttpError } from "../utils/httpErorr";
 import { pool } from "../db";
@@ -44,6 +44,24 @@ async function fetchBookings(db: Queryable, where: string, params: unknown[]) {
   return rows;
 }
 
+// GET /api/bookings/me (all bookings for the authenticated user)
 bookingsRouter.get("/me", requireAuth, async (req, res) => {
   res.json(await fetchBookings(pool, "b.user_id = $1", [req.user!.id]));
+});
+
+// GET /api/bookings/lookup?reference=CIN-ABC123
+// Admin only: staff check a ticket at the door. Finds guest and logged-in bookings alike.
+bookingsRouter.get("/lookup", requireAdmin, async (req, res) => {
+  const { reference } = z
+    .object({ reference: z.string().trim().min(1).max(50) })
+    .parse(req.query);
+
+  const rows = await fetchBookings(
+    pool,
+    "upper(b.booking_reference) = upper($1)",
+    [reference],
+  );
+  if (rows.length === 0)
+    throw new HttpError(404, "No booking found with that reference");
+  res.json(rows[0]);
 });
