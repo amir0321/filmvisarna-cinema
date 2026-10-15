@@ -164,9 +164,8 @@ screeningsRouter.post("/", requireAdmin, async (req, res) => {
   });
 
   res.status(201).json(screening);
-import { query } from "../utils/dbHelpers";
+});
 
-export const screeningsRouter = Router();
 // Get seats for a specific screening
 screeningsRouter.get("/:id/seats", async (req, res) => {
   const screeningId = Number(req.params.id);
