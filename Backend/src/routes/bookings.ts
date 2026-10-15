@@ -65,3 +65,38 @@ bookingsRouter.get("/lookup", requireAdmin, async (req, res) => {
     throw new HttpError(404, "No booking found with that reference");
   res.json(rows[0]);
 });
+
+/**
+ * DELETE /api/bookings/:id
+ * Cancel a booking owned by the authenticated user.
+ */
+bookingsRouter.delete("/:id", requireAuth, async (req, res) => {
+  const bookingId = Number(req.params.id);
+
+  if (!Number.isSafeInteger(bookingId) || bookingId <= 0) {
+    throw new HttpError(400, "Invalid booking ID");
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE booking
+     SET status = 'cancelled'
+     WHERE id = $1
+       AND user_id = $2
+       AND status = 'confirmed'
+     RETURNING id, booking_reference AS "reference", status`,
+    [bookingId, req.user!.id],
+  );
+
+  if (rows.length === 0) {
+    throw new HttpError(
+      404,
+      "Booking not found or already cancelled",
+    );
+  }
+
+  res.json({
+    success: true,
+    message: "Booking cancelled successfully",
+    booking: rows[0],
+  });
+});
