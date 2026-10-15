@@ -9,14 +9,10 @@ import {
 
 export const bookingsRouter = Router();
 
-// Hämta inloggad användares bokningar
 bookingsRouter.get("/me", requireAuth, getMyBookings);
 
-// Slå upp bokning via referenskod (Admin/Personal)
 bookingsRouter.get("/lookup", requireAdmin, lookupBooking);
 
-// Skapa ny bokning (Gäst eller Medlem)
 bookingsRouter.post("/", optionalAuth, postBooking);
 
-// Avboka en bokning (Inloggad medlem)
 bookingsRouter.delete("/:id", requireAuth, deleteBooking);
