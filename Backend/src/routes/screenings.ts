@@ -97,33 +97,6 @@ screeningsRouter.get("/today", async (req, res) => {
   );
 });
 
-// GET /api/screenings/:id/seats  (every seat in the cinema, marked taken or free)
-screeningsRouter.get("/:id/seats", async (req, res) => {
-  const id = parseId(req.params.id);
-
-  const [screening] = await query(
-    `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
-            m.title AS "movieTitle", c.id AS "cinemaId", c.name AS "cinema"
-     FROM screening_times st
-     JOIN movie m  ON m.id = st.movie_id
-     JOIN cinema c ON c.id = st.cinema_id
-     WHERE st.id = $1`,
-    [id],
-  );
-  if (!screening) throw new HttpError(404, "Screening not found");
-
-  const seats = await query(
-    `SELECT s.id, s.row_label AS "row", s.seat_number AS "number",
-            (t.seat_id IS NOT NULL) AS taken
-     FROM seat s
-     LEFT JOIN ticket t ON t.seat_id = s.id AND t.screening_id = $1
-     WHERE s.cinema_id = $2
-     ORDER BY s.row_label, s.seat_number`,
-    [id, screening.cinemaId],
-  );
-  res.json({ screening, seats });
-});
-
 // POST /api/admin/screenings   (pick movie, cinema and start time)
 const createScreeningBody = z.object({
   movieId: z.number().int().positive(),
