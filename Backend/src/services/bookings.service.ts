@@ -305,6 +305,30 @@ export interface CancelBookingResult {
   status: string;
 }
 
+export function validateCancellationDeadline(
+  screeningStartsAt: Date | string,
+  now: Date | number = Date.now(),
+  deadlineHours = config.cancellationDeadlineHours ?? 2,
+): void {
+  const startsAt = new Date(screeningStartsAt).getTime();
+  const currentTime = typeof now === "number" ? now : now.getTime();
+
+  if (startsAt <= currentTime) {
+    throw new HttpError(
+      400,
+      "Cannot cancel a booking for a screening that has already started",
+    );
+  }
+
+  const deadlineMs = deadlineHours * 60 * 60 * 1000;
+  if (startsAt - currentTime < deadlineMs) {
+    throw new HttpError(
+      400,
+      `Cannot cancel a booking less than ${deadlineHours} hours before screening starts`,
+    );
+  }
+}
+
 export async function cancelBooking(
   bookingId: number,
   userId: number,
@@ -332,12 +356,7 @@ export async function cancelBooking(
       throw new HttpError(400, "Booking is already cancelled");
     }
 
-    if (new Date(booking.starts_at) <= new Date()) {
-      throw new HttpError(
-        400,
-        "Cannot cancel a booking for a screening that has already started",
-      );
-    }
+    validateCancellationDeadline(booking.starts_at);
 
     // Free the seats so they become available to book again
     await client.query("DELETE FROM ticket WHERE booking_id = $1", [bookingId]);
