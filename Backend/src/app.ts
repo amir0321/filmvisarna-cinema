@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { ZodError } from "zod";
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
+import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
 import { HttpError } from "./utils/httpErorr";
 
@@ -18,6 +19,7 @@ api.get("/health", (_req, res) => {
   res.json({ status: "ok", message: "Filmvisarna API is running" });
 });
 api.use("/auth", authRouter);
+api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
 
 app.use("/api", api);
