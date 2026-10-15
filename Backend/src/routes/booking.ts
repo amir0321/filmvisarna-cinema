@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { randomBytes } from 'node:crypto'
-import pool from '../db.js'
+import { pool } from '../db.js'
 
 interface TicketInput {
   seatId: number
@@ -12,7 +12,6 @@ interface ItemInput {
   quantity: number
 }
 
-// Used to stop an invalid request before the database is touched
 class HttpError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -25,8 +24,13 @@ function isId(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && err.code === '23505'
+// The ticket table has primary key (screening_id, seat_id), named ticket_pkey
+function isSeatTaken(err: unknown): boolean {
+  return (
+    typeof err === 'object' && err !== null &&
+    'code' in err && err.code === '23505' &&
+    'constraint' in err && err.constraint === 'ticket_pkey'
+  )
 }
 
 export const bookings = Router()
@@ -77,6 +81,10 @@ bookings.post('/', async (req, res) => {
     }
     items.push({ itemId: i.itemId, quantity: i.quantity })
   }
+  if (new Set(items.map(i => i.itemId)).size !== items.length) {
+    res.status(400).json({ error: 'Samma produkt två gånger.' })
+    return
+  }
 
   // ---------- 2. Database transaction ----------
   const client = await pool.connect()
@@ -93,7 +101,7 @@ bookings.post('/', async (req, res) => {
       throw new HttpError(409, 'Visningen har redan startat.')
     }
 
-    // Prices come from the database, never from the browser
+    // Prices come from the database. numeric columns arrive as strings, so convert
     const priceGroupIds = [...new Set(tickets.map(t => t.priceGroupId))]
     const groups = await client.query(
       'SELECT id, price FROM price_group WHERE id = ANY($1::int[])',
@@ -101,7 +109,7 @@ bookings.post('/', async (req, res) => {
     )
     if (groups.rowCount !== priceGroupIds.length) throw new HttpError(400, 'Ogiltig biljettyp.')
     const priceOfGroup = new Map<number, number>(
-      groups.rows.map((g: { id: number; price: number }) => [g.id, g.price]),
+      groups.rows.map((g: { id: number; price: string }) => [g.id, Number(g.price)]),
     )
 
     // The seats must belong to this screening's cinema
@@ -115,7 +123,7 @@ bookings.post('/', async (req, res) => {
     // Create the booking with a booking reference that can't be guessed
     const bookingRef = randomBytes(6).toString('hex')
     const booking = await client.query(
-      `INSERT INTO booking (screening_id, email, booking_ref)
+      `INSERT INTO booking (screening_id, guest_email, booking_reference)
        VALUES ($1, $2, $3) RETURNING id`,
       [screeningId, email, bookingRef],
     )
@@ -126,9 +134,9 @@ bookings.post('/', async (req, res) => {
     for (const t of tickets) {
       const price = priceOfGroup.get(t.priceGroupId)!
       await client.query(
-        `INSERT INTO ticket (booking_id, screening_id, seat_id, price_group_id, price_paid)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [bookingId, screeningId, t.seatId, t.priceGroupId, price],
+        `INSERT INTO ticket (screening_id, seat_id, booking_id, price_group_id)
+         VALUES ($1, $2, $3, $4)`,
+        [screeningId, t.seatId, bookingId, t.priceGroupId],
       )
       total += price
     }
@@ -137,21 +145,21 @@ bookings.post('/', async (req, res) => {
     if (items.length > 0) {
       const itemIds = items.map(i => i.itemId)
       const found = await client.query(
-        'SELECT id, price FROM item WHERE id = ANY($1::int[]) AND is_available',
+        'SELECT id, price FROM menu_item WHERE id = ANY($1::int[]) AND is_available',
         [itemIds],
       )
-      if (found.rowCount !== new Set(itemIds).size) {
+      if (found.rowCount !== itemIds.length) {
         throw new HttpError(400, 'Ogiltiga eller slutsålda kioskprodukter.')
       }
       const priceOfItem = new Map<number, number>(
-        found.rows.map((i: { id: number; price: number }) => [i.id, i.price]),
+        found.rows.map((i: { id: number; price: string }) => [i.id, Number(i.price)]),
       )
       for (const i of items) {
         const price = priceOfItem.get(i.itemId)!
         await client.query(
-          `INSERT INTO booking_item (booking_id, item_id, quantity, price_paid)
-           VALUES ($1, $2, $3, $4)`,
-          [bookingId, i.itemId, i.quantity, price],
+          `INSERT INTO booking_item (booking_id, menu_item_id, quantity)
+           VALUES ($1, $2, $3)`,
+          [bookingId, i.itemId, i.quantity],
         )
         total += price * i.quantity
       }
@@ -166,7 +174,7 @@ bookings.post('/', async (req, res) => {
       res.status(err.status).json({ error: err.message })
       return
     }
-    if (isUniqueViolation(err)) {
+    if (isSeatTaken(err)) {
       res.status(409).json({ error: 'En eller flera stolar är redan bokade. Välj andra stolar.' })
       return
     }
