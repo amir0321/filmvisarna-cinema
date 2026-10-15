@@ -1,38 +1,22 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import pool, { initDb } from './db.js'
-import {bookings} from './routes/booking.js'
+import dotenv from "dotenv";
+import { app } from "./app.js";
+import { config } from "./config.js";
+import { initDb } from "./db.js";
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
-const PORT = process.env.PORT || 3000
-
-app.use(express.json())
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Filmvisarna API is running' })
-})
-
-app.get('/api/movies', async (req, res) => {
-  try {
-    const { rows: movies } = await pool.query('SELECT * FROM movies ORDER BY id ASC')
-    res.json(movies)
-  } catch (error) {
-    console.error('Error fetching movies:', error)
-    res.status(500).json({ error: 'Failed to fetch movies' })
-  }
-})
-app.use ('/api/bookings', bookings)
+const PORT = config.port;
 
 initDb()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`)
-    })
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   })
   .catch(() => {
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT} (Database offline)`)
-    })
-  })
+      console.log(
+        `Server running on http://localhost:${PORT} (Database offline)`,
+      );
+    });
+  });

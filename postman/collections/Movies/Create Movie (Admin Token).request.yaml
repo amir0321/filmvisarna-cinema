@@ -1,0 +1,19 @@
+$kind: http-request
+name: Create Movie (Admin Token)
+url: http://localhost:3000/api/movies
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_0ybl}}
+body:
+  type: json
+  content: |
+    {
+      "title": "Ny Testfilm",
+      "description": "En spännande film",
+      "duration_minutes": 120,
+      "age_rating": "15",
+      "poster_url": "https://example.com/poster.jpg",
+      "release_date": "2025-01-15",
+      "genres": ["Action", "Thriller"]
+    }
+order: 3978143548118106
