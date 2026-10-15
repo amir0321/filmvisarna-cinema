@@ -1,0 +1,7 @@
+$kind: collection
+name: Bookings
+variables:
+  - key: user_token
+    secret: true
+  - key: admin_token
+    secret: true
