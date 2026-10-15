@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { randomBytes } from 'node:crypto'
 import { pool } from '../db.js'
+import { sendBookingConfirmation } from '../services/emailService.js'
 
 interface TicketInput {
   seatId: number
@@ -32,7 +33,62 @@ function isSeatTaken(err: unknown): boolean {
     'constraint' in err && err.constraint === 'ticket_pkey'
   )
 }
+async function sendConfirmationFor(bookingId: number, bookingRef: string, email: string): Promise<void> {
+  const info = await pool.query(
+    `SELECT m.title, m.poster_url, c.name AS cinema, st.starts_at
+     FROM booking b
+     JOIN screening st ON st.id = b.screening_id
+     JOIN movie m ON m.id = st.movie_id
+     JOIN cinema c ON c.id = st.cinema_id
+     WHERE b.id = $1`,
+    [bookingId],
+  )
+  const seats = await pool.query(
+    `SELECT s.row_label, s.seat_number
+     FROM ticket t JOIN seat s ON s.id = t.seat_id
+     WHERE t.booking_id = $1
+     ORDER BY s.row_label, s.seat_number`,
+    [bookingId],
+  )
+  const tickets = await pool.query(
+    `SELECT pg.name, pg.price, count(*)::int AS quantity
+     FROM ticket t JOIN price_group pg ON pg.id = t.price_group_id
+     WHERE t.booking_id = $1
+     GROUP BY pg.name, pg.price`,
+    [bookingId],
+  )
+  const kiosk = await pool.query(
+    `SELECT mi.name, mi.price, bi.quantity
+     FROM booking_item bi JOIN menu_item mi ON mi.id = bi.menu_item_id
+     WHERE bi.booking_id = $1`,
+    [bookingId],
+  )
 
+  const row = info.rows[0]
+  const startsAt = new Date(row.starts_at)
+  const timeZone = 'Europe/Stockholm'
+
+  await sendBookingConfirmation({
+    email,
+    bookingRef,
+    movieTitle: row.title,
+    screeningDate: startsAt.toLocaleDateString('sv-SE', { dateStyle: 'long', timeZone }),
+    screeningTime: startsAt.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone }),
+    cinemaName: row.cinema,
+    seats: seats.rows.map((s: { row_label: string; seat_number: number }) => `${s.row_label}${s.seat_number}`),
+    tickets: tickets.rows.map((t: { name: string; price: string; quantity: number }) => ({
+      type: t.name,
+      quantity: t.quantity,
+      price: Number(t.price),
+    })),
+    kioskItems: kiosk.rows.map((k: { name: string; price: string; quantity: number }) => ({
+      name: k.name,
+      quantity: k.quantity,
+      price: Number(k.price),
+    })),
+    posterUrl: row.poster_url ?? undefined,
+  })
+}
 export const bookings = Router()
 
 bookings.post('/', async (req, res) => {
@@ -167,6 +223,8 @@ bookings.post('/', async (req, res) => {
 
     await client.query('COMMIT')
     res.status(201).json({ bookingRef, totalPrice: total })
+    sendConfirmationFor(bookingId, bookingRef, email)
+    .catch(err=> console.error('Confirmation email failed:', err))
   } catch (err) {
     await client.query('ROLLBACK') // undo everything saved in this transaction
 
