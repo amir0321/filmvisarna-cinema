@@ -8,6 +8,7 @@ import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
 import { HttpError } from "./utils/httpErorr";
 import { bookingsRouter } from "./routes/bookings.js";
+import { kioskRouter } from "./routes/kiosk.routes.js";
 
 export const app = express();
 
@@ -23,6 +24,7 @@ api.use("/auth", authRouter);
 api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
 api.use("/bookings", bookingsRouter);
+api.use("/kiosk", kioskRouter);
 
 app.use("/api", api);
 
