@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import {
   cancelBooking,
+  cancelBookingByToken,
   createBooking,
   getBookingByReference,
+  getBookingCancelPreview,
   getUserBookings,
 } from "../services/bookings.service.js";
 import { parseId } from "../utils/httpErorr.js";
@@ -44,6 +46,9 @@ const lookupBookingSchema = z.object({
   reference: z.string().trim().min(1).max(50),
 });
 
+const cancelTokenSchema = z.object({
+  token: z.string().trim().min(1, "Token krävs."),
+});
 
 export async function getMyBookings(req: Request, res: Response) {
   const bookings = await getUserBookings(req.user!.id);
@@ -82,3 +87,20 @@ export async function deleteBooking(req: Request, res: Response): Promise<void> 
     booking,
   });
 }
+
+export async function getCancelPreview(req: Request, res: Response) {
+  const { token } = cancelTokenSchema.parse(req.query);
+  const preview = await getBookingCancelPreview(token);
+  res.json(preview);
+}
+
+export async function postCancelByToken(req: Request, res: Response) {
+  const { token } = cancelTokenSchema.parse(req.body);
+  const booking = await cancelBookingByToken(token);
+  res.json({
+    success: true,
+    message: "Booking cancelled successfully",
+    booking,
+  });
+}
+

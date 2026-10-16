@@ -1,0 +1,13 @@
+$kind: http-request
+name: Update cinema (Admin)
+url: http://localhost:3000/api/cinemas/1
+method: PUT
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "name": "Stora Salongen VIP"
+    }
+order: 4000

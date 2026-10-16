@@ -149,45 +149,60 @@ Vite automatically proxies all `/api` requests to `http://localhost:3000`.
 ## API Endpoints
 
 ### 🩺 System
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Public | Health check and server status |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | Public | `200`, `500` | Health check and server status |
 
 ### 🔐 Authentication
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public | Register user account (returns JWT token + user info) |
-| `POST` | `/api/auth/login` | Public | Login with email & password (returns JWT token) |
-| `GET` | `/api/auth/me` | Logged In | Get profile of authenticated user |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | `201`, `400`, `409`, `500` | Register user account (returns JWT token + user info) |
+| `POST` | `/api/auth/login` | Public | `200`, `400`, `401`, `500` | Login with email & password (returns JWT token) |
+| `GET` | `/api/auth/me` | Logged In | `200`, `401`, `500` | Get profile of authenticated user |
 
 ### 🎬 Movies
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/movies` | Public | Fetch all movies with associated genres |
-| `GET` | `/api/movies/:id` | Public | Fetch single movie details by ID |
-| `POST` | `/api/movies` | Admin | Create a new movie with genres |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/movies` | Public | `200`, `500` | Fetch all movies with associated genres |
+| `GET` | `/api/movies/:id` | Public | `200`, `400`, `404`, `500` | Fetch single movie details by ID |
+| `POST` | `/api/movies` | Admin | `201`, `400`, `401`, `403`, `500` | Create a new movie with genres |
+| `PUT` | `/api/movies/:id` | Admin | `200`, `400`, `401`, `403`, `404`, `500` | Update movie details and genres |
+| `DELETE` | `/api/movies/:id` | Admin | `200`, `401`, `403`, `404`, `409`, `500` | Delete movie (prevented if scheduled screenings exist) |
+
+### 🏛️ Cinemas
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/cinemas` | Public | `200`, `500` | List all cinema halls with total seat counts |
+| `GET` | `/api/cinemas/:id` | Public | `200`, `400`, `404`, `500` | Fetch cinema hall details with complete seat list |
+| `POST` | `/api/cinemas` | Admin | `201`, `400`, `401`, `403`, `409`, `500` | Create cinema hall and auto-generate seat grid |
+| `PUT` | `/api/cinemas/:id` | Admin | `200`, `400`, `401`, `403`, `404`, `409`, `500` | Update cinema hall name |
+| `DELETE` | `/api/cinemas/:id` | Admin | `200`, `401`, `403`, `404`, `409`, `500` | Delete cinema hall and its seats (prevented if screenings exist) |
 
 ### 🎟️ Screenings & Seats
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/screenings` | Public | List upcoming screenings (filters: `when`, `date`, `movieId`, `cinemaId`, `age`) |
-| `GET` | `/api/screenings/today` | Public | List today's upcoming screenings (optional `age` filter) |
-| `GET` | `/api/screenings/:id/seats` | Public | Get real-time seat availability map (`booked` / `available`) |
-| `POST` | `/api/screenings` | Admin | Schedule a screening with automatic overlap & cleaning buffer validation |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/screenings` | Public | `200`, `400`, `500` | List upcoming screenings (filters: `when`, `date`, `movieId`, `cinemaId`, `age`) |
+| `GET` | `/api/screenings/today` | Public | `200`, `400`, `500` | List today's upcoming screenings (optional `age` filter) |
+| `GET` | `/api/screenings/:id/seats` | Public | `200`, `400`, `404`, `500` | Get real-time seat availability map (`booked` / `available`) |
+| `POST` | `/api/screenings` | Admin | `201`, `400`, `401`, `403`, `404`, `409`, `500` | Schedule a screening with automatic overlap & cleaning buffer validation |
+| `PUT` | `/api/screenings/:id` | Admin | `200`, `400`, `401`, `403`, `404`, `409`, `500` | Update screening time/cinema (with overlap check, prevented if bookings exist) |
+| `DELETE` | `/api/screenings/:id` | Admin | `200`, `401`, `403`, `404`, `409`, `500` | Delete screening (prevented if active bookings exist) |
 
 ### 🍿 Kiosk & Concessions
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/kiosk` | Public | Get active menu items & combos (filters: `category=food\|drink`, `is_combo`) |
-| `GET` | `/api/kiosk/:id` | Public | Get single kiosk item with combo breakdown |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/kiosk` | Public | `200`, `500` | Get active menu items & combos (filters: `category=food\|drink`, `is_combo`) |
+| `GET` | `/api/kiosk/:id` | Public | `200`, `400`, `404`, `500` | Get single kiosk item with combo breakdown |
 
 ### 📋 Bookings
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/bookings` | Guest / Member | Book seats & kiosk items (atomic transaction, auto reference `FV-XXXXX`, email) |
-| `GET` | `/api/bookings/me` | Logged In | View authenticated user's booking history |
-| `GET` | `/api/bookings/lookup?reference=...` | Admin | Look up any booking by booking reference code |
-| `DELETE` | `/api/bookings/:id` | Logged In | Cancel booking (enforces ≥ 2h deadline before screening & releases seats) |
+| Method | Endpoint | Access | Status Codes | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/bookings` | Guest / Member | `201`, `400`, `409`, `500` | Book seats & kiosk items (atomic transaction, auto reference `FV-XXXXX`, email) |
+| `GET` | `/api/bookings/me` | Logged In | `200`, `401`, `500` | View authenticated user's booking history |
+| `GET` | `/api/bookings/lookup?reference=...` | Admin | `200`, `400`, `401`, `403`, `404`, `500` | Look up any booking by booking reference code |
+| `GET` | `/api/bookings/cancel-preview?token=...` | Public (Signed link) | `200`, `400`, `403`, `404`, `500` | Preview booking details before guest cancellation (Figma modal) |
+| `POST` | `/api/bookings/cancel-by-token` | Public (Signed link) | `200`, `400`, `403`, `404`, `500` | Cancel booking using email JWT link (enforces ≥ 2h deadline & releases seats) |
+| `DELETE` | `/api/bookings/:id` | Logged In | `200`, `400`, `401`, `404`, `500` | Cancel booking (enforces ≥ 2h deadline before screening & releases seats) |
 
 ---
 

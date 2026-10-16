@@ -1,7 +1,7 @@
 $kind: http-request
 name: Get all screenings (filters)
-url: http://localhost:3000/api/screenings?when=tomorrow
+url: http://localhost:3000/api/screenings?when=today
 method: GET
 queryParams:
-  when: tomorrow
+  when: today
 order: 1000
