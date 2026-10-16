@@ -7,10 +7,8 @@ import {
 } from "../services/kiosk.service.js";
 import { parseId } from "../utils/httpErorr.js";
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+import { ApiResponse } from "../interfaces/types.js";
+export type { ApiResponse };
 
 export async function getKiosk(
   req: Request,

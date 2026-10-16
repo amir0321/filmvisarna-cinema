@@ -5,3 +5,9 @@ variables:
     secret: true
   - key: admin_token
     secret: true
+  - key: json_web_token_0uzu
+    secret: true
+  - key: bearer_token_13ym
+    secret: true
+  - key: json_web_token_19zh
+    secret: true

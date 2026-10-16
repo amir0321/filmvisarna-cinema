@@ -3,15 +3,15 @@ name: Create booking (User)
 url: http://localhost:3000/api/bookings
 method: POST
 headers:
-  Authorization: Bearer {{user_token}}
+  Authorization: Bearer {{json_web_token_0uzu}}
 body:
   type: json
   content: |
     {
-      "screeningId": 11,
+      "screeningId": 2,
       "tickets": [
         {
-          "seatId": 2,
+          "seatId": 8,
           "priceGroupId": 2
         }
       ],
