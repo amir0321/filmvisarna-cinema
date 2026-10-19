@@ -9,8 +9,12 @@ import {
 } from "../services/cinemas.service.js";
 import { parseId } from "../utils/httpErorr.js";
 
-const createCinemaSchema = z.object({
+export const createCinemaSchema = z.object({
   name: z.string().trim().min(1, "Namn krävs").max(100),
+  format: z.string().trim().max(100).optional().nullable(),
+  tech: z.string().trim().max(200).optional().nullable(),
+  screen_size: z.string().trim().max(50).optional().nullable(),
+  opened_year: z.coerce.number().int().min(1890).max(2100).optional().nullable(),
   rows: z.number().int().min(1, "Minst 1 rad krävs").max(26, "Max 26 rader (A-Z)"),
   seatsPerRow: z
     .number()
@@ -19,8 +23,22 @@ const createCinemaSchema = z.object({
     .max(50, "Max 50 stolar per rad"),
 });
 
-const updateCinemaSchema = z.object({
-  name: z.string().trim().min(1, "Namn krävs").max(100),
+export const updateCinemaSchema = z.object({
+  name: z.string().trim().min(1, "Namn får inte vara tomt").max(100).optional(),
+  format: z.string().trim().max(100).optional().nullable(),
+  tech: z.string().trim().max(200).optional().nullable(),
+  screen_size: z.string().trim().max(50).optional().nullable(),
+  opened_year: z.coerce.number().int().min(1890).max(2100).optional().nullable(),
+  rows: z.number().int().min(1, "Minst 1 rad krävs").max(26).optional(),
+  seatsPerRow: z.number().int().min(1, "Minst 1 stol krävs").max(50).optional(),
+  wheelchairSeats: z
+    .array(
+      z.object({
+        row: z.string().trim().min(1).max(2),
+        number: z.number().int().positive(),
+      }),
+    )
+    .optional(),
 });
 
 export async function getCinemas(_req: Request, res: Response) {
