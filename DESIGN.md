@@ -1,6 +1,6 @@
 # Filmvisarna – Designsammanfattning
 
-> Baserad på Figma-prototypen "File Upload Feature" (design_01–design_16)  
+> Baserad på Figma-prototypen "File Upload Feature" (design_01–design_23, totalt 23 vyer inklusive mobil)  
 > Senast verifierad: 2026-10-19
 
 ---
@@ -78,7 +78,133 @@
 
 ---
 
-### 2.3 Salonger (`/salonger`)
+### 2.3 Filmdetaljsida (`/filmer/:id`)
+
+**Design_17 (Järnhjärtat)**
+
+#### Hero & Bakgrund
+- Stor landskapsbild / bakgrundsvideo med mörk gradient
+- Centrerad Play-ikon (`▶`) för att spela filmtrailer i overlay
+- Vänster kolumn: Högupplöst filmomslag (vertikal poster) med rundade hörn
+- Höger kolumn (Filminformation):
+  - Badges: Genre-pills i versaler (`ACTION` · `SCI-FI`) samt IMDb-betyg (`★ 7.5 IMDb` med gul stjärna)
+  - Filmtitel: Stor vit rubrik (`Järnhjärtat`)
+  - Regissör: `Regi: [Regissörsnamn]`
+  - Synopsis: Fyllig sammanfattning av handlingen
+  - Medverkande: `MEDVERKANDE` med skådespelarnamn som pills/chips
+
+#### Nedre sektion (2 kolumner)
+- **Vänster kolumn – FAKTA-kort:**
+  - Tabell/lista med filmdata:
+    - Åldersgräns (t.ex. `15 år`)
+    - Premiärår (t.ex. `2026`)
+    - Speltid (t.ex. `2h 8m`)
+    - Originaltitel (t.ex. `Iron Heart`)
+    - Språk (t.ex. `Engelska`)
+    - Undertexter (t.ex. `Svenska`)
+- **Höger kolumn – Visningstider & Dagväljare ("Välj dag & tid"):**
+  - Datum-pills: `Idag (1 okt)` (aktiv) · `Imorgon (2 okt)` · `Fredag (3 okt)`
+  - Visningskort per salong under valt datum:
+    - Tidintervall: `17:30 – 19:38`, Salong: `Salong 1`, Tillgänglighet: badge `33 kvar` (grön)
+    - Tidintervall: `21:00 – 23:08`, Salong: `Salong 2`, Tillgänglighet: badge `8 kvar` (röd)
+  - Notering i botten: *"Välj en tid ovan för att gå vidare till stolsväljaren. Betalning sker i kassan."*
+
+---
+
+### 2.4 Bokningsflöde & Stolsväljare (`/boka/:visningId`)
+
+**Design_18 · Design_19**
+
+#### Sidhuvud & Stegindikator
+- Brödsmula: `< [Filmtitel]` (länk tillbaka till filmen)
+- Stegindikator centrerad i toppen:
+  - `1. Biljetter` (grön cirkel med bock `✓`)
+  - `2. Välj platser` (aktiv, röd cirkel med siffra 2 och röd indikatorlinje)
+  - `3. Bekräftelse` (grå cirkel med siffra 3)
+- Mini-sammanfattning av föreställningen:
+  - Liten poster-thumbnail · Titel (`Stjärnornas Krig: Arvet`) · Salong (`Stora Salongen`) · Tid (`13:00–15:45 • 2D`)
+
+#### Vänster kolumn – Steg 1: Välj biljetter
+- Rubrik: **1. Välj biljetter** — *"Välj antal biljetter per kategori"*
+- Biljettkategorier med plus/minus-räknare:
+  - `Vuxen 140 kr` `[-] 1 [+]`
+  - `Pensionär 120 kr` `[-] 0 [+]`
+  - `Barn (under 12 år) 80 kr` `[-] 1 [+]` (röd plusknapp)
+- Sammanfattningsrad (grön banner): `Totalt: 220 kr för 2 biljetter ✓`
+
+#### Vänster kolumn – Steg 2: Välj platser
+- Rubrik: **2. Välj platser** — *"Bästa tillgängliga platser är förvalda — klicka för att ändra"*
+- Stolskarta:
+  - Välvd skärmillustration i toppen: `BIODUK`
+  - Radbeteckningar `A`–`J` på både vänster och höger sida
+  - Stolar ordnade per rad med visuell status:
+    - **Ledig:** Mörkgrå rundad knapp
+    - **Vald:** Grön rundad knapp med vit stol-ikon
+    - **Upptagen:** Mörkgrå rundad knapp med snedstreck (`/`)
+  - Teckenförklaring (Legend) under kartan:
+    - `Ledig` (grå box) · `Vald` (grön box med ikon) · `Upptagen` (grå med snedstreck)
+
+#### Kiosktillägg – Bio-Kiosken (hopfällbar accordion under stolskartan)
+- Rubrik: **Bio-Kiosken – Förbeställ snacks & slipp kön!** (popcorn-ikon + expander-pil `^`)
+- Undertext: *"Hämta ut färska snacks i kassan samtidigt som du betalar dina biljetter."*
+- Produkter med kvantitetsväljare `[-] [antal] [+]`:
+  - 🍿 **Klassikern** – Mellanpopcorn & 50cl Läsk (79 kr)
+  - 🍿 **Stora Biomyset** – Stor Popcorn & 2× Läsk + Godispåse (129 kr)
+  - ☕ **Kaffepaket** – Kaffe/Te & Nybakad Kaka
+
+#### Höger kolumn – Sticky sammanfattning ("Din bokning")
+- Salong och valda platser: `Stora Salongen` · `Rad E, Stol 1 · Rad E, Stol 2`
+- Prisspecifikation:
+  - `1× Vuxen 140 kr`
+  - `1× Barn 80 kr`
+  - `Totalt 220 kr` (stor fet vit text)
+- Betalningsinformation: *"Ingen onlinebetalning krävs. Biljetterna betalas och hämtas ut i kassan senast 15 minuter innan föreställningen börjar."*
+- Fält för bokningsbekräftelse:
+  - Etikett: `E-post för bokningsbekräftelse`
+  - Inmatningsfält med placeholder: `din@epost.se`
+- Medlemstips (infobox):
+  - *"💡 Tips: Bli medlem så sparas dina bokningar automatiskt under Mina sidor!"*
+- CTA-knapp: `Slutför bokning` (stor fylld röd knapp)
+- Länk under knappen (om kiosken är stängd): `🍿 Lägg till snacks från Bio-Kiosken`
+
+---
+
+### 2.5 Bokningsbekräftelse & Digital Biljett (`/bekraftelse/:kod`)
+
+**Design_20 · Design_21**
+
+#### Bekräftelsevy ("Tack för din bokning!")
+- Centrerat modal/kort med mörk bakgrund och subtil border:
+  - Stor grön cirkel med vit bock (`✓`)
+  - Rubrik: **Tack för din bokning!**
+  - Undertext: *"En bekräftelse skickas till din e-post"*
+- **Bokningskod-box:**
+  - Etikett: `BOKNINGSKOD`
+  - Monospace-box med koden: `FV - H7UZQ`
+  - Snabbknapp: `[ Kopiera ]` (med kopiera-ikon)
+- **Biljettsammanfattning:**
+  - Film-thumbnail · Titel (`Stjärnornas Krig: Arvet`) · Salong (`Stora Salongen`) · Tid (`13:00–15:45`)
+  - Platsinfo: `Rad E: Stol 1, 2`
+  - Specifikation:
+    - `1× Vuxen (140 kr) 140 kr`
+    - `1× Barn (80 kr) 80 kr`
+    - `Biljetter 220 kr`
+    - Skiljelinje
+    - `Totalt att betala 220 kr` (belopp i accentgrön)
+- **QR-kod för incheckning:**
+  - Etikett: `Visa upp vid kassan`
+  - Centrerad QR-kod som kodar bokningsreferensen
+  - Kodtext under QR: `FV-H7UZQ`
+
+#### Digital biljett & Hantering (kvitto / avbokning)
+- Under QR-koden finns åtgärdsknappar:
+  - `Skriv ut / Spara som PDF` (mörkgrå knapp / outline)
+  - `Avboka biljett` (röd border / röd text)
+  - `Tillbaka till startsidan` (textlänk)
+
+---
+
+### 2.6 Salonger (`/salonger`)
 
 **Design_05 · Design_06**
 
@@ -119,7 +245,7 @@
 
 ---
 
-### 2.4 Om oss (`/om-oss`)
+### 2.7 Om oss (`/om-oss`)
 
 **Design_07 · Design_08 · Design_09**
 
@@ -173,8 +299,8 @@
 
 #### Nav (inloggad)
 - Navlänk `Mina Bokningar` visas (med notis-badge `1`)
-- Avatar-meny övre höger: namn + e-post + rollbyte (Gäst / Medlem / Admin)
-- Rullgardin: `Min profil` · `Byt roll (DEMO)` · `Logga ut`
+- Avatar-meny övre höger: namn + e-post
+- Rullgardin: `Min profil` · `Logga ut`
 
 #### Profilkort (övre del)
 - Avatar (stor röd cirkel med initial)
@@ -375,8 +501,6 @@ Kolumner: BILD · PRODUKTNAMN · KATEGORI · PRIS · LAGERSTATUS · ÅTGÄRDER
 | **Medlem** | + Mina bokningar, Min profil, kassa vid ankomst |
 | **Admin / Superadmin** | + Backoffice (alla sektioner ovan) |
 
-Demo-rollbyte syns i avatar-menyn (`Gäst / Medlem / Admin`).
-
 ---
 
 ## 6. Återkommande UI-komponenter
@@ -397,6 +521,41 @@ FILMVISARNA •  |  Hem  Filmer & Repertoar  Salonger  Om oss  |  🔍  Logga in
 ```
 FILMVISARNA • BACKOFFICE  |  Bokningar & Kassa  Visningsschema  Filmarkiv  Salonger  Kiosksortiment  |  [A Admin: Ameer (Superadmin)]  Logga ut
 ```
+
+### Navigation – Mobil (Viewport ≤ 768px, t.ex. iPhone SE 375×667)
+
+**Design_22 · Design_23**
+
+#### Mobil Topbar
+```
+FILMVISARNA •                                         ☰  👤
+```
+- Logo till vänster
+- Hamburgarmeny-ikon (`☰`) och Användar-avatar (`👤`) till höger
+
+#### Mobil Bottom Navigation Bar (Fast klistrad i botten)
+Fyra navigeringsflikar med ikoner:
+- `🏠 Hem` (aktiv: röd ikon + text)
+- `🎬 Filmer`
+- `🎟 Biljetter`
+- `👤 Profil`
+
+#### Mobil Sidomeny / Drawer (öppnas via hamburgarikonen `☰`)
+- **Toppsektion:**
+  - Användaravatar (röd cirkel, t.ex. `G` för Gäst eller initial)
+  - Namn/status: `Gäst` (undertitel: `Inte inloggad`)
+  - Stängknapp: `✕` (övre höger i drawern)
+- **Menylista (vertikal):**
+  - `🏠 Hem` (aktiv: rundad röd container-bakgrund)
+  - `🗓 Filmer & Repertoar`
+  - `💺 Salonger`
+  - `🎟 Mina Bokningar`
+  - `👤 Min Profil`
+  - `ℹ Om oss`
+  - `🗄 Admin Backoffice` (med röd pill-badge `ADMIN`)
+- **Knappar i botten av menyn:**
+  - `Logga in` (stor röd CTA-knapp)
+  - `Logga ut` (mörk konturknapp)
 
 ### Bokningsnummer-format
 `FV-XXXXX` (2 bokstäver + bindestreck + 5 alfanumeriska tecken, ex. `FV-8K49P`, `FV-YRZ4V`)
@@ -432,5 +591,3 @@ FILMVISARNA • BACKOFFICE  |  Bokningar & Kassa  Visningsschema  Filmarkiv  Sal
 - [ ] **Notis-badge** på `Mina Bokningar` – visar antal aktiva bokningar
 
 ---
-
-*Dokument genererat utifrån design_01.png – design_16.png (Figma "File Upload Feature", Filmvisarna-projektet)*
