@@ -1,0 +1,7 @@
+$kind: http-request
+name: Verify email
+url: http://localhost:3000/api/auth/verify-email
+method: POST
+headers:
+  Authorization: Bearer {{user_token}}
+order: 5000
