@@ -343,18 +343,24 @@ async function seedScreenings(
   const now = new Date();
   const formatIsoDate = (d: Date) => d.toISOString().split("T")[0];
 
-  const days = [0, 1, 2, 3];
-
-  for (const dayOffset of days) {
+  for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
     const targetDate = new Date(now);
     targetDate.setDate(targetDate.getDate() + dayOffset);
     const dateStr = formatIsoDate(targetDate);
 
-    const largeScreenings = [
-      { movie: "Stjärnornas Krig: Arvet", time: "13:00:00" },
-      { movie: "Järnhjärtat", time: "17:30:00" },
-      { movie: "Djupet", time: "20:30:00" },
-    ];
+    const isEven = dayOffset % 2 === 0;
+
+    const largeScreenings = isEven
+      ? [
+          { movie: "Stjärnornas Krig: Arvet", time: "13:00:00" },
+          { movie: "Järnhjärtat", time: "17:30:00" },
+          { movie: "Djupet", time: "20:30:00" },
+        ]
+      : [
+          { movie: "Väktarnas Dal", time: "13:30:00" },
+          { movie: "Nattens Arkitekt", time: "17:00:00" },
+          { movie: "Järnhjärtat", time: "20:45:00" },
+        ];
 
     for (const s of largeScreenings) {
       const movieId = movieMap.get(s.movie);
@@ -367,11 +373,17 @@ async function seedScreenings(
       }
     }
 
-    const smallScreenings = [
-      { movie: "Lille Björnens Stora Äventyr", time: "14:30:00" },
-      { movie: "Sommaren Vi Försvann", time: "17:00:00" },
-      { movie: "Järnhjärtat", time: "21:00:00" },
-    ];
+    const smallScreenings = isEven
+      ? [
+          { movie: "Lille Björnens Stora Äventyr", time: "14:30:00" },
+          { movie: "Sommaren Vi Försvann", time: "17:00:00" },
+          { movie: "Röd Sand", time: "21:00:00" },
+        ]
+      : [
+          { movie: "Lille Björnens Stora Äventyr", time: "14:00:00" },
+          { movie: "Sommaren Vi Försvann", time: "17:15:00" },
+          { movie: "Djupet", time: "20:30:00" },
+        ];
 
     for (const s of smallScreenings) {
       const movieId = movieMap.get(s.movie);

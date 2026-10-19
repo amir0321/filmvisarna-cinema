@@ -175,16 +175,23 @@ INSERT INTO screening (movie_id, cinema_id, starts_at)
 SELECT m.id, c.id,
        ((current_date + d) + v.t) AT TIME ZONE 'Europe/Stockholm'
 FROM (VALUES
-  ('Stjärnornas Krig: Arvet',     'Stora Salongen', time '13:00'),
-  ('Järnhjärtat',                 'Stora Salongen', time '17:30'),
-  ('Djupet',                      'Stora Salongen', time '20:30'),
-  ('Lille Björnens Stora Äventyr', 'Lilla Salongen', time '14:30'),
-  ('Sommaren Vi Försvann',        'Lilla Salongen', time '17:00'),
-  ('Järnhjärtat',                 'Lilla Salongen', time '21:00')
-) v (title, cinema, t)
+  ('Stjärnornas Krig: Arvet',     'Stora Salongen', time '13:00', 0),
+  ('Järnhjärtat',                 'Stora Salongen', time '17:30', 0),
+  ('Djupet',                      'Stora Salongen', time '20:30', 0),
+  ('Lille Björnens Stora Äventyr', 'Lilla Salongen', time '14:30', 0),
+  ('Sommaren Vi Försvann',        'Lilla Salongen', time '17:00', 0),
+  ('Röd Sand',                    'Lilla Salongen', time '21:00', 0),
+  ('Väktarnas Dal',               'Stora Salongen', time '13:30', 1),
+  ('Nattens Arkitekt',            'Stora Salongen', time '17:00', 1),
+  ('Järnhjärtat',                 'Stora Salongen', time '20:45', 1),
+  ('Lille Björnens Stora Äventyr', 'Lilla Salongen', time '14:00', 1),
+  ('Sommaren Vi Försvann',        'Lilla Salongen', time '17:15', 1),
+  ('Djupet',                      'Lilla Salongen', time '20:30', 1)
+) v (title, cinema, t, parity)
 JOIN movie  m ON m.title = v.title
 JOIN cinema c ON c.name  = v.cinema
-CROSS JOIN generate_series(0, 3) d;
+CROSS JOIN generate_series(0, 13) d
+WHERE (d % 2) = v.parity;
 
 INSERT INTO app_user (email, password_hash, first_name, last_name, role) VALUES
   ('admin@filmvisarna.se', '$2a$12$e6mZ85d1eDcx8b49D26J..G4m1502WwYnO2L42qO.hEsqrV4Vb1Ue', 'Ameer', 'Admin', 'admin'),
