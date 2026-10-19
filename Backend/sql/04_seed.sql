@@ -143,6 +143,80 @@ FROM (VALUES
 JOIN movie m ON m.title = v.title
 JOIN genre g ON g.name = v.genre;
 
+INSERT INTO person (name) VALUES
+  ('Marcus Lindström'),
+  ('Alexander Skarsgård'),
+  ('Alicia Vikander'),
+  ('Rebecca Ferguson'),
+  ('Sofia Bergman'),
+  ('Stellan Skarsgård'),
+  ('Noomi Rapace'),
+  ('Joel Kinnaman'),
+  ('Johan Ek'),
+  ('Bill Skarsgård'),
+  ('Alida Morberg'),
+  ('Fares Fares'),
+  ('Emma Lundgren'),
+  ('Edvin Ryding'),
+  ('Omar Rudberg'),
+  ('Hedda Stiernstedt'),
+  ('Ryan Coogler'),
+  ('Michael B. Jordan'),
+  ('Dominique Thorne'),
+  ('Anthony Ramos'),
+  ('Astrid Lind'),
+  ('Jonas Karlsson'),
+  ('Pernilla August'),
+  ('Shima Niavarani'),
+  ('Henrik Vanger'),
+  ('Matias Varela'),
+  ('Evabritt Strandberg'),
+  ('David Dencik'),
+  ('Daniel Craig'),
+  ('Ana de Armas'),
+  ('Mads Mikkelsen')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_person (movie_id, person_id, role)
+SELECT m.id, p.id, v.role
+FROM (VALUES
+  ('Stjärnornas Krig: Arvet',     'Marcus Lindström',    'director'),
+  ('Stjärnornas Krig: Arvet',     'Alexander Skarsgård', 'actor'),
+  ('Stjärnornas Krig: Arvet',     'Alicia Vikander',     'actor'),
+  ('Stjärnornas Krig: Arvet',     'Rebecca Ferguson',    'actor'),
+  ('Djupet',                      'Sofia Bergman',       'director'),
+  ('Djupet',                      'Stellan Skarsgård',   'actor'),
+  ('Djupet',                      'Noomi Rapace',        'actor'),
+  ('Djupet',                      'Joel Kinnaman',       'actor'),
+  ('Väktarnas Dal',               'Johan Ek',            'director'),
+  ('Väktarnas Dal',               'Bill Skarsgård',      'actor'),
+  ('Väktarnas Dal',               'Alida Morberg',       'actor'),
+  ('Väktarnas Dal',               'Fares Fares',         'actor'),
+  ('Sommaren Vi Försvann',        'Emma Lundgren',       'director'),
+  ('Sommaren Vi Försvann',        'Edvin Ryding',        'actor'),
+  ('Sommaren Vi Försvann',        'Omar Rudberg',        'actor'),
+  ('Sommaren Vi Försvann',        'Hedda Stiernstedt',   'actor'),
+  ('Järnhjärtat',                 'Ryan Coogler',        'director'),
+  ('Järnhjärtat',                 'Michael B. Jordan',   'actor'),
+  ('Järnhjärtat',                 'Dominique Thorne',    'actor'),
+  ('Järnhjärtat',                 'Anthony Ramos',       'actor'),
+  ('Lille Björnens Stora Äventyr', 'Astrid Lind',         'director'),
+  ('Lille Björnens Stora Äventyr', 'Jonas Karlsson',      'actor'),
+  ('Lille Björnens Stora Äventyr', 'Pernilla August',     'actor'),
+  ('Lille Björnens Stora Äventyr', 'Shima Niavarani',     'actor'),
+  ('Nattens Arkitekt',            'Henrik Vanger',       'director'),
+  ('Nattens Arkitekt',            'Matias Varela',       'actor'),
+  ('Nattens Arkitekt',            'Evabritt Strandberg', 'actor'),
+  ('Nattens Arkitekt',            'David Dencik',        'actor'),
+  ('Röd Sand',                    'Daniel Craig',        'director'),
+  ('Röd Sand',                    'Daniel Craig',        'actor'),
+  ('Röd Sand',                    'Ana de Armas',        'actor'),
+  ('Röd Sand',                    'Mads Mikkelsen',      'actor')
+) v (title, person, role)
+JOIN movie  m ON m.title = v.title
+JOIN person p ON p.name  = v.person
+ON CONFLICT DO NOTHING;
+
 INSERT INTO menu_item (name, description, category, price, is_combo, is_available) VALUES
   ('Mellanpopcorn', 'Varma nypoppade mellanpopcorn', 'food', 45.00, false, true),
   ('Stor Popcorn', 'Nypoppade stora popcorn', 'food', 55.00, false, true),

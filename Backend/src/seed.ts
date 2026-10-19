@@ -11,6 +11,8 @@ async function cleanDatabase() {
       seat,
       combo_item,
       menu_item,
+      movie_person,
+      person,
       movie_genre,
       movie,
       genre,
@@ -96,6 +98,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 165,
       age_rating: "15",
       director: "Marcus Lindström",
+      actors: ["Alexander Skarsgård", "Alicia Vikander", "Rebecca Ferguson"],
       imdb_rating: 8.4,
       description:
         "I en avlägsen galax, hundra år efter det stora kriget, vaknar ett gammalt ont och hotar att sluka alla stjärnsystem. Den unge piloten Kael måste samla de sista väktarna för en sista avgörande strid.",
@@ -112,6 +115,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 132,
       age_rating: "15",
       director: "Sofia Bergman",
+      actors: ["Stellan Skarsgård", "Noomi Rapace", "Joel Kinnaman"],
       imdb_rating: 7.9,
       description:
         "Ett forskningsteam på botten av Atlanten upptäcker en uråldrig struktur begravd djupt under havsbottnen. När kommunikationen med ytan bryts inser de att de inte är ensamma i mörkret.",
@@ -128,6 +132,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 118,
       age_rating: "11",
       director: "Johan Ek",
+      actors: ["Bill Skarsgård", "Alida Morberg", "Fares Fares"],
       imdb_rating: 8.1,
       description:
         "En ung flicka finner en förtrollad karta som leder djupt in i en gömd dal där uråldriga varelser vakar över naturens sista hemlighet.",
@@ -144,6 +149,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 104,
       age_rating: "Alla",
       director: "Emma Lundgren",
+      actors: ["Edvin Ryding", "Omar Rudberg", "Hedda Stiernstedt"],
       imdb_rating: 7.6,
       description:
         "En nostalgisk och hjärtevärmande berättelse om fem vänner som spenderar sin sista sommar tillsammans i den svenska skärgården innan vuxenlivet tar vid.",
@@ -160,6 +166,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 128,
       age_rating: "15",
       director: "Ryan Coogler",
+      actors: ["Michael B. Jordan", "Dominique Thorne", "Anthony Ramos"],
       imdb_rating: 7.5,
       description:
         "En robotingenjör programmerar oavsiktligt en militär AI med fri vilja. När AI:n börjar ifrågasätta sina order utbryter ett globalt kapplopp om att antingen kontrollera — eller befria — den.",
@@ -176,6 +183,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 88,
       age_rating: "Alla",
       director: "Astrid Lind",
+      actors: ["Jonas Karlsson", "Pernilla August", "Shima Niavarani"],
       imdb_rating: 8.2,
       description:
         "Följ den modiga lilla björnungen på en spännande resa genom den stora skogen för att hitta den magiska källan och rädda sina vänner.",
@@ -192,6 +200,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 121,
       age_rating: "15",
       director: "Henrik Vanger",
+      actors: ["Matias Varela", "Evabritt Strandberg", "David Dencik"],
       imdb_rating: 8.0,
       description:
         "En mystisk arkitekt anlitas för att rita ett ultramodernt museum mitt i Stockholm, men ritningarna döljer en dödlig labyrint av hemligheter och svek.",
@@ -208,6 +217,7 @@ async function seedGenresAndMovies() {
       duration_minutes: 142,
       age_rating: "15",
       director: "Daniel Craig",
+      actors: ["Daniel Craig", "Ana de Armas", "Mads Mikkelsen"],
       imdb_rating: 7.8,
       description:
         "På en hårdkoloniserad Mars-bas kämpar en grupp gruvarbetare mot extrema väderförhållanden och ett girigt storföretag som försöker tysta en revolution.",
@@ -220,6 +230,20 @@ async function seedGenresAndMovies() {
       genres: ["Sci-Fi", "Action", "Thriller"],
     },
   ];
+
+  const personMap = new Map<string, number>();
+  async function getOrCreatePerson(name: string): Promise<number> {
+    let id = personMap.get(name);
+    if (!id) {
+      const res = await pool.query<{ id: number }>(
+        `INSERT INTO person (name) VALUES ($1) RETURNING id`,
+        [name],
+      );
+      id = res.rows[0].id;
+      personMap.set(name, id);
+    }
+    return id;
+  }
 
   const movieMap = new Map<string, number>();
   for (const m of moviesData) {
@@ -251,6 +275,20 @@ async function seedGenresAndMovies() {
           [movieId, genreId],
         );
       }
+    }
+
+    const directorId = await getOrCreatePerson(m.director);
+    await pool.query(
+      `INSERT INTO movie_person (movie_id, person_id, role) VALUES ($1, $2, 'director') ON CONFLICT DO NOTHING`,
+      [movieId, directorId],
+    );
+
+    for (const actor of m.actors) {
+      const actorId = await getOrCreatePerson(actor);
+      await pool.query(
+        `INSERT INTO movie_person (movie_id, person_id, role) VALUES ($1, $2, 'actor') ON CONFLICT DO NOTHING`,
+        [movieId, actorId],
+      );
     }
   }
 
