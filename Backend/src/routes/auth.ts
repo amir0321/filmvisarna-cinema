@@ -26,11 +26,23 @@ const registerBody = z.object({
   password,
   firstName: z.string().trim().min(1).max(100).optional(),
   lastName: z.string().trim().min(1).max(100).optional(),
+  phone: z.string().trim().max(30).optional(),
 });
 
 const loginBody = z.object({ email, password: z.string().min(1).max(72) });
 
-const user_columns = `id, email, first_name AS "firstName", last_name AS "lastName", role`;
+const updateProfileBody = z.object({
+  firstName: z.string().trim().min(1).max(100).optional(),
+  lastName: z.string().trim().min(1).max(100).optional(),
+  phone: z.string().trim().max(30).optional().nullable(),
+});
+
+const changePasswordBody = z.object({
+  currentPassword: z.string().min(1, "Nuvarande lösenord krävs"),
+  newPassword: z.string().min(8, "Nytt lösenord måste vara minst 8 tecken").max(72),
+});
+
+const user_columns = `id, email, first_name AS "firstName", last_name AS "lastName", phone, is_verified AS "isVerified", points, role`;
 
 // Register a new user - POST /api/auth/register
 authRouter.post("/register", async (req, res) => {
@@ -40,10 +52,16 @@ authRouter.post("/register", async (req, res) => {
   try {
     // Insert the new user into the database and return the user object
     const [user] = await query<{ id: number }>(
-      `INSERT INTO app_user (email, password_hash, first_name, last_name)
-       VALUES (lower($1), $2, $3, $4)
+      `INSERT INTO app_user (email, password_hash, first_name, last_name, phone)
+       VALUES (lower($1), $2, $3, $4, $5)
        RETURNING ${user_columns}`,
-      [body.email, passwordHash, body.firstName ?? null, body.lastName ?? null],
+      [
+        body.email,
+        passwordHash,
+        body.firstName ?? null,
+        body.lastName ?? null,
+        body.phone ?? null,
+      ],
     );
     res.status(201).json({ token: signToken(user.id), user });
   } catch (error) {
@@ -79,4 +97,65 @@ authRouter.get("/me", requireAuth, async (req, res) => {
     [req.user!.id],
   );
   res.json(user);
+});
+
+authRouter.put("/me", requireAuth, async (req, res) => {
+  const body = updateProfileBody.parse(req.body);
+  const existing = await query<any>(
+    `SELECT ${user_columns} FROM app_user WHERE id = $1`,
+    [req.user!.id],
+  );
+  if (!existing[0]) throw new HttpError(404, "Användaren hittades inte");
+
+  const firstName =
+    body.firstName !== undefined ? body.firstName : existing[0].firstName;
+  const lastName =
+    body.lastName !== undefined ? body.lastName : existing[0].lastName;
+  const phone = body.phone !== undefined ? body.phone : existing[0].phone;
+
+  const [updated] = await query<any>(
+    `UPDATE app_user
+     SET first_name = $1, last_name = $2, phone = $3
+     WHERE id = $4
+     RETURNING ${user_columns}`,
+    [firstName, lastName, phone, req.user!.id],
+  );
+
+  res.json({
+    success: true,
+    message: "Profilen har uppdaterats.",
+    user: updated,
+  });
+});
+
+authRouter.post("/change-password", requireAuth, async (req, res) => {
+  const body = changePasswordBody.parse(req.body);
+  const [row] = await query<{ id: number; passwordHash: string }>(
+    `SELECT id, password_hash AS "passwordHash" FROM app_user WHERE id = $1`,
+    [req.user!.id],
+  );
+  if (!row) throw new HttpError(404, "Användaren hittades inte");
+
+  const ok = await bcrypt.compare(body.currentPassword, row.passwordHash);
+  if (!ok) throw new HttpError(401, "Det nuvarande lösenordet är felaktigt.");
+
+  const newHash = await bcrypt.hash(body.newPassword, bcrypt_rounds);
+  await query(`UPDATE app_user SET password_hash = $1 WHERE id = $2`, [
+    newHash,
+    req.user!.id,
+  ]);
+
+  res.json({ success: true, message: "Lösenordet har ändrats." });
+});
+
+authRouter.post("/verify-email", requireAuth, async (req, res) => {
+  const [user] = await query<any>(
+    `UPDATE app_user SET is_verified = true WHERE id = $1 RETURNING ${user_columns}`,
+    [req.user!.id],
+  );
+  res.json({
+    success: true,
+    message: "E-postadressen är nu verifierad.",
+    user,
+  });
 });

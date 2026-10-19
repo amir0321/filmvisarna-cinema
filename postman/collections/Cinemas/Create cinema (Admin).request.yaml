@@ -1,0 +1,19 @@
+$kind: http-request
+name: Create cinema (Admin)
+url: http://localhost:3000/api/cinemas
+method: POST
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "name": "Mellansalongen",
+      "rows": 6,
+      "seatsPerRow": 8,
+      "format": "2D/3D",
+      "tech": "Dolby Atmos 7.1",
+      "screen_size": "14x6m",
+      "opened_year": 2021
+    }
+order: 3000

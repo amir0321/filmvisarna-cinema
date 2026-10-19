@@ -1,0 +1,15 @@
+$kind: http-request
+name: Create screening (Admin Token)
+url: http://localhost:3000/api/screenings
+method: POST
+headers:
+  Authorization: "{{bearer_token_0vcx}}"
+body:
+  type: json
+  content: |
+    {
+      "movieId": 2,
+      "cinemaId": 2,
+      "startsAt": "2026-10-20T19:00:00.000Z"
+    }
+order: 4000

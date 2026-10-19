@@ -31,3 +31,6 @@ pnpm-debug.log*
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Postman internal workspace config (auto-generated)
+.postman/

@@ -1,0 +1,9 @@
+$kind: collection
+name: Screenings
+variables:
+  - key: admin_token
+    secret: true
+  - key: bearer_token_0vcx
+    secret: true
+  - key: json_web_token_030d
+    secret: true

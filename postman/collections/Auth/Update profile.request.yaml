@@ -1,0 +1,14 @@
+$kind: http-request
+name: Update profile
+url: http://localhost:3000/api/auth/me
+method: PUT
+headers:
+  Authorization: Bearer {{user_token}}
+body:
+  type: json
+  content: |
+    {
+      "name": "Anna Andersson",
+      "phone": "+46701234567"
+    }
+order: 3000

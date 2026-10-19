@@ -4,11 +4,8 @@ import { config } from "../config";
 import { pool } from "../db";
 import { HttpError } from "../utils/httpErorr";
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  role: "user" | "admin";
-}
+import { AuthUser } from "../interfaces/types.js";
+export type { AuthUser };
 
 declare global {
   namespace Express {
