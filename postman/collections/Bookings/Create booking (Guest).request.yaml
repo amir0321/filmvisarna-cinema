@@ -6,9 +6,9 @@ body:
   type: json
   content: |
     {
-      "screeningId": 11,
-      "email": "testguest@example.com",
-      "guestName": "Gäst Gästsson",
+      "screeningId": 2,
+      "email": "ameergamer9@gmail.com",
+      "guestName": "Ameer",
       "tickets": [
         {
           "seatId": 1,

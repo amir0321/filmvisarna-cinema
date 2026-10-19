@@ -1,29 +1,6 @@
 // Types & Interfaces
-
-export interface TicketInfo {
-  type: string;
-  quantity: number;
-  price: number;
-}
-
-export interface KioskItemInfo {
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-export interface EmailPayload {
-  email: string;
-  bookingRef: string;
-  movieTitle: string;
-  screeningDate: string;
-  screeningTime: string;
-  cinemaName: string;
-  seats: string[];
-  tickets: TicketInfo[];
-  kioskItems: KioskItemInfo[];
-  posterUrl?: string;
-}
+import { TicketInfo, KioskItemInfo, EmailPayload } from "../interfaces/types.js";
+export type { TicketInfo, KioskItemInfo, EmailPayload };
 
 // Template & Calculation Helpers
 
@@ -67,6 +44,9 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
   const kioskText = bookingData.kioskItems
     .map(k => `- ${k.quantity}x ${k.name} (${k.price} SEK)`)
     .join('\n');
+  const cancelUrl =
+    bookingData.cancelUrl ||
+    `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
 
   return (
     `Thank you for your booking!\n\n` +
@@ -79,6 +59,7 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
     `Tickets:\n${ticketsText}\n\n` +
     (bookingData.kioskItems.length > 0 ? `Kiosk Items:\n${kioskText}\n\n` : '') +
     `Total Amount: ${total} SEK\n\n` +
+    `Avboka din bokning här: ${cancelUrl}\n\n` +
     `Please show this booking reference at the counter upon arrival!`
   );
 }
@@ -87,7 +68,9 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
   const total = calculateBookingTotal(bookingData);
   const ticketsHtml = renderTicketsHtml(bookingData.tickets);
   const kioskHtml = renderKioskHtml(bookingData.kioskItems);
-  const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
+  const cancelUrl =
+    bookingData.cancelUrl ||
+    `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
 
   return `
     <div 

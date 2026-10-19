@@ -1,0 +1,11 @@
+$kind: http-request
+name: Cancel booking by token (Guest)
+url: http://localhost:3000/api/bookings/cancel-by-token
+method: POST
+body:
+  type: json
+  content: |
+    {
+      "token": "{{json_web_token_19zh}}"
+    }
+order: 6000

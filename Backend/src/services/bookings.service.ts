@@ -1,31 +1,32 @@
 import { pool } from "../db.js";
-import { config } from "../config.js";
 import { HttpError } from "../utils/httpErorr.js";
 import { generateUniqueBookingRef } from "../utils/bookingRef.js";
-import { sendBookingConfirmation } from "./emailService.js";
+import { sendConfirmationForBooking } from "./bookingNotification.service.js";
+import { generateCancellationJwt } from "./cancellations.service.js";
 
-export interface TicketInput {
-  seatId: number;
-  priceGroupId: number;
-}
+import {
+  CreateBookingInput,
+  CreateBookingResult,
+  ItemInput,
+  TicketInput,
+} from "../interfaces/types.js";
 
-export interface ItemInput {
-  itemId: number;
-  quantity: number;
-}
+// Re-export cancellation services and types for backward compatibility
+export {
+  cancelBooking,
+  cancelBookingByToken,
+  getBookingCancelPreview,
+  generateCancellationJwt,
+  verifyCancellationJwt,
+  validateCancellationDeadline,
+} from "./cancellations.service.js";
 
-export interface CreateBookingInput {
-  screeningId: number;
-  email: string;
-  guestName?: string | null;
-  tickets: TicketInput[];
-  items?: ItemInput[];
-}
-
-export interface CreateBookingResult {
-  bookingRef: string;
-  totalPrice: number;
-}
+export type {
+  TicketInput,
+  ItemInput,
+  CreateBookingInput,
+  CreateBookingResult,
+};
 
 // SQL för att hämta kompletta bokningsdetaljer med film, salong, biljetter och kioskvaror
 const BOOKING_DETAILS_QUERY = `
@@ -68,83 +69,6 @@ function isSeatTaken(err: unknown): boolean {
     "constraint" in err &&
     (err as { constraint?: string }).constraint === "ticket_pkey"
   );
-}
-
-async function sendConfirmationFor(
-  bookingId: number,
-  bookingRef: string,
-  email: string,
-): Promise<void> {
-  const info = await pool.query(
-    `SELECT m.title, m.poster_url, c.name AS cinema, st.starts_at
-     FROM booking b
-     JOIN screening st ON st.id = b.screening_id
-     JOIN movie m ON m.id = st.movie_id
-     JOIN cinema c ON c.id = st.cinema_id
-     WHERE b.id = $1`,
-    [bookingId],
-  );
-  if (info.rowCount === 0) return;
-
-  const seats = await pool.query(
-    `SELECT s.row_label, s.seat_number
-     FROM ticket t JOIN seat s ON s.id = t.seat_id
-     WHERE t.booking_id = $1
-     ORDER BY s.row_label, s.seat_number`,
-    [bookingId],
-  );
-  const tickets = await pool.query(
-    `SELECT pg.name, pg.price, count(*)::int AS quantity
-     FROM ticket t JOIN price_group pg ON pg.id = t.price_group_id
-     WHERE t.booking_id = $1
-     GROUP BY pg.name, pg.price`,
-    [bookingId],
-  );
-  const kiosk = await pool.query(
-    `SELECT mi.name, mi.price, bi.quantity
-     FROM booking_item bi JOIN menu_item mi ON mi.id = bi.menu_item_id
-     WHERE bi.booking_id = $1`,
-    [bookingId],
-  );
-
-  const row = info.rows[0];
-  const startsAt = new Date(row.starts_at);
-  const timeZone = config.timezone || "Europe/Stockholm";
-
-  await sendBookingConfirmation({
-    email,
-    bookingRef,
-    movieTitle: row.title,
-    screeningDate: startsAt.toLocaleDateString("sv-SE", {
-      dateStyle: "long",
-      timeZone,
-    }),
-    screeningTime: startsAt.toLocaleTimeString("sv-SE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone,
-    }),
-    cinemaName: row.cinema,
-    seats: seats.rows.map(
-      (s: { row_label: string; seat_number: number }) =>
-        `${s.row_label}${s.seat_number}`,
-    ),
-    tickets: tickets.rows.map(
-      (t: { name: string; price: string | number; quantity: number }) => ({
-        type: t.name,
-        quantity: t.quantity,
-        price: Number(t.price),
-      }),
-    ),
-    kioskItems: kiosk.rows.map(
-      (k: { name: string; price: string | number; quantity: number }) => ({
-        name: k.name,
-        quantity: k.quantity,
-        price: Number(k.price),
-      }),
-    ),
-    posterUrl: row.poster_url ?? undefined,
-  });
 }
 
 async function fetchBookings(where: string, params: unknown[]) {
@@ -275,13 +199,15 @@ export async function createBooking(
       }
     }
 
+    const cancelToken = generateCancellationJwt(bookingRef, email);
+
     await client.query("COMMIT");
 
-    sendConfirmationFor(bookingId, bookingRef, email).catch((err) =>
+    sendConfirmationForBooking(bookingId, bookingRef, email).catch((err) =>
       console.error("Confirmation email failed:", err),
     );
 
-    return { bookingRef, totalPrice: total };
+    return { bookingRef, totalPrice: total, cancelToken };
   } catch (err) {
     await client.query("ROLLBACK");
 
@@ -298,84 +224,3 @@ export async function createBooking(
     client.release();
   }
 }
-
-export interface CancelBookingResult {
-  id: number;
-  reference: string;
-  status: string;
-}
-
-export function validateCancellationDeadline(
-  screeningStartsAt: Date | string,
-  now: Date | number = Date.now(),
-  deadlineHours = config.cancellationDeadlineHours ?? 2,
-): void {
-  const startsAt = new Date(screeningStartsAt).getTime();
-  const currentTime = typeof now === "number" ? now : now.getTime();
-
-  if (startsAt <= currentTime) {
-    throw new HttpError(
-      400,
-      "Cannot cancel a booking for a screening that has already started",
-    );
-  }
-
-  const deadlineMs = deadlineHours * 60 * 60 * 1000;
-  if (startsAt - currentTime < deadlineMs) {
-    throw new HttpError(
-      400,
-      `Cannot cancel a booking less than ${deadlineHours} hours before screening starts`,
-    );
-  }
-}
-
-export async function cancelBooking(
-  bookingId: number,
-  userId: number,
-): Promise<CancelBookingResult> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
-    const { rows } = await client.query(
-      `SELECT b.id, b.booking_reference AS "reference", b.status, s.starts_at
-       FROM booking b
-       JOIN screening s ON s.id = b.screening_id
-       WHERE b.id = $1 AND b.user_id = $2
-       FOR UPDATE OF b`,
-      [bookingId, userId],
-    );
-
-    if (rows.length === 0) {
-      throw new HttpError(404, "Booking not found");
-    }
-
-    const booking = rows[0];
-
-    if (booking.status === "cancelled") {
-      throw new HttpError(400, "Booking is already cancelled");
-    }
-
-    validateCancellationDeadline(booking.starts_at);
-
-    // Free the seats so they become available to book again
-    await client.query("DELETE FROM ticket WHERE booking_id = $1", [bookingId]);
-
-    const updated = await client.query(
-      `UPDATE booking
-       SET status = 'cancelled'
-       WHERE id = $1
-       RETURNING id, booking_reference AS "reference", status`,
-      [bookingId],
-    );
-
-    await client.query("COMMIT");
-    return updated.rows[0];
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-

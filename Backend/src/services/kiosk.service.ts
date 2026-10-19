@@ -1,30 +1,18 @@
 import { query } from "../utils/dbHelpers.js";
 import { HttpError } from "../utils/httpErorr.js";
 
-export type MenuItemCategory = "food" | "drink";
-
-export interface ComboItemPart {
-  id: number;
-  name: string;
-  quantity: number;
-}
-
-export interface KioskItem {
-  id: number;
-  name: string;
-  description: string | null;
-  category: MenuItemCategory;
-  price: number;
-  is_combo: boolean;
-  image_url: string | null;
-  is_available: boolean;
-  combo_items?: ComboItemPart[] | null;
-}
-
-export interface KioskItemFilters {
-  category?: MenuItemCategory;
-  isCombo?: boolean;
-}
+import {
+  MenuItemCategory,
+  ComboItemPart,
+  KioskItem,
+  KioskItemFilters,
+} from "../interfaces/types.js";
+export type {
+  MenuItemCategory,
+  ComboItemPart,
+  KioskItem,
+  KioskItemFilters,
+};
 
 const KIOSK_SELECT = `
   SELECT

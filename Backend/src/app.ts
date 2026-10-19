@@ -9,6 +9,7 @@ import { moviesRouter } from "./routes/movies";
 import { HttpError } from "./utils/httpErorr";
 import { bookingsRouter } from "./routes/bookings.js";
 import { kioskRouter } from "./routes/kiosk.routes.js";
+import { cinemasRouter } from "./routes/cinemas.js";
 
 export const app = express();
 
@@ -25,6 +26,7 @@ api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
 api.use("/bookings", bookingsRouter);
 api.use("/kiosk", kioskRouter);
+api.use("/cinemas", cinemasRouter);
 
 app.use("/api", api);
 
