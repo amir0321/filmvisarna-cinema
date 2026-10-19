@@ -1,0 +1,7 @@
+$kind: http-request
+name: Upload image (Admin)
+url: http://localhost:3000/api/upload
+method: POST
+headers:
+  Authorization: Bearer {{admin_token}}
+order: 1000
