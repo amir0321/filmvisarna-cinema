@@ -245,7 +245,7 @@ Standard felmeddelande i JSON:
 
 ---
 
-### 🍿 Kiosk (`/api/kiosk`)
+### 🍿 Kiosk & Meny (`/api/kiosk` & `/api/menu`)
 
 #### `GET /api/kiosk`
 - **Åtkomst:** Publik (alla)
@@ -256,6 +256,39 @@ Standard felmeddelande i JSON:
 - **`200 OK`**: Returnerar enskild vara med menyinnehåll.
 - **`400 Bad Request`**: Ogiltigt ID-format.
 - **`404 Not Found`**: Kioskvaran hittades inte eller är slutsåld.
+
+#### `GET /api/menu`
+- **Åtkomst:** Publik (alla) – stödjer `?all=true` för Admin
+- **`200 OK`**: Returnerar tillgängliga mat/dryck/combos med `contents`.
+
+#### `GET /api/menu/:id`
+- **Åtkomst:** Publik (alla)
+- **`200 OK`**: Returnerar enskild menyartikel med dess innehåll.
+- **`400 Bad Request`**: Ogiltigt ID-format.
+- **`404 Not Found`**: Artikeln hittades inte eller är inaktiv.
+
+#### `GET /api/admin/menu-items`
+- **Åtkomst:** Admin (`requireAdmin`)
+- **`200 OK`**: Returnerar alla menyartiklar inklusive dolda/slut i lager.
+- **`401 Unauthorized`**: Inte inloggad.
+- **`403 Forbidden`**: Inte administratör.
+
+#### `POST /api/admin/menu-items` (även tillgänglig via `POST /api/menu`)
+- **Åtkomst:** Admin (`requireAdmin`)
+- **`201 Created`**: Skapar en ny menyartikel eller combo med ingående artiklar.
+- **`400 Bad Request`**: Valideringsfel (combo saknar artiklar, vanlig vara har innehåll, ogiltig artikel-referens).
+- **`401 Unauthorized`**: Inte inloggad.
+- **`403 Forbidden`**: Inte administratör.
+- **`409 Conflict`**: En menyartikel med detta namn finns redan.
+
+#### `PATCH /api/admin/menu-items/:id` (även tillgänglig via `PATCH /api/menu/:id`)
+- **Åtkomst:** Admin (`requireAdmin`)
+- **`200 OK`**: Uppdaterar namn, beskrivning, pris eller lagerstatus (`isAvailable`).
+- **`400 Bad Request`**: Skickade inga fält att uppdatera eller ogiltigt värde.
+- **`401 Unauthorized`**: Inte inloggad.
+- **`403 Forbidden`**: Inte administratör.
+- **`404 Not Found`**: Menyartikeln hittades inte.
+- **`409 Conflict`**: Namnet är upptaget av en annan artikel.
 
 ---
 

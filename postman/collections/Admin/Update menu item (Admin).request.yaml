@@ -1,0 +1,14 @@
+$kind: http-request
+name: Update menu item (Admin)
+url: http://localhost:3000/api/admin/menu-items/1
+method: PATCH
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "price": 85,
+      "isAvailable": true
+    }
+order: 2200
