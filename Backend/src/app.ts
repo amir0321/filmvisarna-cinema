@@ -7,15 +7,25 @@ import { authRouter } from "./routes/auth";
 import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
 import { HttpError } from "./utils/httpErorr";
+import path from "node:path";
 import { bookingsRouter } from "./routes/bookings.js";
 import { kioskRouter } from "./routes/kiosk.routes.js";
 import { cinemasRouter } from "./routes/cinemas.js";
+import { uploadRouter } from "./routes/upload.js";
+import { priceGroupsRouter } from "./routes/priceGroups.js";
+import { adminRouter } from "./routes/admin.js";
+import { contactRouter } from "./routes/contact.js";
 
 export const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: "100kb" }));
+
+// Static serving for uploaded files
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 const api = express.Router();
 api.get("/health", (_req, res) => {
@@ -27,6 +37,10 @@ api.use("/movies", moviesRouter);
 api.use("/bookings", bookingsRouter);
 api.use("/kiosk", kioskRouter);
 api.use("/cinemas", cinemasRouter);
+api.use("/upload", uploadRouter);
+api.use("/price-groups", priceGroupsRouter);
+api.use("/admin", adminRouter);
+api.use("/contact", contactRouter);
 
 app.use("/api", api);
 

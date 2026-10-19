@@ -10,7 +10,23 @@ export interface ApiResponse<T> {
 export interface AuthUser {
   id: number;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  isVerified?: boolean;
+  points?: number;
   role: "user" | "admin";
+}
+
+export interface UpdateProfileInput {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // 3. Filmer (Movies)
@@ -21,17 +37,25 @@ export interface Movie {
   duration_minutes: number;
   age_rating: string | null;
   poster_url: string | null;
+  landscape_image_url: string | null;
+  trailer_url: string | null;
+  director: string | null;
+  imdb_rating: number | null;
   release_date: string | null;
   genres: string[];
 }
 
 export interface CreateMovieInput {
   title: string;
-  description?: string;
+  description?: string | null;
   duration_minutes: number;
-  age_rating?: string;
-  poster_url?: string;
-  release_date?: string;
+  age_rating?: string | null;
+  poster_url?: string | null;
+  landscape_image_url?: string | null;
+  trailer_url?: string | null;
+  director?: string | null;
+  imdb_rating?: number | null;
+  release_date?: string | null;
   genres?: string[];
 }
 
@@ -41,6 +65,10 @@ export interface UpdateMovieInput {
   duration_minutes?: number;
   age_rating?: string | null;
   poster_url?: string | null;
+  landscape_image_url?: string | null;
+  trailer_url?: string | null;
+  director?: string | null;
+  imdb_rating?: number | null;
   release_date?: string | null;
   genres?: string[];
 }
@@ -50,11 +78,17 @@ export interface SeatInfo {
   id: number;
   row: string;
   number: number;
+  seatType?: "regular" | "wheelchair";
+  isWheelchair?: boolean;
 }
 
 export interface CinemaOverview {
   id: number;
   name: string;
+  format?: string | null;
+  tech?: string | null;
+  screen_size?: string | null;
+  opened_year?: number | null;
   total_seats: number;
 }
 
@@ -64,12 +98,23 @@ export interface CinemaDetail extends CinemaOverview {
 
 export interface CreateCinemaInput {
   name: string;
+  format?: string | null;
+  tech?: string | null;
+  screen_size?: string | null;
+  opened_year?: number | null;
   rows: number;
   seatsPerRow: number;
 }
 
 export interface UpdateCinemaInput {
-  name: string;
+  name?: string;
+  format?: string | null;
+  tech?: string | null;
+  screen_size?: string | null;
+  opened_year?: number | null;
+  rows?: number;
+  seatsPerRow?: number;
+  wheelchairSeats?: Array<{ row: string; number: number }>;
 }
 
 // 5. Visningar (Screenings)
@@ -92,12 +137,17 @@ export interface ScreeningOverview {
   ageLimit?: number;
   cinemaId?: number;
   cinema: string;
+  totalSeats?: number;
+  bookedSeats?: number;
+  availableSeats?: number;
 }
 
 export interface ScreeningSeatStatus {
   id: number;
   row_label: string;
   seat_number: number;
+  seat_type: "regular" | "wheelchair";
+  is_wheelchair: boolean;
   status: "booked" | "available";
 }
 
@@ -145,6 +195,15 @@ export interface KioskItemFilters {
 }
 
 // 7. Bokningar (Bookings)
+export interface BookingFilters {
+  screeningId?: number;
+  status?: "confirmed" | "cancelled";
+  isPaid?: boolean;
+  search?: string;
+  from?: string;
+  to?: string;
+}
+
 export interface TicketInput {
   seatId: number;
   priceGroupId: number;
@@ -163,9 +222,15 @@ export interface CreateBookingInput {
   items?: ItemInput[];
 }
 
+export interface UpdateBookingInput {
+  isPaid?: boolean;
+  isCheckedIn?: boolean;
+}
+
 export interface CreateBookingResult {
   bookingRef: string;
   totalPrice: number;
+  booking?: any;
   cancelToken?: string;
 }
 
@@ -218,3 +283,30 @@ export interface EmailPayload {
   posterUrl?: string;
   cancelUrl?: string;
 }
+
+// 9. Biljettyper (Price Groups)
+export interface PriceGroup {
+  id: number;
+  name: "child" | "adult" | "elder";
+  price: number;
+}
+
+// 10. Kontaktformulär
+export interface ContactMessageInput {
+  name: string;
+  email: string;
+  message: string;
+}
+
+// 11. Admin Statistik
+export interface AdminStatsResult {
+  bookingsToday: number;
+  bookingsWaiting: number;
+  bookingsPaid: number;
+  expectedRevenue: number;
+  paidRevenue: number;
+  totalSeatsToday: number;
+  bookedSeatsToday: number;
+  occupancyRatePercent: number;
+}
+

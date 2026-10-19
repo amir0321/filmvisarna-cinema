@@ -1,0 +1,14 @@
+$kind: http-request
+name: Update booking payment or checkin (Admin)
+url: http://localhost:3000/api/bookings/1
+method: PATCH
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "isPaid": true,
+      "isCheckedIn": true
+    }
+order: 3200

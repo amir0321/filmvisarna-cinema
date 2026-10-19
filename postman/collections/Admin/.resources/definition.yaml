@@ -1,0 +1,5 @@
+$kind: collection
+name: Admin
+variables:
+  - key: admin_token
+    secret: true

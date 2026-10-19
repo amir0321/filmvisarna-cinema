@@ -4,19 +4,26 @@ CREATE TABLE app_user (
   password_hash text NOT NULL,
   first_name    text,
   last_name     text,
+  phone         text,
+  is_verified   boolean NOT NULL DEFAULT false,
+  points        int NOT NULL DEFAULT 0 CHECK (points >= 0),
   role          text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
 -- ---------- MOVIE, GENRE, PERSON -------------------------------------
 CREATE TABLE movie (
-  id               int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title            text NOT NULL,
-  description      text,
-  duration_minutes int  NOT NULL CHECK (duration_minutes > 0),
-  age_rating       text,
-  poster_url       text,
-  release_date     date
+  id                  int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title               text NOT NULL,
+  description         text,
+  duration_minutes    int  NOT NULL CHECK (duration_minutes > 0),
+  age_rating          text,
+  poster_url          text,
+  landscape_image_url text,
+  trailer_url         text,
+  director            text,
+  imdb_rating         numeric(3, 1) CHECK (imdb_rating >= 0 AND imdb_rating <= 10),
+  release_date        date
 );
 
 CREATE TABLE genre (
@@ -44,8 +51,12 @@ CREATE TABLE movie_person (
 
 -- ---------- CINEMA, SEAT, SCREENING ----------------------------------
 CREATE TABLE cinema (
-  id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name text NOT NULL UNIQUE
+  id          int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name        text NOT NULL UNIQUE,
+  format      text,
+  tech        text,
+  screen_size text,
+  opened_year int
 );
 
 CREATE TABLE seat (
@@ -53,6 +64,7 @@ CREATE TABLE seat (
   cinema_id   int  NOT NULL REFERENCES cinema (id) ON DELETE CASCADE,
   row_label   text NOT NULL,
   seat_number int  NOT NULL CHECK (seat_number > 0),
+  seat_type   text NOT NULL DEFAULT 'regular' CHECK (seat_type IN ('regular', 'wheelchair')),
   UNIQUE (cinema_id, row_label, seat_number)
 );
 
@@ -81,6 +93,10 @@ CREATE TABLE booking (
   guest_name        text,
   guest_email       text,
   status            text NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled')),
+  is_paid           boolean NOT NULL DEFAULT false,
+  paid_at           timestamptz,
+  is_checked_in     boolean NOT NULL DEFAULT false,
+  checked_in_at     timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT booking_has_owner CHECK (user_id IS NOT NULL OR guest_email IS NOT NULL),
   UNIQUE (id, screening_id)

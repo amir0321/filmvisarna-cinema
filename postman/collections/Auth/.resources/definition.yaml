@@ -5,3 +5,6 @@ variables:
     secret: true
   - key: json_web_token_1bay
     secret: true
+  - key: user_token
+    secret: true
+

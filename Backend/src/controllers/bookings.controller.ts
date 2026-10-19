@@ -7,8 +7,40 @@ import {
   getBookingByReference,
   getBookingCancelPreview,
   getUserBookings,
+  listAllBookings,
+  updateBookingStatus,
 } from "../services/bookings.service.js";
 import { parseId } from "../utils/httpErorr.js";
+
+export const listBookingsQuerySchema = z.object({
+  screeningId: z.coerce.number().int().positive().optional(),
+  status: z.enum(["confirmed", "cancelled"]).optional(),
+  isPaid: z
+    .preprocess((v) => {
+      if (v === "true" || v === true) return true;
+      if (v === "false" || v === false) return false;
+      return v;
+    }, z.boolean().optional()),
+  search: z.string().trim().min(1).max(100).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format: ÅÅÅÅ-MM-DD")
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format: ÅÅÅÅ-MM-DD")
+    .optional(),
+});
+
+export const updateBookingSchema = z
+  .object({
+    isPaid: z.boolean().optional(),
+    isCheckedIn: z.boolean().optional(),
+  })
+  .refine(
+    (data) => data.isPaid !== undefined || data.isCheckedIn !== undefined,
+    { message: "Minst ett fält (isPaid eller isCheckedIn) måste anges." },
+  );
 
 const createBookingSchema = z.object({
   screeningId: z.number().int().positive("Ogiltigt visnings-id."),
@@ -49,6 +81,12 @@ const lookupBookingSchema = z.object({
 const cancelTokenSchema = z.object({
   token: z.string().trim().min(1, "Token krävs."),
 });
+
+export async function getBookings(req: Request, res: Response) {
+  const query = listBookingsQuerySchema.parse(req.query);
+  const bookings = await listAllBookings(query);
+  res.json(bookings);
+}
 
 export async function getMyBookings(req: Request, res: Response) {
   const bookings = await getUserBookings(req.user!.id);
@@ -103,4 +141,36 @@ export async function postCancelByToken(req: Request, res: Response) {
     booking,
   });
 }
+
+export async function patchBooking(req: Request, res: Response) {
+  const id = parseId(req.params.id, "booking ID");
+  const body = updateBookingSchema.parse(req.body);
+  const booking = await updateBookingStatus(id, body);
+  res.json({
+    success: true,
+    message: "Bokningen har uppdaterats.",
+    booking,
+  });
+}
+
+export async function patchBookingPay(req: Request, res: Response) {
+  const id = parseId(req.params.id, "booking ID");
+  const booking = await updateBookingStatus(id, { isPaid: true });
+  res.json({
+    success: true,
+    message: "Bokningen har markerats som betald.",
+    booking,
+  });
+}
+
+export async function patchBookingCheckin(req: Request, res: Response) {
+  const id = parseId(req.params.id, "booking ID");
+  const booking = await updateBookingStatus(id, { isCheckedIn: true });
+  res.json({
+    success: true,
+    message: "Bokningen har checkats in.",
+    booking,
+  });
+}
+
 

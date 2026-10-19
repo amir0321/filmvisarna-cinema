@@ -9,31 +9,60 @@ import {
   updateMovie,
 } from "../services/movies.service.js";
 
-const createMovieBody = z.object({
+export const createMovieBody = z.object({
   title: z
     .string()
     .trim()
     .min(1, "title krävs och får inte vara tom")
     .max(300, "title får max vara 300 tecken"),
 
-  description: z.string().trim().max(2000).optional(),
+  description: z.string().trim().max(2000).optional().nullable(),
 
   duration_minutes: z
     .number()
     .int("duration_minutes måste vara ett heltal")
     .positive("duration_minutes måste vara ett positivt tal"),
 
-  age_rating: z.string().trim().max(10).optional(),
+  age_rating: z.string().trim().max(10).optional().nullable(),
 
   poster_url: z
     .string()
     .url("poster_url måste vara en giltig URL")
-    .optional(),
+    .optional()
+    .nullable(),
+
+  landscape_image_url: z
+    .string()
+    .url("landscape_image_url måste vara en giltig URL")
+    .optional()
+    .nullable(),
+
+  trailer_url: z
+    .string()
+    .url("trailer_url måste vara en giltig URL")
+    .optional()
+    .nullable(),
+
+  director: z
+    .string()
+    .trim()
+    .max(200, "director får max vara 200 tecken")
+    .optional()
+    .nullable(),
+
+  imdb_rating: z
+    .coerce
+    .number()
+    .min(0, "imdb_rating måste vara minst 0")
+    .max(10, "imdb_rating kan max vara 10")
+    .optional()
+    .nullable(),
 
   release_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "release_date måste ha formatet ÅÅÅÅ-MM-DD")
-    .optional(),
+    .optional()
+    .nullable(),
 
   genres: z
     .array(z.string().trim().min(1).max(100))
@@ -41,7 +70,7 @@ const createMovieBody = z.object({
     .optional(),
 });
 
-const updateMovieBody = z.object({
+export const updateMovieBody = z.object({
   title: z
     .string()
     .trim()
@@ -65,6 +94,33 @@ const updateMovieBody = z.object({
     .optional()
     .nullable(),
 
+  landscape_image_url: z
+    .string()
+    .url("landscape_image_url måste vara en giltig URL")
+    .optional()
+    .nullable(),
+
+  trailer_url: z
+    .string()
+    .url("trailer_url måste vara en giltig URL")
+    .optional()
+    .nullable(),
+
+  director: z
+    .string()
+    .trim()
+    .max(200, "director får max vara 200 tecken")
+    .optional()
+    .nullable(),
+
+  imdb_rating: z
+    .coerce
+    .number()
+    .min(0, "imdb_rating måste vara minst 0")
+    .max(10, "imdb_rating kan max vara 10")
+    .optional()
+    .nullable(),
+
   release_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "release_date måste ha formatet ÅÅÅÅ-MM-DD")
@@ -77,8 +133,15 @@ const updateMovieBody = z.object({
     .optional(),
 });
 
-export async function getMovies(_req: Request, res: Response) {
-  const movies = await getAllMovies();
+export const listMoviesQuerySchema = z.object({
+  genre: z.string().trim().min(1).optional(),
+  search: z.string().trim().min(1).optional(),
+  age: z.coerce.number().int().min(0).max(120).optional(),
+});
+
+export async function getMovies(req: Request, res: Response) {
+  const query = listMoviesQuerySchema.parse(req.query);
+  const movies = await getAllMovies(query);
   res.json({ success: true, data: movies });
 }
 

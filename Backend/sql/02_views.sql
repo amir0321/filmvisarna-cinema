@@ -1,8 +1,8 @@
 CREATE VIEW cinema_overview WITH (security_invoker = true) AS
-SELECT c.id, c.name, COUNT(s.id)::int AS total_seats
+SELECT c.id, c.name, COUNT(s.id)::int AS total_seats, c.format, c.tech, c.screen_size, c.opened_year
 FROM cinema c
 LEFT JOIN seat s ON s.cinema_id = c.id
-GROUP BY c.id, c.name;
+GROUP BY c.id, c.name, c.format, c.tech, c.screen_size, c.opened_year;
 
 CREATE VIEW screening_times WITH (security_invoker = true) AS
 SELECT s.id, s.movie_id, s.cinema_id, s.starts_at,

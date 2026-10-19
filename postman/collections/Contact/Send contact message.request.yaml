@@ -1,0 +1,14 @@
+$kind: http-request
+name: Send contact message
+url: http://localhost:3000/api/contact
+method: POST
+body:
+  type: json
+  content: |
+    {
+      "name": "Maria Svensson",
+      "email": "maria@example.com",
+      "subject": "Fråga om rullstolsplatser",
+      "message": "Hej, finns det rullstolsplatser tillgängliga på fredagens visning?"
+    }
+order: 1000
