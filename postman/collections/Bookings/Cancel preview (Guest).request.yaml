@@ -1,9 +1,9 @@
 $kind: http-request
 name: Cancel preview (Guest)
-url: http://localhost:3000/api/bookings/cancel-preview?token={{json_web_token_19zh}}
+url: http://localhost:3000/api/bookings/cancel-preview?token={{cancellation_token}}
 method: GET
 queryParams:
-  token: "{{json_web_token_19zh}}"
+  token: "{{cancellation_token}}"
 body:
   type: json
   content: ""

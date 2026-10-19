@@ -1,5 +1,5 @@
 $kind: http-request
 name: Get movies with filters
-url: http://localhost:3000/api/movies?genre=Action&search=Inception&age=15
+url: http://localhost:3000/api/movies?genre=Action&search=Järnhjärtat&age=15
 method: GET
 order: 2500

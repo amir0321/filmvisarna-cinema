@@ -8,7 +8,8 @@ body:
   type: json
   content: |
     {
-      "name": "Anna Andersson",
+      "firstName": "Anna",
+      "lastName": "Andersson",
       "phone": "+46701234567"
     }
 order: 3000

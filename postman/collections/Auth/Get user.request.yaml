@@ -1,6 +1,7 @@
 $kind: http-request
+name: Get user
 url: http://localhost:3000/api/auth/me
 method: GET
 headers:
-  Authorization: "{{bearer_token_14y0}}"
+  Authorization: Bearer {{user_token}}
 order: 2948953706532237

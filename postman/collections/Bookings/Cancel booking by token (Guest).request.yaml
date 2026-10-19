@@ -6,6 +6,6 @@ body:
   type: json
   content: |
     {
-      "token": "{{json_web_token_19zh}}"
+      "token": "{{cancellation_token}}"
     }
 order: 6000

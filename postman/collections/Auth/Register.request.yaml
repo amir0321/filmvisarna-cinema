@@ -6,9 +6,18 @@ body:
   type: json
   content: |-
     {
-      "email": "ameer.tech28@gmail.com",
-      "password": "Test_9687",
-      "firstName": "Test2",
-      "lastName": "Test3"
+      "email": "ny.medlem@filmvisarna.se",
+      "password": "Password123!",
+      "firstName": "Ny",
+      "lastName": "Medlem"
     }
 order: 1791983102483
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const res = pm.response.json();
+      if (res && res.token) {
+        pm.globals.set('user_token', res.token);
+        console.log('user_token har sparats automatiskt!');
+      }

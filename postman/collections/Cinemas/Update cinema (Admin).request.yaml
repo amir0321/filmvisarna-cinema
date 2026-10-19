@@ -14,8 +14,8 @@ body:
       "screen_size": "22x10m",
       "opened_year": 2024,
       "wheelchairSeats": [
-        { "row": 1, "seatNumber": 1 },
-        { "row": 1, "seatNumber": 2 }
+        { "row": "A", "number": 1 },
+        { "row": "A", "number": 2 }
       ]
     }
 order: 4000
