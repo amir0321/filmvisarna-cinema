@@ -202,6 +202,11 @@ Vite automatically proxies all `/api` requests to `http://localhost:3000`.
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/kiosk` | Public | `200`, `500` | Get active menu items & combos (filters: `category=food\|drink`, `is_combo`) |
 | `GET` | `/api/kiosk/:id` | Public | `200`, `400`, `404`, `500` | Get single kiosk item with combo breakdown |
+| `GET` | `/api/menu` | Public | `200`, `500` | Get available food, drinks, and combos with contents (`?all=true` for admin) |
+| `GET` | `/api/menu/:id` | Public | `200`, `400`, `404`, `500` | Get single menu item with contents breakdown |
+| `GET` | `/api/admin/menu-items` | Admin | `200`, `401`, `403`, `500` | List all menu items including unavailable / hidden |
+| `POST` | `/api/admin/menu-items` | Admin | `201`, `400`, `401`, `403`, `409`, `500` | Create menu item or combo with contents (also at `POST /api/menu`) |
+| `PATCH` | `/api/admin/menu-items/:id` | Admin | `200`, `400`, `401`, `403`, `404`, `409`, `500` | Update price, name, description or availability (also at `PATCH /api/menu/:id`) |
 
 ### 📋 Bookings
 | Method | Endpoint | Access | Status Codes | Description |
