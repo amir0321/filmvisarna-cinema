@@ -103,7 +103,17 @@ export async function listUpcomingScreenings(
     `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
             m.id AS "movieId", m.title AS "movieTitle", m.poster_url AS "posterUrl",
             m.age_rating AS "ageRating", (${AGE_LIMIT}) AS "ageLimit",
-            c.id AS "cinemaId", c.name AS "cinema"
+            c.id AS "cinemaId", c.name AS "cinema",
+            (SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) AS "totalSeats",
+            (SELECT COUNT(*)::int
+             FROM ticket t
+             JOIN booking b ON b.id = t.booking_id
+             WHERE t.screening_id = st.id AND b.status = 'confirmed') AS "bookedSeats",
+            ((SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) -
+             (SELECT COUNT(*)::int
+              FROM ticket t
+              JOIN booking b ON b.id = t.booking_id
+              WHERE t.screening_id = st.id AND b.status = 'confirmed'))::int AS "availableSeats"
      FROM screening_times st
      JOIN movie m  ON m.id = st.movie_id
      JOIN cinema c ON c.id = st.cinema_id
@@ -145,6 +155,8 @@ export async function getScreeningSeats(
      s.id,
      s.row_label,
      s.seat_number,
+     s.seat_type,
+     (s.seat_type = 'wheelchair') AS is_wheelchair,
      CASE
        WHEN EXISTS (
          SELECT 1
