@@ -1,56 +1,44 @@
-import { createBrowserRouter, type RouteObject } from 'react-router'
-import type { ComponentType } from 'react'
-import App from './App'
-import type { NavItem, PageModule } from './types'
-
-export type { NavItem, PageModule }
-
-const pages = import.meta.glob<PageModule>('./pages/**/*.tsx', { eager: true })
-
-export const navLinks: NavItem[] = Object.entries(pages)
-  .filter(([, module]) => !module.hideFromNav)
-  .map(([path, module]) => {
-    const fileName = path.replace('./pages/', '').replace('.tsx', '')
-    const isHome = fileName.toLowerCase() === 'home'
-
-    return {
-      name: module.navTitle || (isHome ? 'Hem' : fileName),
-      path: isHome ? '/' : `/${fileName.toLowerCase()}`,
-      order: module.navOrder ?? 999,
-    }
-  })
-  .filter((item) => !item.path.toLowerCase().includes('detail'))
-  .sort((a, b) => a.order - b.order)
-  .map(({ name, path }) => ({ name, path }))
-
-const dynamicRoutes: RouteObject[] = Object.keys(pages).map((path) => {
-  const fileName = path.replace('./pages/', '').replace('.tsx', '')
-
-  const isHome = fileName.toLowerCase() === 'home'
-  const isDetail = fileName.toLowerCase().includes('detail')
-
-  const module = pages[path]
-  const Component = (module.default ||
-    module[fileName] ||
-    Object.values(module)[0]) as ComponentType
-
-  if (isHome) {
-    return {
-      index: true,
-      element: Component ? <Component /> : null,
-    }
-  }
-
-  return {
-    path: isDetail ? `${fileName.toLowerCase()}/:id` : fileName.toLowerCase(),
-    element: Component ? <Component /> : null,
-  }
-})
+import { createBrowserRouter } from 'react-router'
+import PublicLayout from './layouts/PublicLayout'
+import AdminLayout from './layouts/AdminLayout'
+import Home from './pages/Home'
+import Movies from './pages/Movies'
+import MyBookings from './pages/MyBookings'
+import NotFound from './pages/NotFound'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminBookings from './pages/admin/AdminBookings'
+import AdminScreenings from './pages/admin/AdminScreenings'
+import AdminMovies from './pages/admin/AdminMovies'
+import AdminCinemas from './pages/admin/AdminCinemas'
 
 export const router = createBrowserRouter([
+  // Public application layout
   {
     path: '/',
-    element: <App />,
-    children: dynamicRoutes,
+    element: <PublicLayout />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: 'movies', element: <Movies /> },
+      { path: 'my-bookings', element: <MyBookings /> },
+    ],
+  },
+  // Backoffice administration layout
+  {
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboard /> },
+      { path: 'bookings', element: <AdminBookings /> },
+      { path: 'screenings', element: <AdminScreenings /> },
+      { path: 'movies', element: <AdminMovies /> },
+      { path: 'cinemas', element: <AdminCinemas /> },
+    ],
+  },
+  // Catch-all 404 Not Found route
+  {
+    path: '*',
+    element: <NotFound />,
   },
 ])
+
+export default router

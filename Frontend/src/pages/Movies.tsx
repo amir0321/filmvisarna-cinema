@@ -1,33 +1,8 @@
-import { useEffect, useState } from 'react'
-import type { ApiResponse, Movie } from '../types'
-
-export const navTitle = 'Filmer'
-export const navOrder = 2
+import { useMovies } from '../hooks'
 
 export default function Movies() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/api/movies')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Kunde inte hämta filmer')
-        }
-        return res.json()
-      })
-      .then((json: ApiResponse<Movie[]> | Movie[]) => {
-        const list = Array.isArray(json) ? json : json.data || []
-        setMovies(list)
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error(err)
-        setError('Kunde inte ladda filmer från servern.')
-        setLoading(false)
-      })
-  }, [])
+  const { data: movies, loading, error } = useMovies()
+  const movieList = movies || []
 
   return (
     <div className="py-4">
@@ -52,14 +27,14 @@ export default function Movies() {
         </div>
       )}
 
-      {!loading && !error && movies.length === 0 && (
+      {!loading && !error && movieList.length === 0 && (
         <div className="alert alert-info" role="alert">
           Inga filmer hittades.
         </div>
       )}
 
       <div className="row g-4">
-        {movies.map((movie) => {
+        {movieList.map((movie) => {
           const duration = movie.duration_minutes ?? movie.duration
           const genre = movie.genres?.[0] || 'Långfilm'
           return (
@@ -83,7 +58,7 @@ export default function Movies() {
                   <h5 className="card-title fw-bold text-white mb-2">{movie.title}</h5>
                   {duration && (
                     <p className="text-secondary small mb-3">
-                      ⏱ {duration} minuter
+                      <i className="bi bi-clock me-1"></i> {duration} minuter
                     </p>
                   )}
                   <div className="mt-auto">

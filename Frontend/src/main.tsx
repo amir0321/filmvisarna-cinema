@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { router } from './routes.tsx'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import 'bootstrap-icons/font/bootstrap-icons.css'
 import './index.scss'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
