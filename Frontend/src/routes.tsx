@@ -1,21 +1,11 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import type { ComponentType } from 'react'
 import App from './App'
+import type { NavItem, PageModule } from './types'
 
-interface PageModule {
-  default?: ComponentType
-  navOrder?: number
-  navTitle?: string
-  hideFromNav?: boolean
-  [key: string]: unknown
-}
+export type { NavItem, PageModule }
 
 const pages = import.meta.glob<PageModule>('./pages/**/*.tsx', { eager: true })
-
-export interface NavItem {
-  name: string
-  path: string
-}
 
 export const navLinks: NavItem[] = Object.entries(pages)
   .filter(([, module]) => !module.hideFromNav)
@@ -24,7 +14,7 @@ export const navLinks: NavItem[] = Object.entries(pages)
     const isHome = fileName.toLowerCase() === 'home'
 
     return {
-      name: module.navTitle || (isHome ? 'Home' : fileName),
+      name: module.navTitle || (isHome ? 'Hem' : fileName),
       path: isHome ? '/' : `/${fileName.toLowerCase()}`,
       order: module.navOrder ?? 999,
     }

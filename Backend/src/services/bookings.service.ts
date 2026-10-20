@@ -200,7 +200,7 @@ export async function getBookingByReference(reference: string) {
     reference,
   ]);
   if (rows.length === 0) {
-    throw new HttpError(404, "No booking found with that reference");
+    throw new HttpError(404, "Ingen bokning hittades med den referensen.");
   }
   return rows[0];
 }

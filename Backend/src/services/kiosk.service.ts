@@ -74,7 +74,7 @@ export async function getKioskItemById(id: number): Promise<KioskItem> {
   const items = await query<KioskItem>(sql, [id]);
 
   if (!items[0]) {
-    throw new HttpError(404, "Kiosk item not found");
+    throw new HttpError(404, "Kioskartikeln hittades inte.");
   }
 
   return items[0];

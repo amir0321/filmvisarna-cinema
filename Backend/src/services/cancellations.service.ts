@@ -44,7 +44,7 @@ export function validateCancellationDeadline(
   if (startsAt <= currentTime) {
     throw new HttpError(
       400,
-      "Cannot cancel a booking for a screening that has already started",
+      "Kan inte avboka en visning som redan har startat.",
     );
   }
 
@@ -52,7 +52,7 @@ export function validateCancellationDeadline(
   if (startsAt - currentTime < deadlineMs) {
     throw new HttpError(
       400,
-      `Cannot cancel a booking less than ${deadlineHours} hours before screening starts`,
+      `Kan inte avboka mindre än ${deadlineHours} timmar innan visningen startar.`,
     );
   }
 }
@@ -75,13 +75,13 @@ export async function cancelBooking(
     );
 
     if (rows.length === 0) {
-      throw new HttpError(404, "Booking not found");
+      throw new HttpError(404, "Bokningen hittades inte.");
     }
 
     const booking = rows[0];
 
     if (booking.status === "cancelled") {
-      throw new HttpError(400, "Booking is already cancelled");
+      throw new HttpError(400, "Bokningen är redan avbokad.");
     }
 
     validateCancellationDeadline(booking.starts_at);

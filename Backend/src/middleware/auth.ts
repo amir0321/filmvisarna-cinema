@@ -33,7 +33,7 @@ async function resolveUser(req: Request): Promise<AuthUser | undefined> {
 
   const [scheme, token] = header.split(" ");
   if (scheme?.toLowerCase() !== "bearer" || !token) {
-    throw new HttpError(401, "Authorization header must be: Bearer <token>");
+    throw new HttpError(401, "Auktoriseringsheadern måste ha formatet: Bearer <token>");
   }
 
   let userId: number;
@@ -43,15 +43,15 @@ async function resolveUser(req: Request): Promise<AuthUser | undefined> {
     });
     userId = Number(typeof payload === "string" ? NaN : payload.sub);
   } catch {
-    throw new HttpError(401, "Invalid or expired token");
+    throw new HttpError(401, "Ogiltig eller utgången token.");
   }
-  if (!Number.isInteger(userId)) throw new HttpError(401, "Invalid token");
+  if (!Number.isInteger(userId)) throw new HttpError(401, "Ogiltig token.");
 
   const { rows } = await pool.query<AuthUser>(
     "SELECT id, email, role FROM app_user WHERE id = $1",
     [userId],
   );
-  if (!rows[0]) throw new HttpError(401, "User no longer exists");
+  if (!rows[0]) throw new HttpError(401, "Användaren finns inte längre.");
   return rows[0];
 }
 
@@ -70,7 +70,7 @@ export async function requireAuth(
   next: NextFunction,
 ) {
   req.user = await resolveUser(req);
-  if (!req.user) throw new HttpError(401, "You need to log in");
+  if (!req.user) throw new HttpError(401, "Du måste logga in för att fortsätta.");
   next();
 }
 
@@ -81,8 +81,8 @@ export async function requireAdmin(
   next: NextFunction,
 ) {
   req.user = await resolveUser(req);
-  if (!req.user) throw new HttpError(401, "You need to log in");
+  if (!req.user) throw new HttpError(401, "Du måste logga in för att fortsätta.");
   if (req.user.role !== "admin")
-    throw new HttpError(403, "Admin access required");
+    throw new HttpError(403, "Administratörsbehörighet krävs.");
   next();
 }

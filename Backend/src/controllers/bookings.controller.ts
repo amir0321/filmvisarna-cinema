@@ -117,11 +117,11 @@ export async function postBooking(req: Request, res: Response) {
 }
 
 export async function deleteBooking(req: Request, res: Response): Promise<void> {
-  const bookingId = parseId(req.params.id, "booking ID");
+  const bookingId = parseId(req.params.id, "boknings-ID");
   const booking = await cancelBooking(bookingId, req.user!.id);
   res.json({
     success: true,
-    message: "Booking cancelled successfully",
+    message: "Bokningen har avbokats.",
     booking,
   });
 }
@@ -137,13 +137,13 @@ export async function postCancelByToken(req: Request, res: Response) {
   const booking = await cancelBookingByToken(token);
   res.json({
     success: true,
-    message: "Booking cancelled successfully",
+    message: "Bokningen har avbokats.",
     booking,
   });
 }
 
 export async function patchBooking(req: Request, res: Response) {
-  const id = parseId(req.params.id, "booking ID");
+  const id = parseId(req.params.id, "boknings-ID");
   const body = updateBookingSchema.parse(req.body);
   const booking = await updateBookingStatus(id, body);
   res.json({
@@ -154,7 +154,7 @@ export async function patchBooking(req: Request, res: Response) {
 }
 
 export async function patchBookingPay(req: Request, res: Response) {
-  const id = parseId(req.params.id, "booking ID");
+  const id = parseId(req.params.id, "boknings-ID");
   const booking = await updateBookingStatus(id, { isPaid: true });
   res.json({
     success: true,
@@ -164,7 +164,7 @@ export async function patchBookingPay(req: Request, res: Response) {
 }
 
 export async function patchBookingCheckin(req: Request, res: Response) {
-  const id = parseId(req.params.id, "booking ID");
+  const id = parseId(req.params.id, "boknings-ID");
   const booking = await updateBookingStatus(id, { isCheckedIn: true });
   res.json({
     success: true,

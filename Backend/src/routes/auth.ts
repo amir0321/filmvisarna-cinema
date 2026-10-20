@@ -14,32 +14,39 @@ const bcrypt_rounds = 12;
 // A dummy hash to use when a user is not found, to prevent timing attacks
 const dummy_hash = bcrypt.hashSync("dummy_password", bcrypt_rounds);
 
-const email = z.string().trim().email().max(200);
+const email = z
+  .string()
+  .trim()
+  .email("Ogiltig e-postadress.")
+  .max(200, "E-postadressen får inte vara längre än 200 tecken.");
 
 const password = z
   .string()
-  .min(8, "Password is required")
-  .max(72, "Password must be at most 72 characters long");
+  .min(8, "Lösenord krävs och måste vara minst 8 tecken.")
+  .max(72, "Lösenordet får vara max 72 tecken långt.");
 
 const registerBody = z.object({
   email,
   password,
-  firstName: z.string().trim().min(1).max(100).optional(),
-  lastName: z.string().trim().min(1).max(100).optional(),
+  firstName: z.string().trim().min(1, "Förnamn krävs.").max(100).optional(),
+  lastName: z.string().trim().min(1, "Efternamn krävs.").max(100).optional(),
   phone: z.string().trim().max(30).optional(),
 });
 
-const loginBody = z.object({ email, password: z.string().min(1).max(72) });
+const loginBody = z.object({
+  email,
+  password: z.string().min(1, "Lösenord krävs.").max(72),
+});
 
 const updateProfileBody = z.object({
-  firstName: z.string().trim().min(1).max(100).optional(),
-  lastName: z.string().trim().min(1).max(100).optional(),
+  firstName: z.string().trim().min(1, "Förnamn får inte vara tomt.").max(100).optional(),
+  lastName: z.string().trim().min(1, "Efternamn får inte vara tomt.").max(100).optional(),
   phone: z.string().trim().max(30).optional().nullable(),
 });
 
 const changePasswordBody = z.object({
-  currentPassword: z.string().min(1, "Nuvarande lösenord krävs"),
-  newPassword: z.string().min(8, "Nytt lösenord måste vara minst 8 tecken").max(72),
+  currentPassword: z.string().min(1, "Nuvarande lösenord krävs."),
+  newPassword: z.string().min(8, "Nytt lösenord måste vara minst 8 tecken.").max(72),
 });
 
 const user_columns = `id, email, first_name AS "firstName", last_name AS "lastName", phone, is_verified AS "isVerified", points, role`;
@@ -66,7 +73,7 @@ authRouter.post("/register", async (req, res) => {
     res.status(201).json({ token: signToken(user.id), user });
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
-      throw new HttpError(409, "That email is already registered");
+      throw new HttpError(409, "Den angivna e-postadressen är redan registrerad.");
     }
     throw error;
   }
@@ -85,7 +92,7 @@ authRouter.post("/login", async (req, res) => {
     body.password,
     row?.passwordHash ?? dummy_hash,
   );
-  if (!row || !ok) throw new HttpError(401, "Wrong email or password");
+  if (!row || !ok) throw new HttpError(401, "Felaktig e-postadress eller lösenord.");
 
   const { passwordHash: _omit, ...user } = row;
   res.json({ token: signToken(row.id), user });
@@ -105,7 +112,7 @@ authRouter.put("/me", requireAuth, async (req, res) => {
     `SELECT ${user_columns} FROM app_user WHERE id = $1`,
     [req.user!.id],
   );
-  if (!existing[0]) throw new HttpError(404, "Användaren hittades inte");
+  if (!existing[0]) throw new HttpError(404, "Användaren hittades inte.");
 
   const firstName =
     body.firstName !== undefined ? body.firstName : existing[0].firstName;
@@ -134,7 +141,7 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
     `SELECT id, password_hash AS "passwordHash" FROM app_user WHERE id = $1`,
     [req.user!.id],
   );
-  if (!row) throw new HttpError(404, "Användaren hittades inte");
+  if (!row) throw new HttpError(404, "Användaren hittades inte.");
 
   const ok = await bcrypt.compare(body.currentPassword, row.passwordHash);
   if (!ok) throw new HttpError(401, "Det nuvarande lösenordet är felaktigt.");

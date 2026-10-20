@@ -28,11 +28,11 @@ const listQuerySchema = filtersSchema
     when: z.enum(["today", "tomorrow", "weekend"]).optional(),
     date: z
       .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Använd formatet ÅÅÅÅ-MM-DD")
       .optional(),
   })
   .refine((q) => !(q.when && q.date), {
-    message: 'Use either "when" or "date", not both',
+    message: 'Ange antingen "when" eller "date", inte båda',
     path: ["when"],
   });
 
@@ -77,7 +77,7 @@ export async function getTodayScreenings(req: Request, res: Response) {
 }
 
 export async function getSeats(req: Request, res: Response) {
-  const screeningId = parseId(req.params.id, "screening ID");
+  const screeningId = parseId(req.params.id, "visnings-ID");
   const result = await getScreeningSeats(screeningId);
   res.json(result);
 }
@@ -89,14 +89,14 @@ export async function postScreening(req: Request, res: Response) {
 }
 
 export async function putScreening(req: Request, res: Response) {
-  const id = parseId(req.params.id, "screening ID");
+  const id = parseId(req.params.id, "visnings-ID");
   const body = updateScreeningBody.parse(req.body);
   const updated = await updateScreening(id, body);
   res.json({ success: true, data: updated });
 }
 
 export async function deleteScreeningHandler(req: Request, res: Response) {
-  const id = parseId(req.params.id, "screening ID");
+  const id = parseId(req.params.id, "visnings-ID");
   await deleteScreening(id);
-  res.json({ success: true, message: "Visningen har tagits bort" });
+  res.json({ success: true, message: "Visningen har tagits bort." });
 }

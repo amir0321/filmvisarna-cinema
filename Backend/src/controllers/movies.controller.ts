@@ -13,60 +13,60 @@ export const createMovieBody = z.object({
   title: z
     .string()
     .trim()
-    .min(1, "title krävs och får inte vara tom")
-    .max(300, "title får max vara 300 tecken"),
+    .min(1, "Titel krävs och får inte vara tom.")
+    .max(300, "Titel får max vara 300 tecken."),
 
   description: z.string().trim().max(2000).optional().nullable(),
 
   duration_minutes: z
     .number()
-    .int("duration_minutes måste vara ett heltal")
-    .positive("duration_minutes måste vara ett positivt tal"),
+    .int("Speltid (minuter) måste vara ett heltal.")
+    .positive("Speltid (minuter) måste vara ett positivt tal."),
 
   age_rating: z.string().trim().max(10).optional().nullable(),
 
   poster_url: z
     .string()
-    .url("poster_url måste vara en giltig URL")
+    .url("Poster-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   landscape_image_url: z
     .string()
-    .url("landscape_image_url måste vara en giltig URL")
+    .url("Bred bild-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   trailer_url: z
     .string()
-    .url("trailer_url måste vara en giltig URL")
+    .url("Trailer-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   director: z
     .string()
     .trim()
-    .max(200, "director får max vara 200 tecken")
+    .max(200, "Regissör får max vara 200 tecken.")
     .optional()
     .nullable(),
 
   imdb_rating: z
     .coerce
     .number()
-    .min(0, "imdb_rating måste vara minst 0")
-    .max(10, "imdb_rating kan max vara 10")
+    .min(0, "IMDb-betyg måste vara minst 0.")
+    .max(10, "IMDb-betyg kan max vara 10.")
     .optional()
     .nullable(),
 
   release_date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "release_date måste ha formatet ÅÅÅÅ-MM-DD")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Premiärdatum måste ha formatet ÅÅÅÅ-MM-DD.")
     .optional()
     .nullable(),
 
   genres: z
     .array(z.string().trim().min(1).max(100))
-    .max(10, "Max 10 genres per film")
+    .max(10, "Max 10 genrer per film.")
     .optional(),
 });
 
@@ -74,62 +74,62 @@ export const updateMovieBody = z.object({
   title: z
     .string()
     .trim()
-    .min(1, "title får inte vara tom")
-    .max(300, "title får max vara 300 tecken")
+    .min(1, "Titel får inte vara tom.")
+    .max(300, "Titel får max vara 300 tecken.")
     .optional(),
 
   description: z.string().trim().max(2000).optional().nullable(),
 
   duration_minutes: z
     .number()
-    .int("duration_minutes måste vara ett heltal")
-    .positive("duration_minutes måste vara ett positivt tal")
+    .int("Speltid (minuter) måste vara ett heltal.")
+    .positive("Speltid (minuter) måste vara ett positivt tal.")
     .optional(),
 
   age_rating: z.string().trim().max(10).optional().nullable(),
 
   poster_url: z
     .string()
-    .url("poster_url måste vara en giltig URL")
+    .url("Poster-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   landscape_image_url: z
     .string()
-    .url("landscape_image_url måste vara en giltig URL")
+    .url("Bred bild-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   trailer_url: z
     .string()
-    .url("trailer_url måste vara en giltig URL")
+    .url("Trailer-URL måste vara en giltig URL.")
     .optional()
     .nullable(),
 
   director: z
     .string()
     .trim()
-    .max(200, "director får max vara 200 tecken")
+    .max(200, "Regissör får max vara 200 tecken.")
     .optional()
     .nullable(),
 
   imdb_rating: z
     .coerce
     .number()
-    .min(0, "imdb_rating måste vara minst 0")
-    .max(10, "imdb_rating kan max vara 10")
+    .min(0, "IMDb-betyg måste vara minst 0.")
+    .max(10, "IMDb-betyg kan max vara 10.")
     .optional()
     .nullable(),
 
   release_date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "release_date måste ha formatet ÅÅÅÅ-MM-DD")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Premiärdatum måste ha formatet ÅÅÅÅ-MM-DD.")
     .optional()
     .nullable(),
 
   genres: z
     .array(z.string().trim().min(1).max(100))
-    .max(10, "Max 10 genres per film")
+    .max(10, "Max 10 genrer per film.")
     .optional(),
 });
 
@@ -146,7 +146,7 @@ export async function getMovies(req: Request, res: Response) {
 }
 
 export async function getMovie(req: Request, res: Response) {
-  const id = parseId(req.params.id);
+  const id = parseId(req.params.id, "film-ID");
   const movie = await getMovieById(id);
   res.json({ success: true, data: movie });
 }
@@ -158,14 +158,14 @@ export async function postMovie(req: Request, res: Response) {
 }
 
 export async function putMovie(req: Request, res: Response) {
-  const id = parseId(req.params.id);
+  const id = parseId(req.params.id, "film-ID");
   const body = updateMovieBody.parse(req.body);
   const movie = await updateMovie(id, body);
   res.json({ success: true, data: movie });
 }
 
 export async function deleteMovieHandler(req: Request, res: Response) {
-  const id = parseId(req.params.id);
+  const id = parseId(req.params.id, "film-ID");
   await deleteMovie(id);
-  res.json({ success: true, message: "Filmen har tagits bort" });
+  res.json({ success: true, message: "Filmen har tagits bort." });
 }

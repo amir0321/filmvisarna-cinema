@@ -41,7 +41,7 @@ export async function getKioskItem(
   req: Request,
   res: Response<ApiResponse<KioskItem>>,
 ): Promise<void> {
-  const id = parseId(req.params.id, "kiosk item ID");
+  const id = parseId(req.params.id, "kioskartikel-ID");
   const item = await getKioskItemById(id);
 
   res.status(200).json({

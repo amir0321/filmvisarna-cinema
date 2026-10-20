@@ -30,7 +30,7 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 const api = express.Router();
 api.get("/health", (_req, res) => {
-  res.json({ status: "ok", message: "Filmvisarna API is running" });
+  res.json({ status: "ok", message: "Filmvisarna API är igång" });
 });
 api.use("/auth", authRouter);
 api.use("/screenings", screeningsRouter);

@@ -17,7 +17,7 @@ const AGE_LIMIT = `CASE WHEN m.age_rating ~ '^[0-9]+$' THEN m.age_rating::int EL
 
 function validateScreeningStartsAt(startsAt: Date) {
   if (startsAt.getTime() <= Date.now()) {
-    throw new HttpError(400, "startsAt must be in the future");
+    throw new HttpError(400, "Starttiden måste vara i framtiden.");
   }
 }
 
@@ -26,7 +26,7 @@ async function assertCinemaExists(client: PoolClient, cinemaId: number, forUpdat
     `SELECT id FROM cinema WHERE id = $1 ${forUpdate ? "FOR UPDATE" : ""}`,
     [cinemaId],
   );
-  if (res.rowCount === 0) throw new HttpError(404, "Cinema not found");
+  if (res.rowCount === 0) throw new HttpError(404, "Salongen hittades inte.");
 }
 
 async function getMovieDuration(client: PoolClient, movieId: number): Promise<number> {
@@ -34,7 +34,7 @@ async function getMovieDuration(client: PoolClient, movieId: number): Promise<nu
     "SELECT duration_minutes FROM movie WHERE id = $1",
     [movieId],
   );
-  if (movie.rowCount === 0) throw new HttpError(404, "Movie not found");
+  if (movie.rowCount === 0) throw new HttpError(404, "Filmen hittades inte.");
   return movie.rows[0].duration_minutes;
 }
 
@@ -58,7 +58,7 @@ async function assertNoScreeningOverlap(
   if (clash.rowCount && clash.rowCount > 0) {
     throw new HttpError(
       409,
-      `That time overlaps another screening in this cinema (including a ${buffer} minute buffer)`,
+      `Tiden krockar med en annan visning i denna salong (inklusive ${buffer} minuters ställtid).`,
     );
   }
 }
@@ -147,7 +147,7 @@ export async function getScreeningSeats(
   );
 
   if (screening.length === 0) {
-    throw new HttpError(404, "Screening not found");
+    throw new HttpError(404, "Visningen hittades inte.");
   }
 
   const seats = await query<ScreeningSeatStatus>(
@@ -221,7 +221,7 @@ export async function updateScreening(
       "SELECT id, movie_id, cinema_id, starts_at FROM screening WHERE id = $1 FOR UPDATE",
       [id],
     );
-    if (current.rowCount === 0) throw new HttpError(404, "Screening not found");
+    if (current.rowCount === 0) throw new HttpError(404, "Visningen hittades inte.");
 
     const cur = current.rows[0];
     const movieId = input.movieId ?? cur.movie_id;
@@ -264,7 +264,7 @@ export async function updateScreening(
 export async function deleteScreening(id: number): Promise<void> {
   const existing = await query("SELECT id FROM screening WHERE id = $1", [id]);
   if (existing.length === 0) {
-    throw new HttpError(404, "Screening not found");
+    throw new HttpError(404, "Visningen hittades inte.");
   }
 
   const clientProxy = {

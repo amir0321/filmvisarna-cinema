@@ -47,7 +47,7 @@ export async function getCinemaById(id: number): Promise<CinemaDetail> {
   );
 
   if (!rows[0]) {
-    throw new HttpError(404, "Salongen hittades inte");
+    throw new HttpError(404, "Salongen hittades inte.");
   }
 
   return rows[0];

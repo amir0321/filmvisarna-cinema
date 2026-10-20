@@ -68,5 +68,5 @@ export async function putCinema(req: Request, res: Response) {
 export async function deleteCinemaHandler(req: Request, res: Response) {
   const id = parseId(req.params.id, "salongs-ID");
   await deleteCinema(id);
-  res.json({ success: true, message: "Salongen har tagits bort" });
+  res.json({ success: true, message: "Salongen har tagits bort." });
 }

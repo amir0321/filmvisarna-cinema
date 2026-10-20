@@ -75,7 +75,7 @@ export async function getMovieById(id: number): Promise<Movie> {
     `${MOVIE_SELECT} WHERE m.id = $1 GROUP BY m.id`,
     [id],
   );
-  if (!rows[0]) throw new HttpError(404, "Filmen hittades inte");
+  if (!rows[0]) throw new HttpError(404, "Filmen hittades inte.");
   return rows[0];
 }
 
