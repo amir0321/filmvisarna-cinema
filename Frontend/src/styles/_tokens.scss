@@ -1,0 +1,48 @@
+// Design tokens from "Filmvisarna – Designsystem, gränssnitt och tillgänglighet".
+// Only defines CSS variables; nothing is styled until a component uses them.
+// Add more tokens from the document here as new pages need them.
+:root {
+  // Surfaces
+  --fv-bg-canvas: #0b0f19;
+  --fv-bg-surface: #161f30;
+  --fv-bg-secondary: #1e2d47;
+  --fv-bg-muted: #111827;
+  --fv-bg-chip: #0f172a;
+  --fv-bg-chip-hover: #1e293b;
+
+  // Brand and status
+  --fv-brand-primary: #e50914;
+  --fv-brand-primary-hover: #b91c1c;
+  --fv-status-success: #10b981;
+  --fv-status-warning: #f59e0b;
+
+  // Text
+  --fv-text-heading: #ffffff;
+  --fv-text-strong: #f8fafc;
+  --fv-text-body: #cbd5e1;
+  --fv-text-subtle: #94a3b8;
+  --fv-text-on-light: #0b0f19; // dark text for light badges (success/warning)
+
+  // Borders
+  --fv-border-default: rgba(255, 255, 255, 0.18);
+  --fv-border-subtle: rgba(148, 163, 184, 0.15);
+  --fv-border-strong: rgba(255, 255, 255, 0.25);
+  --fv-focus-ring: #ffffff;
+
+  // Radius scale
+  --fv-radius-xs: 4px;
+  --fv-radius-sm: 6px;
+  --fv-radius-md: 8px;
+  --fv-radius-control: 10px;
+  --fv-radius-lg: 12px;
+  --fv-radius-card: 16px;
+  --fv-radius-xl: 20px;
+  --fv-radius-pill: 999px;
+
+  // Shadows
+  --fv-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --fv-shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.5);
+
+  // Sizing
+  --fv-touch-target: 44px;
+}
