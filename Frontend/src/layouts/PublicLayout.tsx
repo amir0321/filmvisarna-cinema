@@ -5,7 +5,7 @@ export default function PublicLayout() {
   return (
     <div className="d-flex flex-column min-vh-100 bg-dark text-light">
       <Header />
-      <main className="flex-grow-1 container-fluid px-3 px-md-5 py-4">
+      <main className="flex-grow-1">
         <Outlet />
       </main>
       <footer className="py-4 border-top border-secondary border-opacity-25 bg-black text-secondary text-center small">

@@ -5,7 +5,7 @@ export default function Movies() {
   const movieList = movies || []
 
   return (
-    <div className="py-4">
+    <div className="container-fluid px-3 px-md-5 py-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold mb-1">Aktuella filmer</h2>
