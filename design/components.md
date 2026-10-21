@@ -156,14 +156,11 @@ Här dokumenteras samtliga återanvända UI-delar i prototypen med utseende, må
 
 ### 3.8 Tabbar (flikkomponenter)
 
-Prototypen innehåller fem varianter av tabb-navigering:
+Applikationen innehåller fyra varianter av tabb-navigering på sidorna (medan toppnavigeringen i både publik vy och admin använder samma `.public-nav-link` i `Navbar.tsx` — se `design/layout.md` §4.2–4.3):
 1. **Understrukna textflikar (`FilmerScreen.tsx`):** `På bio nu` och `Kommande premiärer` (med gul räknarbadge `4`). Aktiv flik har `border-bottom: 2px solid #E50914`, text `#F8FAFC`, `font-weight: 700` (`Poppins`).
 2. **Segmenterad pill-box (`MyBookingsScreen.tsx` och `ProfilScreen.tsx` mobil):** Container i `#161F30` med `padding: 4px`. I `MyBookingsScreen.tsx` har aktiv flik bakgrund `rgba(255, 255, 255, 0.1)`; i `ProfilScreen.tsx` (mobil) har aktiv flik bakgrund `#E50914` och vit text.
 3. **Vertikal sidomeny med vänsterkant (`ProfilScreen.tsx` desktop):** Staplade knappar i `#161F30`-kort. Aktiv flik har `border-left: 3px solid #E50914`, bakgrund `rgba(229, 9, 20, 0.06)`, text `#F8FAFC` och `font-weight: 600`.
 4. **Fristående knappflikar (`ProfilScreen.tsx` underflikar under Bokningshistorik):** `Kommande visningar` (aktiv: bakgrund `#E50914`, vit text) och `Tidigare besök` (inaktiv: bakgrund `#161F30`, text `#94A3B8`).
-5. **Admin-toppflikar (`AdminScreen.tsx`):**
-   - **Desktop:** Ikon + fullständig etikett (`padding: 8px 14px`, `border-radius: 8px 8px 0 0`). Aktiv flik har bakgrund `rgba(229, 9, 20, 0.12)`, text `#ff6b6b` och `border-bottom: 2px solid #E50914`.
-   - **Mobil:** Andra rad i toppbaren med staplad ikon + kort etikett (`Bokningar`, `Schema`, `Filmer`, `Salonger`), `font-size: 10px`. Aktiv flik har text `#E50914` och `border-bottom: 2px solid #E50914`.
 
 ### 3.9 Toasts och Inline-feedback
 

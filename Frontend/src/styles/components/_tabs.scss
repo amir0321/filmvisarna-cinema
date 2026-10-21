@@ -1,0 +1,171 @@
+// ============================================================================
+// Filmvisarna – Tabs & Flikkomponenter (_tabs.scss)
+// Follows design/tokens.md and design/components.md §3.8
+// ============================================================================
+
+.fv-tabs-underline {
+  .fv-tab-list {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid $fv-border;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .fv-tab-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 4px;
+    border: none;
+    background: transparent;
+    color: $fv-muted-fg;
+    font-family: $fv-font-display;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $fv-fg;
+    }
+
+    &.active {
+      color: $fv-fg;
+      font-weight: 700;
+      border-bottom-color: $fv-primary;
+    }
+  }
+}
+
+.fv-tabs-segmented {
+  .fv-tab-list {
+    display: inline-flex;
+    padding: 4px;
+    background-color: $fv-card-bg;
+    border-radius: $fv-radius-pill;
+    border: 1px solid $fv-border;
+    gap: 4px;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .fv-tab-trigger {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    border-radius: $fv-radius-pill;
+    color: $fv-muted-fg;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $fv-fg;
+    }
+
+    &.active {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: $fv-fg;
+      font-weight: 600;
+    }
+  }
+
+  &.segmented-primary {
+    .fv-tab-trigger.active {
+      background-color: $fv-primary;
+      color: $fv-white;
+    }
+  }
+}
+
+.fv-tabs-vertical {
+  .fv-tab-list {
+    display: flex;
+    flex-direction: column;
+    background-color: $fv-card-bg;
+    border-radius: $fv-card-radius;
+    border: 1px solid $fv-border;
+    overflow: hidden;
+  }
+
+  .fv-tab-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    width: 100%;
+    color: $fv-muted-fg;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid $border-faint;
+    transition: all 0.15s ease;
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.02);
+      color: $fv-fg;
+    }
+
+    &.active {
+      border-left-color: $fv-primary;
+      background-color: rgba($fv-primary, 0.06);
+      color: $fv-fg;
+      font-weight: 600;
+    }
+  }
+}
+
+.fv-tabs-pills {
+  .fv-tab-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .fv-tab-trigger {
+    padding: 8px 16px;
+    border-radius: $radius-pill;
+    border: 1px solid $fv-border;
+    background-color: $fv-card-bg;
+    color: $fv-muted-fg;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    cursor: pointer;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: $fv-fg;
+    }
+
+    &.active {
+      background-color: $fv-primary;
+      border-color: $fv-primary;
+      color: $fv-white;
+      font-weight: 600;
+    }
+  }
+}

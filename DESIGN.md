@@ -39,7 +39,7 @@ Detta dokument är den fullständiga design- och gränssnittsspecifikationen fö
 | :--- | :--- |
 | [design/tokens.md](design/tokens.md) | Sektion 2: Alla designtokens (färger, typografi, avstånd/layoutmått, hörnradier, skuggor/oskärpa samt brytpunkter och z-index) översatta till hex/px/rem och SCSS-variabler. |
 | [design/components.md](design/components.md) | Sektion 3: Alla återanvända UI-komponenter (knappar, chips/pills, badges, kort, tabeller, formulär, modaler/BottomSheets, tabbar, inline-feedback, platskartor, steppers och cookie-banner). |
-| [design/layout.md](design/layout.md) | Sektion 4: Applikationsskal, publik toppnavigering, admin-toppnavigering, mobil bottennavigering, mobil sidomeny, sidfot samt grid och responsivt beteende. |
+| [design/layout.md](design/layout.md) | Sektion 4: Applikationsskal, gemensam toppnavigering (`Navbar`) för publik hemsida och admin, mobil bottennavigering (`BottomNav`), mobil sidomeny (`MobileDrawer`), sidfot samt grid och responsivt beteende. |
 | [design/flows.md](design/flows.md) | Sektion 6–10: Användarflöden (bokning, avbokning, admin), roller och behörigheter, ikoner och bilder, funktioner ej med i vår app samt inkonsekvenser och OKLART. |
 | [design/coverage.md](design/coverage.md) | Sektion 11: Fullständig täckningslista som mappar samtliga 28 källfiler i `docs/figma-make/src/` mot sektionerna i designspecifikationen. |
 | [design/pages/home.md](design/pages/home.md) | Sektion 5.1: Startsida (`HomeScreen`, föreslagen route `/`) med hero-sektion, klibbig filterrad, repertoargrid och interaktioner. |
