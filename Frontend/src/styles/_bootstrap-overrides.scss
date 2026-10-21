@@ -1,0 +1,94 @@
+// Must be evaluated before Bootstrap is imported
+$body-bg: $color-bg;
+$body-color: $text-primary;
+$body-secondary-color: $text-secondary;
+
+$primary: $color-primary;
+$secondary: $text-secondary;
+$success: $color-success;
+$warning: $color-warning;
+$danger: $color-danger;
+$info: $color-info;
+$light: $text-primary;
+$dark: $color-bg;
+
+$border-color: $border-subtle;
+$border-color-translucent: $border-subtle;
+
+$font-family-sans-serif: $font-sans;
+$headings-font-family: $font-heading;
+$headings-color: $text-heading;
+$headings-font-weight: 700;
+$font-family-monospace: $font-mono;
+
+$border-radius: $radius-base;
+$border-radius-sm: $radius-sm;
+$border-radius-lg: $radius-card;
+$border-radius-pill: $radius-pill;
+
+$card-bg: $color-surface;
+$card-color: $text-primary;
+$card-border-color: $border-subtle;
+$card-border-radius: $radius-card;
+$card-cap-bg: $color-surface-2;
+
+$input-bg: $color-surface-muted;
+$input-color: $text-primary;
+$input-border-color: $border-strong;
+$input-placeholder-color: $text-muted;
+$input-border-radius: $radius-base;
+$input-focus-bg: $color-surface-muted;
+$input-focus-border-color: $color-primary;
+$input-focus-box-shadow: 0 0 0 2px tint($color-primary, 0.35);
+
+$form-check-input-bg: $color-surface-muted;
+$form-check-input-border: 1px solid $border-strong;
+$form-check-input-checked-bg-color: $color-primary;
+$form-check-input-checked-border-color: $color-primary;
+
+$form-select-bg: $color-surface-muted;
+$form-select-color: $text-primary;
+$form-select-border-color: $border-strong;
+$form-select-focus-box-shadow: 0 0 0 2px tint($color-primary, 0.35);
+
+$modal-content-bg: $color-surface;
+$modal-content-color: $text-primary;
+$modal-content-border-color: $border-subtle;
+$modal-content-border-radius: $radius-card;
+$modal-backdrop-bg: $color-black;
+$modal-backdrop-opacity: 0.75;
+$modal-header-border-color: $border-subtle;
+$modal-footer-border-color: $border-subtle;
+
+$table-bg: transparent;
+$table-color: $text-primary;
+$table-border-color: $border-faint;
+$table-striped-bg: $white-overlay-03;
+$table-hover-bg: $white-overlay-05;
+
+$dropdown-bg: $color-surface-2;
+$dropdown-color: $text-primary;
+$dropdown-border-color: $border-subtle;
+$dropdown-border-radius: $radius-md;
+$dropdown-link-color: $text-primary;
+$dropdown-link-hover-color: $text-heading;
+$dropdown-link-hover-bg: $white-overlay-08;
+$dropdown-link-active-bg: $color-primary;
+$dropdown-link-active-color: $color-white;
+$dropdown-divider-bg: $border-subtle;
+
+$navbar-dark-color: $text-secondary;
+$navbar-dark-hover-color: $text-heading;
+$navbar-dark-active-color: $color-primary;
+
+$link-color: $color-primary;
+$link-hover-color: $color-primary-dark;
+
+$enable-shadows: false;
+$enable-gradients: false;
+
+$body-bg-dark: $color-bg;
+$body-color-dark: $text-primary;
+$body-secondary-color-dark: $text-secondary;
+$border-color-dark: $border-subtle;
+$border-color-translucent-dark: $border-subtle;
