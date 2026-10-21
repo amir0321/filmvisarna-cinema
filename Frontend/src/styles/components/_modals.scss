@@ -1,0 +1,148 @@
+// ============================================================================
+// Filmvisarna – Modaler & BottomSheets (_modals.scss)
+// Follows design/tokens.md and design/components.md §3.7
+// ============================================================================
+
+@keyframes fv-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fv-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fv-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.fv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: $fv-z-modal-top;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fv-fade-in 0.2s ease;
+}
+
+.fv-modal-dialog {
+  position: relative;
+  background-color: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+  width: 100%;
+  box-shadow: $fv-shadow-card-lg;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fv-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.size-sm {
+    max-width: 420px;
+  }
+
+  &.size-md {
+    max-width: 560px;
+  }
+
+  &.size-lg {
+    max-width: 780px;
+  }
+}
+
+.fv-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid $fv-border;
+
+  .fv-modal-title {
+    margin: 0;
+    font-family: $fv-font-display;
+    font-size: 18px;
+    font-weight: 700;
+    color: $fv-fg;
+  }
+
+  .fv-modal-close {
+    background: transparent;
+    border: none;
+    color: $fv-muted-fg;
+    font-size: 20px;
+    padding: 4px;
+    border-radius: $radius-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: $fv-fg;
+    }
+  }
+}
+
+.fv-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.fv-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid $fv-border;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+// Mobile BottomSheet modifier (< 768px)
+@media (max-width: ($fv-bp-md - 0.02px)) {
+  .fv-modal-backdrop.as-bottom-sheet {
+    align-items: flex-end;
+    padding: 0;
+
+    .fv-modal-dialog {
+      border-radius: 20px 20px 0 0;
+      border-bottom: none;
+      max-height: 92vh;
+      animation: fv-slide-up 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .fv-bottom-sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(148, 163, 184, 0.3);
+      margin: 10px auto 4px auto;
+      flex-shrink: 0;
+    }
+  }
+}

@@ -1,0 +1,115 @@
+// ============================================================================
+// Filmvisarna – Chips, Pills & Filters (_pills.scss)
+// Follows design/tokens.md and design/components.md §3.2
+// ============================================================================
+
+.fv-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.fv-chip-genre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: $radius-pill;
+  font-size: 13px;
+  font-weight: 400;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: $fv-muted-fg;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    color: $fv-fg;
+  }
+
+  &.active {
+    background: rgba($fv-primary, 0.15);
+    border-color: $fv-primary;
+    color: $fv-primary;
+    font-weight: 600;
+  }
+}
+
+.fv-chip-age {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: transparent;
+  color: $fv-muted-fg;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    color: $fv-fg;
+  }
+
+  &.active {
+    background: $fv-primary;
+    border-color: $fv-primary;
+    color: $fv-white;
+  }
+}
+
+.fv-screening-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: $radius-md;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $fv-fg;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &.interactive {
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: $fv-white;
+    }
+  }
+
+  &.compact {
+    padding: 4px 9px;
+    border-radius: 6px;
+  }
+
+  &.fv-screening-pill-low {
+    background: rgba($fv-primary, 0.15);
+    border-color: rgba($fv-primary, 0.3);
+    color: $fv-danger-light;
+
+    .seats-left {
+      opacity: 0.75;
+      font-size: 11px;
+    }
+  }
+}
