@@ -8,11 +8,10 @@ const publicNavLinks = [
 
 export default function Header() {
   return (
-    <header className="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary border-opacity-25 sticky-top">
+    <header className="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
       <div className="container-fluid px-3 px-md-5">
-        <Link to="/" className="navbar-brand fw-bold d-flex align-items-center text-danger text-uppercase tracking-wider">
-          <i className="bi bi-film me-2 fs-4"></i>
-          <span>Filmvisarna</span>
+        <Link to="/" className="navbar-brand brand-logo">
+          Filmvisarna
         </Link>
 
         <button
@@ -22,7 +21,7 @@ export default function Header() {
           data-bs-target="#publicNavbar"
           aria-controls="publicNavbar"
           aria-expanded="false"
-          aria-label="Toggle navigation"
+          aria-label="Visa meny"
         >
           <span className="navbar-toggler-icon"></span>
         </button>

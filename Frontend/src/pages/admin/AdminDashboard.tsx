@@ -44,7 +44,7 @@ export default function AdminDashboard() {
       <div className="row g-4">
         {cards.map((c) => (
           <div key={c.path} className="col-12 col-md-6 col-lg-3">
-            <div className="card h-100 bg-black border-secondary border-opacity-25 shadow-sm">
+            <div className="card h-100 bg-card border-secondary border-opacity-25 shadow-sm">
               <div className="card-body d-flex flex-column p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <i className={`bi ${c.icon} text-danger fs-2`}></i>
