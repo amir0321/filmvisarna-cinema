@@ -53,7 +53,7 @@ Alla värden nedan är översatta till konkreta mått (`hex`, `rgba`, `px`, `rem
 | Admin-/modalrubrik (`h1`/`h2`) | `Poppins` | `22px` (`1.375rem`) | `font-weight: 700` | `$fv-fs-h2-sm` | `src/components/AdminScreen.tsx`, `src/components/FilmerScreen.tsx` |
 | Kort-/undersektion (`h2`/`h3`) | `Poppins` | `20px` (`1.25rem`) | `font-weight: 700` | `$fv-fs-h3` | `src/components/MyBookingsScreen.tsx`, `src/components/SalongerScreen.tsx`, `src/components/admin/SalongerAdminTab.tsx` |
 | Panel-/modalrubrik (`h2`/`h3`) | `Poppins` | `17px`–`18px` (`1.0625rem`–`1.125rem`) | `font-weight: 600` / `700` | `$fv-fs-h4` | `src/components/SeatSelectionScreen.tsx`, `src/components/ProfilScreen.tsx`, `src/components/admin/SchemaTab.tsx` |
-| Logotyp (`FILMVISARNA`) | `Poppins` | Publik: `16px` (`1rem`), Admin: `14px` (`13px` mobil) | `font-weight: 700`, `uppercase`, `letter-spacing: 0.18em` (`0.16em` admin) | `$fv-fs-logo` | `src/components/Nav.tsx`, `src/components/AdminScreen.tsx` |
+| Logotyp (`FILMVISARNA`) | `Poppins` | `16px` (`1rem`) i både publik vy och admin | `font-weight: 700`, `uppercase`, `letter-spacing: 0.18em` | `$fv-fs-logo` | `Frontend/src/components/BrandLogo.tsx` |
 | Brödtext stor / Korttitel | `Inter` / `Poppins` | `16px` (`1rem`) / `15px` (`0.9375rem`) | `font-weight: 400` / `600`, `line-height: 1.625` | `$fv-fs-base` | `src/components/HomeScreen.tsx`, `src/components/FilmerScreen.tsx` |
 | Standardtext / Knappar / Fält | `Inter` | `14px` (`0.875rem`) | `font-weight: 400` / `500` / `600` | `$fv-fs-sm` | `src/components/Nav.tsx`, `src/components/ProfilScreen.tsx` |
 | Chip / Kompakt knapp | `Inter` | `13px` (`0.8125rem`) | `font-weight: 500` / `600` | `$fv-fs-xs-plus` | `src/index.css`, `src/components/FilmerScreen.tsx` |
@@ -65,11 +65,9 @@ Alla värden nedan är översatta till konkreta mått (`hex`, `rgba`, `px`, `rem
 | Namn | Värde | Användning | Föreslaget SCSS-variabelnamn | Källfil |
 | :--- | :--- | :--- | :--- | :--- |
 | Bas-skala (8px-system) | `8px`, `16px`, `24px`, `32px`, `48px`, `64px` (`0.5rem`–`4rem`) | Generellt avståndssystem för marginaler, padding och gaps | `$fv-space-1` … `$fv-space-6` | `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| Nav-höjd (publik) | `64px` (`4rem`) | Fast höjd på global toppnavigering (`Nav.tsx`) | `$fv-nav-height` | `src/components/Nav.tsx` |
-| Nav-höjd (admin) | `56px` (`3.5rem`) | Fast höjd på admin-huvudrad (`AdminScreen.tsx`) | `$fv-admin-nav-height` | `src/components/AdminScreen.tsx` |
-| BottomNav-höjd (mobil) | `64px` (`4rem`) | Fast höjd på mobil bottennavigering (`BottomNav.tsx`) | `$fv-bottom-nav-height` | `src/components/BottomNav.tsx` |
-| Container Max-Width (Admin) | `1600px` (`100rem`) | Maxbredd i `AdminScreen.tsx` (`padding: 0 40px` desktop, `0 16px` mobil) | `$fv-container-admin` | `src/components/AdminScreen.tsx` |
-| Container Max-Width (XL / 7xl) | `1280px` (`80rem`) | Maxbredd i `Nav.tsx`, `HomeScreen.tsx`, `FilmerScreen.tsx`, `SalongerScreen.tsx` | `$fv-container-7xl` | `src/components/Nav.tsx`, `src/components/HomeScreen.tsx` |
+| Nav-höjd (publik & admin) | `64px` (`4rem`) | Fast höjd på gemensam toppnavigering (`Navbar.tsx`) i både publik vy och admin | `$fv-nav-height` | `Frontend/src/components/Navbar.tsx` |
+| BottomNav-höjd (mobil) | `64px` (`4rem`) | Fast höjd på mobil bottennavigering (`BottomNav.tsx`) i både publik vy och admin | `$fv-bottom-nav-height` | `Frontend/src/components/BottomNav.tsx` |
+| Container Max-Width (XL / 7xl) | `1280px` (`80rem`) | Maxbredd i `Navbar.tsx` (publik & admin), `HomeScreen.tsx`, `FilmerScreen.tsx`, `SalongerScreen.tsx` | `$fv-container-7xl` | `Frontend/src/components/Navbar.tsx`, `src/components/HomeScreen.tsx` |
 | Container Max-Width (6xl) | `1152px` (`72rem`) | Maxbredd i `MovieDetailScreen.tsx`, `SeatSelectionScreen.tsx` | `$fv-container-6xl` | `src/components/MovieDetailScreen.tsx`, `src/components/SeatSelectionScreen.tsx` |
 | Container Max-Width (5xl) | `1024px` (`64rem`) | Maxbredd i `ProfilScreen.tsx` | `$fv-container-5xl` | `src/components/ProfilScreen.tsx` |
 | Container Max-Width (4xl) | `896px` (`56rem`) | Maxbredd i `CookieBanner.tsx` | `$fv-container-4xl` | `src/components/CookieBanner.tsx` |

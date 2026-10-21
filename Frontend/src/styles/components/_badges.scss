@@ -1,0 +1,221 @@
+// ============================================================================
+// Filmvisarna – Badges & Märkningar (_badges.scss)
+// Follows design/tokens.md and design/components.md §3.3
+// ============================================================================
+
+.fv-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: $fv-font-sans;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-radius: $fv-radius-sm;
+  padding: 4px 8px;
+  font-size: $font-size-12;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &.fv-badge-pill {
+    border-radius: $fv-radius-pill;
+  }
+}
+
+.fv-badge-primary {
+  background-color: $fv-primary;
+  color: $fv-white;
+}
+
+.fv-badge-success {
+  background-color: rgba($fv-success, 0.15);
+  color: $fv-success;
+}
+
+.fv-badge-warning {
+  background-color: rgba($fv-warning, 0.15);
+  color: $fv-warning;
+}
+
+.fv-badge-danger {
+  background-color: rgba($fv-primary, 0.12);
+  color: $fv-danger-light;
+}
+
+.fv-badge-info {
+  background-color: rgba($fv-info, 0.12);
+  color: $fv-info-light;
+}
+
+.fv-badge-muted {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: $fv-muted-fg;
+}
+
+.fv-badge-genre {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: $fv-muted-fg;
+  font-size: $font-size-12;
+  font-weight: 500;
+  border-radius: $radius-xs;
+  padding: 3px 6px;
+}
+
+.fv-badge-runtime {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 5px;
+}
+
+.fv-badge-premiere {
+  background: linear-gradient(135deg, $fv-warning-dark 0%, $fv-warning 100%);
+  color: $fv-white;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: $fv-font-display;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  width: 100%;
+  text-align: center;
+}
+
+// Age badges by view variant
+.fv-age-badge-poster-home {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: $fv-white;
+
+  &.age-all {
+    background-color: $fv-success;
+  }
+  &.age-restricted {
+    background-color: $fv-primary;
+  }
+}
+
+.fv-age-badge-poster-filmer {
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: $fv-white;
+
+  &.age-all {
+    background-color: $fv-success;
+  }
+  &.age-15 {
+    background-color: $fv-primary;
+  }
+  &.age-mid {
+    background-color: $fv-warning;
+    color: $fv-white;
+  }
+}
+
+.fv-age-badge-admin {
+  padding: 2px 8px;
+  border-radius: $fv-radius-pill;
+  font-size: 12px;
+  font-weight: 700;
+
+  &.age-all {
+    background-color: rgba($fv-success, 0.15);
+    color: $fv-success;
+  }
+  &.age-restricted {
+    background-color: rgba($fv-primary, 0.12);
+    color: $fv-danger-light;
+  }
+}
+
+// Status Badges
+.fv-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: $fv-radius-pill;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+
+  &.status-paid,
+  &.status-active,
+  &.status-member {
+    background-color: rgba($fv-success, 0.15);
+    color: $fv-success;
+  }
+
+  &.status-pending,
+  &.status-guest-member {
+    background-color: rgba($fv-warning, 0.15);
+    color: $fv-warning;
+  }
+
+  &.status-cancelled {
+    background-color: rgba(153, 27, 27, 0.2);
+    color: $fv-danger-light;
+  }
+
+  &.status-verified {
+    background-color: rgba($fv-success, 0.15);
+    color: $fv-success;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}
+
+// Auditorium Badges
+.fv-auditorium-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: $radius-md;
+  font-size: 12px;
+  font-weight: 600;
+
+  &.auditorium-1 {
+    background-color: rgba($fv-primary, 0.12);
+    color: $fv-danger-light;
+  }
+
+  &.auditorium-2 {
+    background-color: rgba($fv-info, 0.12);
+    color: $fv-info-light;
+  }
+}
+
+// Star Rating Badge
+.fv-star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+
+  .star-icon {
+    color: $fv-warning;
+    font-size: 13px;
+  }
+
+  .rating-score {
+    font-family: $fv-font-mono;
+    font-weight: 600;
+    color: $fv-warning;
+  }
+
+  .rating-source {
+    font-size: 12px;
+    color: $fv-muted-fg;
+  }
+}

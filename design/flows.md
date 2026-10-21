@@ -42,9 +42,9 @@ flowchart LR
 
 ### 6.3 Admin-flöden
 
-1. **Åtkomst till Admin (`AdminScreen.tsx`):**
-   - Nåbar via länken `Admin` i sidfoten på `HomeScreen` eller via `Admin Backoffice` i `MobileDrawer`.
-   - Klick på logotypen `FILMVISARNA` eller knappen `Logga ut` (`Ut` på mobil) i admin-toppbaren navigerar tillbaka till `'home'`.
+1. **Åtkomst till Admin (`/admin`):**
+   - Nåbar för inloggade administratörer (`user.role === 'admin'`) via länken `Admin` (`ADMIN`-badge) i `Navbar` eller `Admin Backoffice` i `MobileDrawer`.
+   - Inne i `/admin` används samma `Navbar`, `MobileDrawer` och `BottomNav` som på vanliga hemsidan, men med admin-länkarna (`Bokningar & Kassa`, `Visningsschema`, `Filmarkiv`, `Salonger`) samt `Till biografen` (`/`) och logotypen `FILMVISARNA` för att gå tillbaka till den publika hemsidan. Utloggning sker via avatar-dropdownen (desktop) eller `MobileDrawer` (mobil).
 2. **Flik 1 – Bokningar & Kassa (`BokningarTab.tsx`):**
    - Sökning i realtid på bokningsnummer eller e-post via fältet `Snabb incheckning`.
    - Val av visning i dropdownen `Filtrerar visning`.
@@ -74,7 +74,7 @@ Prototypen har ingen riktig autentisering eller rollstyrning i state, utan prese
 | **Ej inloggad besökare / Gäst** | `Nav.tsx`, `MobileDrawer.tsx`, `SeatSelectionScreen.tsx` | I `Nav` visas knapparna `Logga in` och `Bli Medlem`. I `MobileDrawer` visas avatar `G` med texten `Gäst` och `Inte inloggad`. I `SeatSelectionScreen` bokar gästen genom att ange sin e-postadress (`E-post för bokningsbekräftelse`) utan konto. | `src/components/Nav.tsx`, `src/components/MobileDrawer.tsx`, `src/components/SeatSelectionScreen.tsx` |
 | **Gästmedlem** | `MyBookingsScreen.tsx` | Visar profilkort med initialer `AL`, e-post (`savedBookings[0]?.email` eller `anna.lindqvist@example.se`) och grön badge `Gästmedlem`. Kan se aktuella bokningar, öppna biljettbekräftelsen och öppna avbokningsmodalen. | `src/components/MyBookingsScreen.tsx` |
 | **Aktiv medlem** | `ProfilScreen.tsx` | Visar avatar (`G` eller initialer från för-/efternamn), e-post med badge `VERIFIERAD`, grön status-pill `Aktiv medlem`, statistik (`Bokningar` och `Poäng: 240`), samt flikar för att redigera personuppgifter, byta lösenord och se bokningshistorik. | `src/components/ProfilScreen.tsx` |
-| **Admin / Superadmin** | `AdminScreen.tsx` (samt ingångar i `HomeScreen.tsx` och `MobileDrawer.tsx`) | Visar i toppbaren badge `Backoffice` samt användarbricka med avatar `A`, `Admin: Ameer` och `Superadmin`. Har tillgång till samtliga 4 backoffice-flikar (`Bokningar & Kassa`, `Visningsschema`, `Filmarkiv`, `Salonger`). | `src/components/AdminScreen.tsx`, `src/components/HomeScreen.tsx`, `src/components/MobileDrawer.tsx` |
+| **Admin / Superadmin** | `Navbar.tsx`, `MobileDrawer.tsx`, `BottomNav.tsx` & `/admin/*` | Har tillgång till `Admin`-länken (`ADMIN`-badge) i den gemensamma headern (`Navbar`) och mobilmenyn (`MobileDrawer`). Inne i `/admin` används samma header-design (`64px`, `.app-navbar`, avatar-dropdown, `MobileDrawer` och `BottomNav`) med tillgång till samtliga backoffice-vyer (`Bokningar & Kassa`, `Visningsschema`, `Filmarkiv`, `Salonger`). | `Frontend/src/components/Navbar.tsx`, `Frontend/src/components/MobileDrawer.tsx`, `Frontend/src/components/BottomNav.tsx` |
 
 ---
 
