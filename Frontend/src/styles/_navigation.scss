@@ -1,0 +1,524 @@
+// Navigation styles (Navbar, MobileDrawer, BottomNav — shared across Public and Admin layouts)
+// Uses exclusively $fv-* design tokens from _tokens.scss
+
+.brand-logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  font-family: $fv-font-display;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: $fv-fg;
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background-color: $fv-primary;
+  }
+}
+
+// Shared top navigation (§4.2 & §4.3)
+.app-navbar {
+  height: $fv-nav-height;
+  min-height: $fv-nav-height;
+  z-index: $fv-z-fixed;
+  background-color: $fv-nav-bg;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid $fv-border;
+}
+
+.nav-container {
+  max-width: $fv-container-7xl;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 $fv-space-2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $fv-space-1;
+
+  @media (min-width: $fv-bp-lg) {
+    padding: 0 $fv-space-3;
+    gap: $fv-space-2;
+  }
+
+  @media (min-width: $fv-bp-xl) {
+    padding: 0 $fv-space-4;
+  }
+}
+
+.nav-brand-group,
+.nav-actions-group {
+  flex-shrink: 0;
+}
+
+.nav-links-list {
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.public-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $fv-muted-fg;
+  background-color: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background-color 0.15s ease;
+
+  @media (min-width: $fv-bp-lg) {
+    padding: $fv-space-1 12px;
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: $fv-bp-xl) {
+    padding: $fv-space-1 $fv-space-2;
+  }
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &.active {
+    color: $fv-fg;
+    background-color: rgba($fv-fg, 0.07);
+  }
+}
+
+.nav-admin-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba($fv-primary, 0.15);
+  color: $fv-primary;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.nav-search-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background-color: rgba($fv-white, 0.04);
+  color: $fv-muted-fg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  padding: 0;
+  flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.nav-login-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid rgba($fv-muted-fg, 0.25);
+  color: $fv-muted-fg;
+  background-color: transparent;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+  @media (min-width: $fv-bp-lg) {
+    padding: $fv-space-1 $fv-space-2;
+    font-size: 0.875rem;
+  }
+
+  &:hover {
+    color: $fv-fg;
+    border-color: rgba($fv-muted-fg, 0.4);
+  }
+
+  &.active {
+    color: $fv-fg;
+    background-color: rgba($fv-fg, 0.07);
+  }
+}
+
+.nav-register-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: $fv-radius-md;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background-color: $fv-primary;
+  color: $fv-white;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease;
+
+  @media (min-width: $fv-bp-lg) {
+    padding: $fv-space-1 $fv-space-2;
+    font-size: 0.875rem;
+  }
+
+  &:hover {
+    background-color: $fv-primary-dark;
+    color: $fv-white;
+  }
+}
+
+.nav-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border-radius: $fv-radius-pill;
+  border: 1px solid $fv-border;
+  background-color: rgba($fv-white, 0.04);
+  color: $fv-fg;
+
+  &:hover {
+    background-color: rgba($fv-white, 0.08);
+  }
+}
+
+.nav-avatar-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $fv-primary 0%, $fv-purple 100%);
+  color: $fv-white;
+  font-family: $fv-font-display;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-user-dropdown {
+  min-width: 210px;
+  background-color: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-radius-xl;
+  padding: 6px;
+}
+
+.nav-dropdown-email {
+  font-size: 0.75rem;
+}
+
+.nav-dropdown-logout {
+  color: $fv-danger-light;
+
+  &:hover,
+  &:focus {
+    color: $fv-danger-light;
+    background-color: rgba($fv-primary, 0.12);
+  }
+}
+
+.nav-mobile-profile-btn {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: $fv-radius-pill;
+  background-color: rgba($fv-white, 0.08);
+  color: $fv-muted-fg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 1rem;
+
+  &:hover {
+    color: $fv-fg;
+  }
+}
+
+.nav-hamburger-btn {
+  padding: $fv-space-1;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  color: $fv-muted-fg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+
+  &:hover {
+    color: $fv-fg;
+    background-color: rgba($fv-white, 0.06);
+  }
+}
+
+// Mobile side drawer (§4.5)
+.offcanvas.mobile-drawer {
+  width: 80vw;
+  max-width: 320px;
+  background-color: $fv-drawer-bg;
+  color: $fv-fg;
+  border-left: 1px solid $fv-border;
+  z-index: $fv-z-drawer;
+}
+
+.offcanvas-backdrop {
+  z-index: $fv-z-drawer - 1;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.mobile-drawer-header {
+  padding: 20px 20px $fv-space-2;
+  border-bottom: 1px solid rgba($fv-muted-fg, 0.1);
+}
+
+.drawer-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background-color: rgba($fv-white, 0.06);
+  color: $fv-muted-fg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+
+  &:hover {
+    color: $fv-fg;
+    background-color: rgba($fv-white, 0.1);
+  }
+}
+
+.drawer-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $fv-font-display;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $fv-white;
+}
+
+.drawer-avatar-guest {
+  background: linear-gradient(135deg, $fv-primary 0%, $fv-primary-dark 100%);
+}
+
+.drawer-avatar-user {
+  background: linear-gradient(135deg, $fv-primary 0%, $fv-purple 100%);
+}
+
+.drawer-user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $fv-fg;
+}
+
+.drawer-user-status {
+  font-size: 0.75rem;
+  color: $fv-muted-fg;
+}
+
+.drawer-nav {
+  padding: 12px;
+}
+
+.drawer-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: $fv-radius-md;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: $fv-muted-fg;
+  background-color: transparent;
+  border-left: 2px solid transparent;
+  text-decoration: none;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: $fv-fg;
+    background-color: rgba($fv-white, 0.04);
+  }
+
+  &.active {
+    background-color: rgba($fv-primary, 0.1);
+    color: $fv-primary;
+    font-weight: 600;
+    border-left-color: $fv-primary;
+  }
+}
+
+.drawer-nav-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.drawer-divider {
+  height: 1px;
+  background-color: rgba($fv-muted-fg, 0.1);
+  margin: 12px 0;
+}
+
+.drawer-footer {
+  padding: $fv-space-2 12px $fv-space-4;
+  border-top: 1px solid rgba($fv-muted-fg, 0.1);
+}
+
+.drawer-login-outline-btn {
+  display: inline-block;
+  padding: 12px;
+  border-radius: $fv-radius-md;
+  background-color: transparent;
+  color: $fv-fg;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid rgba($fv-muted-fg, 0.25);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba($fv-white, 0.06);
+    border-color: rgba($fv-muted-fg, 0.4);
+    color: $fv-fg;
+  }
+}
+
+.drawer-login-btn {
+  display: inline-block;
+  padding: 12px;
+  border-radius: $fv-radius-md;
+  background-color: $fv-primary;
+  color: $fv-white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+
+  &:hover {
+    background-color: $fv-primary-dark;
+    color: $fv-white;
+  }
+}
+
+.drawer-logout-btn {
+  padding: 12px;
+  border-radius: $fv-radius-md;
+  background-color: transparent;
+  border: 1px solid rgba($fv-primary, 0.4);
+  color: $fv-primary;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  &:hover {
+    background-color: rgba($fv-primary, 0.1);
+  }
+}
+
+// Mobile bottom navigation (§4.4)
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: $fv-z-fixed;
+  height: $fv-bottom-nav-height;
+  background-color: $fv-card-bg;
+  border-top: 1px solid rgba($fv-muted-fg, 0.12);
+  box-shadow: $fv-shadow-bottom-nav;
+}
+
+.bottom-nav-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: $fv-muted-fg;
+  text-decoration: none;
+  font-size: 0.625rem;
+  font-weight: 400;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &.active {
+    color: $fv-primary;
+    font-weight: 600;
+  }
+}
+
+.bottom-nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background-color: $fv-primary;
+  border-radius: 0 0 2px 2px;
+}
+
+.bottom-nav-icon {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  line-height: 1.1;
+}
+
+// Layout main & footer spacing for bottom nav (shared across PublicLayout and AdminLayout)
+.public-main {
+  padding-bottom: $fv-bottom-nav-height;
+
+  @media (min-width: $fv-bp-md) {
+    padding-bottom: $fv-space-3;
+  }
+}
+
+.public-footer {
+  margin-bottom: $fv-bottom-nav-height;
+
+  @media (min-width: $fv-bp-md) {
+    margin-bottom: 0;
+  }
+}
