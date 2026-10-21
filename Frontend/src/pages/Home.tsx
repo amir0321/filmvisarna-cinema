@@ -8,7 +8,7 @@ export default function Home() {
           Film är bäst på riktig bio
         </span>
         <h1 className="display-4 fw-bold text-white mb-3">Välkommen till Filmvisarna</h1>
-        <p className="lead text-secondary mx-auto mb-4" style={{ maxWidth: '600px' }}>
+        <p className="lead text-secondary mx-auto mb-4 mw-600">
           Upptäck aktuella filmer, boka dina favoritplatser i våra moderna salonger och njut av Småstads
           bästa bioupplevelse.
         </p>

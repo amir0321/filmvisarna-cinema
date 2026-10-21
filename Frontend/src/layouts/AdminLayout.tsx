@@ -10,11 +10,11 @@ const adminNavLinks = [
 export default function AdminLayout() {
   return (
     <div className="d-flex flex-column min-vh-100 bg-dark text-light">
-      <header className="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-danger border-2 sticky-top shadow-sm">
+      <header className="navbar navbar-expand-lg navbar-dark app-navbar-admin sticky-top">
         <div className="container-fluid px-3 px-md-4">
-          <Link to="/admin" className="navbar-brand fw-bold d-flex align-items-center me-4">
-            <span className="text-danger fw-bolder me-1">FILMVISARNA</span>
-            <span className="badge bg-secondary text-uppercase fw-normal ms-1 fs-6">Backoffice</span>
+          <Link to="/admin" className="navbar-brand d-flex align-items-center gap-2 me-4">
+            <span className="brand-logo brand-logo-admin">Filmvisarna</span>
+            <span className="backoffice-badge d-none d-md-inline-block">Backoffice</span>
           </Link>
 
           <button
@@ -24,7 +24,7 @@ export default function AdminLayout() {
             data-bs-target="#adminNavbar"
             aria-controls="adminNavbar"
             aria-expanded="false"
-            aria-label="Toggle navigation"
+            aria-label="Visa meny"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
@@ -61,7 +61,7 @@ export default function AdminLayout() {
         <Outlet />
       </main>
 
-      <footer className="py-3 border-top border-secondary border-opacity-25 bg-black text-secondary text-center small">
+      <footer className="py-3 border-top border-secondary border-opacity-25 bg-card text-secondary text-center small">
         <p className="mb-0">Filmvisarna Backoffice &bull; Administrationspanel</p>
       </footer>
     </div>

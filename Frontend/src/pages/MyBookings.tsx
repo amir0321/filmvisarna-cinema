@@ -14,11 +14,11 @@ export default function MyBookings() {
       </div>
 
       {!token ? (
-        <div className="card bg-black border-secondary border-opacity-25 p-4 text-center">
+        <div className="card bg-card border-secondary border-opacity-25 p-4 text-center">
           <div className="py-4">
             <i className="bi bi-person-lock text-danger display-4 mb-3 d-block"></i>
             <h4 className="fw-bold">Logga in för att se dina bokningar</h4>
-            <p className="text-secondary mb-4 mx-auto" style={{ maxWidth: '480px' }}>
+            <p className="text-secondary mb-4 mx-auto mw-480">
               Som medlem samlas alla dina bokningar här automatiskt. Har du bokat som gäst hittar du din
               bokningsbekräftelse i ditt e-postmeddelande.
             </p>
@@ -30,7 +30,7 @@ export default function MyBookings() {
           </div>
         </div>
       ) : (
-        <div className="card bg-black border-secondary border-opacity-25 p-4 text-center">
+        <div className="card bg-card border-secondary border-opacity-25 p-4 text-center">
           <p className="text-secondary mb-0">Inga aktiva bokningar hittades.</p>
         </div>
       )}

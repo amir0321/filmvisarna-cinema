@@ -8,7 +8,7 @@ export default function PublicLayout() {
       <main className="flex-grow-1 container-fluid px-3 px-md-5 py-4">
         <Outlet />
       </main>
-      <footer className="py-4 border-top border-secondary border-opacity-25 bg-black text-secondary text-center small">
+      <footer className="py-4 border-top border-secondary border-opacity-25 bg-card text-secondary text-center small">
         <div className="container">
           <p className="mb-1 text-light">Filmvisarna Cinema &bull; Stortorget 12, Småstad</p>
           <p className="mb-0">Betalning sker alltid på plats i kassan vid ankomst.</p>

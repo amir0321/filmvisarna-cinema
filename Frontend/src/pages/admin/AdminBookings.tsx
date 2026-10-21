@@ -8,7 +8,7 @@ export default function AdminBookings() {
         </div>
       </div>
 
-      <div className="card bg-black border-secondary border-opacity-25 p-4 text-center">
+      <div className="card bg-card border-secondary border-opacity-25 p-4 text-center">
         <p className="text-secondary mb-0">Boknings- och kassamodulen är under utveckling.</p>
       </div>
     </div>

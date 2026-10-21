@@ -58,6 +58,113 @@ textarea:focus-visible,
   background-color: $color-surface;
 }
 
+.bg-card {
+  background-color: $fv-card-bg;
+}
+
+.age-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $fv-radius-sm;
+  font-size: $font-size-12;
+  font-weight: 700;
+  color: $fv-white;
+}
+
+.age-badge-all {
+  background-color: $fv-success;
+}
+
+.age-badge-mid {
+  background-color: $fv-warning;
+  color: $fv-bg;
+}
+
+.age-badge-high {
+  background-color: $fv-primary;
+}
+
+.app-navbar {
+  min-height: $fv-nav-height;
+  background-color: $fv-nav-bg;
+  backdrop-filter: $fv-blur-glass;
+  -webkit-backdrop-filter: $fv-blur-glass;
+  border-bottom: 1px solid $fv-border;
+}
+
+.app-navbar-admin {
+  min-height: $fv-admin-nav-height;
+  background-color: $admin-nav-surface-bg;
+  border-bottom: 2px solid $fv-primary;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  font-family: $fv-font-display;
+  font-weight: 700;
+  font-size: $font-size-16;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: $fv-fg;
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    margin-bottom: 6px;
+    border-radius: $radius-circle;
+    background-color: $fv-primary;
+  }
+}
+
+.brand-logo-admin {
+  font-size: $font-size-13;
+  letter-spacing: 0.16em;
+
+  @media (min-width: $fv-bp-md) {
+    font-size: $font-size-14;
+  }
+
+  &::after {
+    width: 5px;
+    height: 5px;
+    margin-bottom: 5px;
+  }
+}
+
+.backoffice-badge {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background-color: rgba($fv-primary, 0.15);
+  color: $fv-primary;
+  font-size: $font-size-10;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.mw-480 {
+  max-width: 480px;
+}
+
+.mw-520 {
+  max-width: 520px;
+}
+
+.mw-600 {
+  max-width: 600px;
+}
+
+.poster-img {
+  height: 320px;
+  object-fit: cover;
+}
+
 .bg-surface-2 {
   background-color: $color-surface-2;
 }

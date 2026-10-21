@@ -8,7 +8,7 @@ export default function AdminScreenings() {
         </div>
       </div>
 
-      <div className="card bg-black border-secondary border-opacity-25 p-4 text-center">
+      <div className="card bg-card border-secondary border-opacity-25 p-4 text-center">
         <p className="text-secondary mb-0">Visningsschemamodulen är under utveckling.</p>
       </div>
     </div>
