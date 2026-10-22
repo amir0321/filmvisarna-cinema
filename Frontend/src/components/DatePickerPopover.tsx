@@ -55,7 +55,7 @@ function buildMonthWeeks(monthStart: string): (string | null)[][] {
 }
 
 // Mount only while open. Uses position: fixed and follows the anchor on scroll/resize,
-// which also lets it escape the horizontally scrolling filter row without being clipped.
+// so it is never clipped by a parent with overflow hidden.
 export default function DatePickerPopover({
   id,
   anchorRef,
@@ -90,7 +90,7 @@ export default function DatePickerPopover({
     }
 
     updatePosition()
-    // Capture phase also catches scrolling inside the filter row, not only the page
+    // Capture phase also catches scrolling inside nested scroll containers, not only the page
     window.addEventListener('scroll', updatePosition, { capture: true, passive: true })
     window.addEventListener('resize', updatePosition)
     return () => {
