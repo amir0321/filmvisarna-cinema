@@ -46,7 +46,7 @@ export default function HeroSection({ movie }: HeroSectionProps) {
             <p className="hero-section__description mb-4">{movie.description}</p>
           )}
 
-          <div className="d-flex flex-column flex-sm-row gap-3">
+          <div className="d-flex flex-wrap gap-3">
             {movie.trailer_url && (
               <button
                 type="button"

@@ -3,23 +3,12 @@
   border-block: 1px solid var(--fv-border-subtle);
 }
 
+// Chips wrap onto new lines on narrow screens, as in the mobile design
 .filter-strip__group {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  // Mobile: one horizontally scrollable row per group instead of wrapping onto many lines
-  overflow-x: auto;
-  padding-block: 0.25rem; // room for the focus ring inside the scroll area
-  padding-inline: 0.125rem;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  @media (min-width: 768px) {
-    overflow-x: visible;
-  }
 }
 
 .filter-strip__label {
