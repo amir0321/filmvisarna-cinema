@@ -1,0 +1,49 @@
+// ============================================================================
+// Filmvisarna – Skeleton Shimmer (_skeleton.scss)
+// Follows design/tokens.md and design/components.md
+// ============================================================================
+
+@keyframes fv-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.fv-skeleton {
+  background: linear-gradient(90deg, #161F30 0%, #1E2D47 50%, #161F30 100%);
+  background-size: 200% 100%;
+  animation: fv-shimmer 1.6s infinite ease-in-out;
+  border-radius: $radius-sm;
+
+  &.variant-text {
+    height: 14px;
+    width: 100%;
+    margin-bottom: 8px;
+    border-radius: $radius-xs;
+  }
+
+  &.variant-rect {
+    width: 100%;
+    height: 100%;
+  }
+
+  &.variant-circle {
+    border-radius: 50%;
+    aspect-ratio: 1;
+  }
+
+  &.variant-pill {
+    border-radius: $radius-pill;
+    height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fv-skeleton {
+    animation: none;
+    background: #161F30;
+  }
+}

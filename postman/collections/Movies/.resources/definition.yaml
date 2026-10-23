@@ -1,7 +1,5 @@
 $kind: collection
 name: Movies
 variables:
-  - key: json_web_token_0ybl
-    secret: true
-  - key: bearer_token_0sxf
+  - key: admin_token
     secret: true

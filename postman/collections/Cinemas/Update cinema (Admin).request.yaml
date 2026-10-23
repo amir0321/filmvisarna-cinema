@@ -1,0 +1,21 @@
+$kind: http-request
+name: Update cinema (Admin)
+url: http://localhost:3000/api/cinemas/1
+method: PUT
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "name": "Stora Salongen VIP",
+      "format": "4K Laser IMAX",
+      "tech": "Dolby Atmos 64-kanaler",
+      "screen_size": "22x10m",
+      "opened_year": 2024,
+      "wheelchairSeats": [
+        { "row": "A", "number": 1 },
+        { "row": "A", "number": 2 }
+      ]
+    }
+order: 4000

@@ -1,7 +1,8 @@
 $kind: collection
 name: Auth
 variables:
-  - key: bearer_token_14y0
+  - key: user_token
     secret: true
-  - key: json_web_token_1bay
+  - key: admin_token
     secret: true
+

@@ -11,6 +11,6 @@ export class HttpError extends Error {
 export function parseId(value: unknown, name = "id"): number {
   const n = Number(value);
   if (!Number.isInteger(n) || n <= 0)
-    throw new HttpError(400, `Invalid ${name}`);
+    throw new HttpError(400, `Ogiltigt ${name}`);
   return n;
 }

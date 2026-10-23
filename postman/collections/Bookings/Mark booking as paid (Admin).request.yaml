@@ -1,0 +1,7 @@
+$kind: http-request
+name: Mark booking as paid (Admin)
+url: http://localhost:3000/api/bookings/1/pay
+method: PATCH
+headers:
+  Authorization: Bearer {{admin_token}}
+order: 3300

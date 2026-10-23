@@ -1,37 +1,49 @@
-import { pool } from "../db.js";
 import { config } from "../config.js";
+import { pool } from "../db.js";
 import { HttpError } from "../utils/httpErorr.js";
 import { generateUniqueBookingRef } from "../utils/bookingRef.js";
-import { sendBookingConfirmation } from "./emailService.js";
+import { sendConfirmationForBooking } from "./bookingNotification.service.js";
+import { generateCancellationJwt } from "./cancellations.service.js";
 
-export interface TicketInput {
-  seatId: number;
-  priceGroupId: number;
-}
+import {
+  BookingFilters,
+  CreateBookingInput,
+  CreateBookingResult,
+  ItemInput,
+  TicketInput,
+  UpdateBookingInput,
+} from "../interfaces/types.js";
 
-export interface ItemInput {
-  itemId: number;
-  quantity: number;
-}
+// Re-export cancellation services and types for backward compatibility
+export {
+  cancelBooking,
+  cancelBookingByToken,
+  getBookingCancelPreview,
+  generateCancellationJwt,
+  verifyCancellationJwt,
+  validateCancellationDeadline,
+} from "./cancellations.service.js";
 
-export interface CreateBookingInput {
-  screeningId: number;
-  email: string;
-  guestName?: string | null;
-  tickets: TicketInput[];
-  items?: ItemInput[];
-}
-
-export interface CreateBookingResult {
-  bookingRef: string;
-  totalPrice: number;
-}
+export type {
+  BookingFilters,
+  TicketInput,
+  ItemInput,
+  CreateBookingInput,
+  CreateBookingResult,
+  UpdateBookingInput,
+};
 
 // SQL för att hämta kompletta bokningsdetaljer med film, salong, biljetter och kioskvaror
 const BOOKING_DETAILS_QUERY = `
   SELECT b.id, b.booking_reference AS "reference", b.status,
+         b.is_paid AS "isPaid",
+         b.paid_at AS "paidAt",
+         b.is_checked_in AS "isCheckedIn",
+         b.checked_in_at AS "checkedInAt",
          b.created_at AS "createdAt",
          b.guest_name AS "guestName", b.guest_email AS "guestEmail",
+         COALESCE(b.guest_email, u.email) AS "email",
+         COALESCE(b.guest_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '')) AS "customerName",
          json_build_object('id', st.id, 'startsAt', st.starts_at, 'endsAt', st.ends_at,
                            'movieTitle', m.title, 'cinema', c.name) AS screening,
          COALESCE((SELECT json_agg(json_build_object(
@@ -53,6 +65,7 @@ const BOOKING_DETAILS_QUERY = `
          bt.item_total   AS "itemTotal",
          bt.total_price  AS "totalPrice"
   FROM booking b
+  LEFT JOIN app_user u ON u.id = b.user_id
   JOIN screening_times st ON st.id = b.screening_id
   JOIN movie m   ON m.id = st.movie_id
   JOIN cinema c  ON c.id = st.cinema_id
@@ -70,89 +83,112 @@ function isSeatTaken(err: unknown): boolean {
   );
 }
 
-async function sendConfirmationFor(
-  bookingId: number,
-  bookingRef: string,
-  email: string,
-): Promise<void> {
-  const info = await pool.query(
-    `SELECT m.title, m.poster_url, c.name AS cinema, st.starts_at
-     FROM booking b
-     JOIN screening st ON st.id = b.screening_id
-     JOIN movie m ON m.id = st.movie_id
-     JOIN cinema c ON c.id = st.cinema_id
-     WHERE b.id = $1`,
-    [bookingId],
-  );
-  if (info.rowCount === 0) return;
-
-  const seats = await pool.query(
-    `SELECT s.row_label, s.seat_number
-     FROM ticket t JOIN seat s ON s.id = t.seat_id
-     WHERE t.booking_id = $1
-     ORDER BY s.row_label, s.seat_number`,
-    [bookingId],
-  );
-  const tickets = await pool.query(
-    `SELECT pg.name, pg.price, count(*)::int AS quantity
-     FROM ticket t JOIN price_group pg ON pg.id = t.price_group_id
-     WHERE t.booking_id = $1
-     GROUP BY pg.name, pg.price`,
-    [bookingId],
-  );
-  const kiosk = await pool.query(
-    `SELECT mi.name, mi.price, bi.quantity
-     FROM booking_item bi JOIN menu_item mi ON mi.id = bi.menu_item_id
-     WHERE bi.booking_id = $1`,
-    [bookingId],
-  );
-
-  const row = info.rows[0];
-  const startsAt = new Date(row.starts_at);
-  const timeZone = config.timezone || "Europe/Stockholm";
-
-  await sendBookingConfirmation({
-    email,
-    bookingRef,
-    movieTitle: row.title,
-    screeningDate: startsAt.toLocaleDateString("sv-SE", {
-      dateStyle: "long",
-      timeZone,
-    }),
-    screeningTime: startsAt.toLocaleTimeString("sv-SE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone,
-    }),
-    cinemaName: row.cinema,
-    seats: seats.rows.map(
-      (s: { row_label: string; seat_number: number }) =>
-        `${s.row_label}${s.seat_number}`,
-    ),
-    tickets: tickets.rows.map(
-      (t: { name: string; price: string | number; quantity: number }) => ({
-        type: t.name,
-        quantity: t.quantity,
-        price: Number(t.price),
-      }),
-    ),
-    kioskItems: kiosk.rows.map(
-      (k: { name: string; price: string | number; quantity: number }) => ({
-        name: k.name,
-        quantity: k.quantity,
-        price: Number(k.price),
-      }),
-    ),
-    posterUrl: row.poster_url ?? undefined,
-  });
-}
-
 async function fetchBookings(where: string, params: unknown[]) {
   const { rows } = await pool.query(
     `${BOOKING_DETAILS_QUERY} WHERE ${where} ORDER BY st.starts_at DESC`,
     params,
   );
   return rows;
+}
+
+export async function listAllBookings(filters: BookingFilters = {}) {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters.screeningId !== undefined) {
+    params.push(filters.screeningId);
+    conditions.push(`b.screening_id = $${params.length}`);
+  }
+
+  if (filters.status) {
+    params.push(filters.status);
+    conditions.push(`b.status = $${params.length}`);
+  }
+
+  if (filters.isPaid !== undefined) {
+    params.push(filters.isPaid);
+    conditions.push(`b.is_paid = $${params.length}`);
+  }
+
+  if (filters.from) {
+    params.push(filters.from);
+    conditions.push(`(st.starts_at AT TIME ZONE '${config.timezone}')::date >= $${params.length}::date`);
+  }
+
+  if (filters.to) {
+    params.push(filters.to);
+    conditions.push(`(st.starts_at AT TIME ZONE '${config.timezone}')::date <= $${params.length}::date`);
+  }
+
+  if (filters.search) {
+    params.push(`%${filters.search.trim()}%`);
+    const p = `$${params.length}`;
+    conditions.push(`(
+      b.booking_reference ILIKE ${p}
+      OR b.guest_name ILIKE ${p}
+      OR b.guest_email ILIKE ${p}
+      OR u.email ILIKE ${p}
+      OR u.first_name ILIKE ${p}
+      OR u.last_name ILIKE ${p}
+      OR m.title ILIKE ${p}
+    )`);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const { rows } = await pool.query(
+    `${BOOKING_DETAILS_QUERY} ${whereClause} ORDER BY b.created_at DESC`,
+    params,
+  );
+  return rows;
+}
+
+export async function updateBookingStatus(
+  bookingId: number,
+  input: UpdateBookingInput,
+) {
+  const { isPaid, isCheckedIn } = input;
+  if (isPaid === undefined && isCheckedIn === undefined) {
+    throw new HttpError(400, "Minst ett fält (isPaid eller isCheckedIn) måste anges.");
+  }
+
+  const existing = await pool.query(
+    "SELECT id, status, is_paid, is_checked_in FROM booking WHERE id = $1",
+    [bookingId],
+  );
+  if (existing.rowCount === 0) {
+    throw new HttpError(404, "Bokningen hittades inte.");
+  }
+
+  const updates: string[] = [];
+  const params: unknown[] = [bookingId];
+
+  if (isPaid !== undefined) {
+    params.push(isPaid);
+    updates.push(`is_paid = $${params.length}`);
+    if (isPaid) {
+      updates.push(`paid_at = now()`);
+    } else {
+      updates.push(`paid_at = null`);
+    }
+  }
+
+  if (isCheckedIn !== undefined) {
+    params.push(isCheckedIn);
+    updates.push(`is_checked_in = $${params.length}`);
+    if (isCheckedIn) {
+      updates.push(`checked_in_at = now()`);
+    } else {
+      updates.push(`checked_in_at = null`);
+    }
+  }
+
+  await pool.query(
+    `UPDATE booking SET ${updates.join(", ")} WHERE id = $1`,
+    params,
+  );
+
+  const updatedRows = await fetchBookings("b.id = $1", [bookingId]);
+  return updatedRows[0];
 }
 
 export async function getUserBookings(userId: number) {
@@ -164,7 +200,7 @@ export async function getBookingByReference(reference: string) {
     reference,
   ]);
   if (rows.length === 0) {
-    throw new HttpError(404, "No booking found with that reference");
+    throw new HttpError(404, "Ingen bokning hittades med den referensen.");
   }
   return rows[0];
 }
@@ -275,13 +311,22 @@ export async function createBooking(
       }
     }
 
+    const cancelToken = generateCancellationJwt(bookingRef, email);
+
     await client.query("COMMIT");
 
-    sendConfirmationFor(bookingId, bookingRef, email).catch((err) =>
+    sendConfirmationForBooking(bookingId, bookingRef, email).catch((err) =>
       console.error("Confirmation email failed:", err),
     );
 
-    return { bookingRef, totalPrice: total };
+    const created = await fetchBookings("b.id = $1", [bookingId]);
+
+    return {
+      bookingRef,
+      totalPrice: total,
+      booking: created[0] ?? null,
+      cancelToken,
+    };
   } catch (err) {
     await client.query("ROLLBACK");
 

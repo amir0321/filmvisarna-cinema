@@ -1,0 +1,14 @@
+// ============================================================================
+// Filmvisarna – Reusable Component Styles Index (_components.scss)
+// Follows design/tokens.md and design/components.md
+// Modular structure separating each component domain into its own stylesheet
+// ============================================================================
+
+@import './components/badges';
+@import './components/pills';
+@import './components/tabs';
+@import './components/modals';
+@import './components/feedback';
+@import './components/skeleton';
+@import './components/empty-state';
+@import './components/poster';

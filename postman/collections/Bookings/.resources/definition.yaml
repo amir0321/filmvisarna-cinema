@@ -5,3 +5,5 @@ variables:
     secret: true
   - key: admin_token
     secret: true
+  - key: cancellation_token
+    secret: true

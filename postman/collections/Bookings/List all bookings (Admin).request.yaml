@@ -1,0 +1,7 @@
+$kind: http-request
+name: List all bookings (Admin)
+url: http://localhost:3000/api/bookings?screeningId=&status=confirmed&isPaid=&search=
+method: GET
+headers:
+  Authorization: Bearer {{admin_token}}
+order: 3100

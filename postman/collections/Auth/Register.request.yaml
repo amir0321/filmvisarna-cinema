@@ -1,13 +1,23 @@
 $kind: http-request
+name: Register
 url: http://localhost:3000/api/auth/register
 method: POST
 body:
   type: json
   content: |-
     {
-      "email": "test@test.com",
-      "password": "Test_123",
-      "firstName": "Test",
-      "lastName": "Test2"
+      "email": "ny.medlem@filmvisarna.se",
+      "password": "Password123!",
+      "firstName": "Ny",
+      "lastName": "Medlem"
     }
 order: 1791983102483
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const res = pm.response.json();
+      if (res && res.token) {
+        pm.globals.set('user_token', res.token);
+        console.log('user_token har sparats automatiskt!');
+      }

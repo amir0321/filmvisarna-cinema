@@ -1,0 +1,13 @@
+$kind: http-request
+name: Update screening (Admin)
+url: http://localhost:3000/api/screenings/1
+method: PUT
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "startsAt": "2026-10-25T19:00:00Z"
+    }
+order: 5000

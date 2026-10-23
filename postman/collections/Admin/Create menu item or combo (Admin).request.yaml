@@ -1,0 +1,27 @@
+$kind: http-request
+name: Create menu item or combo (Admin)
+url: http://localhost:3000/api/admin/menu-items
+method: POST
+headers:
+  Authorization: Bearer {{admin_token}}
+body:
+  type: json
+  content: |
+    {
+      "name": "Superkombon",
+      "description": "Stora popcorn, 2 läsk och valfri choklad",
+      "category": "food",
+      "price": 149,
+      "isCombo": true,
+      "contents": [
+        {
+          "menuItemId": 1,
+          "quantity": 1
+        },
+        {
+          "menuItemId": 2,
+          "quantity": 2
+        }
+      ]
+    }
+order: 2100

@@ -24,9 +24,11 @@ async function getTransporter(): Promise<Transporter> {
     process.env.EMAIL_USER &&
     process.env.EMAIL_PASS
   ) {
+    const port = Number(process.env.EMAIL_PORT);
     cachedTransporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT),
+      port,
+      secure: port === 465,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -57,8 +59,9 @@ export async function sendBookingConfirmation(bookingData: EmailPayload) {
   const htmlContent = generateBookingConfirmationHtml(bookingData);
   const textContent = generateBookingConfirmationText(bookingData);
 
+  const senderEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@filmvisarna.se';
   const mailOptions = {
-    from: 'Filmvisarna Cinema',
+    from: `"Filmvisarna Cinema" <${senderEmail}>`,
     to: bookingData.email,
     subject: `Booking Confirmation - ${bookingData.movieTitle} (${bookingData.bookingRef})`,
     text: textContent,

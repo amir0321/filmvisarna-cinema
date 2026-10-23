@@ -3,7 +3,7 @@ name: Create Movie (Admin Token)
 url: http://localhost:3000/api/movies
 method: POST
 headers:
-  Authorization: Bearer {{json_web_token_0ybl}}
+  Authorization: Bearer {{admin_token}}
 body:
   type: json
   content: |
@@ -14,6 +14,10 @@ body:
       "age_rating": "15",
       "poster_url": "https://example.com/poster.jpg",
       "release_date": "2025-01-15",
-      "genres": ["Action", "Thriller"]
+      "genres": ["Action", "Thriller"],
+      "director": "Christopher Nolan",
+      "imdb_rating": 8.7,
+      "trailer_url": "https://www.youtube.com/watch?v=example",
+      "landscape_image_url": "https://example.com/landscape.jpg"
     }
 order: 3978143548118106

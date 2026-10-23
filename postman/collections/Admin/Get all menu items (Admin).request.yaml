@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get all menu items (Admin)
+url: http://localhost:3000/api/admin/menu-items
+method: GET
+headers:
+  Authorization: Bearer {{admin_token}}
+order: 2000

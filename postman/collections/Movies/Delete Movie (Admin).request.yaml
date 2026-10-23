@@ -1,0 +1,7 @@
+$kind: http-request
+name: Delete Movie (Admin)
+url: http://localhost:3000/api/movies/1
+method: DELETE
+headers:
+  Authorization: Bearer {{admin_token}}
+order: 5000

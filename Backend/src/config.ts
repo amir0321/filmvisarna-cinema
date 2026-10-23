@@ -8,6 +8,7 @@ const schema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   TIMEZONE: z.string().default("Europe/Stockholm"),
   SCREENING_BUFFER_MINUTES: z.coerce.number().int().min(0).default(20),
+  CANCELLATION_DEADLINE_HOURS: z.coerce.number().int().min(0).default(2),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -27,4 +28,5 @@ export const config = {
   corsOrigin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
   timezone: env.TIMEZONE,
   screeningBufferMinutes: env.SCREENING_BUFFER_MINUTES,
+  cancellationDeadlineHours: env.CANCELLATION_DEADLINE_HOURS,
 };
