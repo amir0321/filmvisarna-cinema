@@ -1,0 +1,25 @@
+.age-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--fv-radius-xs);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  // Dark text, white is too low contrast on green and amber
+  &--success {
+    background-color: var(--fv-status-success);
+    color: var(--fv-text-on-light);
+  }
+
+  &--warning {
+    background-color: var(--fv-status-warning);
+    color: var(--fv-text-on-light);
+  }
+
+  &--danger {
+    background-color: var(--fv-brand-primary);
+    color: var(--fv-text-heading);
+  }
+}

@@ -1,0 +1,99 @@
+.date-picker-popover {
+  position: fixed;
+  // Below the sticky header
+  z-index: 1010;
+  width: min(21rem, calc(100vw - 16px));
+  padding: 0.75rem;
+  border: 1px solid var(--fv-border-default);
+  border-radius: var(--fv-radius-xl);
+  background-color: var(--fv-bg-surface);
+  box-shadow: var(--fv-shadow-overlay);
+  color: var(--fv-text-strong);
+}
+
+.date-picker-popover__month {
+  color: var(--fv-text-heading);
+  font-family: var(--bs-font-sans-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.date-picker-popover__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fv-touch-target);
+  height: var(--fv-touch-target);
+  border: 0;
+  border-radius: var(--fv-radius-lg);
+  background: transparent;
+  color: var(--fv-text-heading);
+
+  &:hover:not(:disabled) {
+    background-color: var(--fv-bg-secondary);
+  }
+
+  &:disabled {
+    color: var(--fv-text-subtle);
+    opacity: 0.5;
+  }
+}
+
+.date-picker-popover__grid {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+
+  th {
+    padding-bottom: 0.35rem;
+    color: var(--fv-text-subtle);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 0.1rem;
+  }
+}
+
+.date-picker-popover__day {
+  width: 100%;
+  max-width: var(--fv-touch-target);
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: var(--fv-radius-pill);
+  background: transparent;
+  color: var(--fv-text-strong);
+  font-size: 0.875rem;
+
+  &:hover:not(:disabled) {
+    background-color: var(--fv-bg-secondary);
+  }
+
+  &:disabled {
+    color: var(--fv-text-subtle);
+    opacity: 0.45;
+  }
+
+  &--today {
+    border-color: var(--fv-border-strong);
+    font-weight: 600;
+  }
+
+  &--selected,
+  &--selected:hover:not(:disabled) {
+    border-color: var(--fv-brand-primary);
+    background-color: var(--fv-brand-primary);
+    color: var(--fv-text-heading);
+    font-weight: 700;
+  }
+}
+
+.date-picker-popover__nav,
+.date-picker-popover__day {
+  &:focus-visible {
+    outline: 2px solid var(--fv-focus-ring);
+    outline-offset: 2px;
+  }
+}

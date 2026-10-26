@@ -8,7 +8,7 @@ export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<string>('active')
 
   return (
-    <div className="py-4" style={{ maxWidth: '768px', margin: '0 auto' }}>
+    <div className="container-fluid px-3 px-md-5 py-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h2 fw-bold mb-1">Mina bokningar</h1>

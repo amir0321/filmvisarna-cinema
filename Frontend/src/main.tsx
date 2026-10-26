@@ -6,6 +6,7 @@ import { router } from './routes.tsx'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import './index.scss'
+import { router } from './routes.tsx'
 
 
 createRoot(document.getElementById('root')!).render(

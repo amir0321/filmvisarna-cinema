@@ -1,0 +1,29 @@
+.trailer-modal {
+  width: min(960px, calc(100% - 2rem));
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+
+.trailer-modal__content {
+  padding: 1rem;
+  border: 1px solid var(--fv-border-default);
+  border-radius: var(--fv-radius-xl);
+  background: var(--fv-bg-surface);
+  box-shadow: var(--fv-shadow-overlay);
+
+  h2 {
+    color: var(--fv-text-heading);
+  }
+
+  .btn-close:focus-visible {
+    outline: 2px solid var(--fv-focus-ring);
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
