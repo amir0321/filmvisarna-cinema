@@ -7,7 +7,6 @@ import {
   todayIsoDate,
 } from "../../utils/date";
 import DatePickerPopover from "../DatePickerPopover";
-import "../../styles/components/home/FilterStrip.scss";
 
 export type DateFilter =
   | { kind: "preset"; when: ScreeningWhen }

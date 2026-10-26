@@ -1,6 +1,6 @@
 .filter-strip {
-  background-color: var(--fv-bg-muted);
-  border-block: 1px solid var(--fv-border-subtle);
+  background-color: $color-surface-muted;
+  border-block: 1px solid $border-default;
 }
 
 .filter-strip__group {
@@ -13,7 +13,7 @@
 .filter-strip__label {
   flex-shrink: 0;
   margin-right: 0.25rem;
-  color: var(--fv-text-subtle);
+  color: $text-muted;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -23,7 +23,7 @@
 .filter-strip__divider {
   align-self: stretch;
   width: 1px;
-  background-color: var(--fv-border-subtle);
+  background-color: $border-default;
 }
 
 .filter-pill {
@@ -31,13 +31,13 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  min-width: var(--fv-touch-target);
-  min-height: var(--fv-touch-target);
+  min-width: 44px;
+  min-height: 44px;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--fv-border-strong);
-  border-radius: var(--fv-radius-lg);
-  background-color: var(--fv-bg-chip);
-  color: var(--fv-text-heading);
+  border: 1px solid $white-overlay-25;
+  border-radius: $radius-lg;
+  background-color: $color-surface-chip;
+  color: $text-heading;
   font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
@@ -46,17 +46,12 @@
     border-color 0.15s ease;
 
   &:hover {
-    background-color: var(--fv-bg-chip-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
+    background-color: $color-surface-chip-hover;
   }
 
   &--active,
   &--active:hover {
-    border-color: var(--fv-brand-primary);
-    background-color: var(--fv-brand-primary);
+    border-color: $color-primary;
+    background-color: $color-primary;
   }
 }

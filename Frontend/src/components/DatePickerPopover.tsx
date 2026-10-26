@@ -10,7 +10,6 @@ import {
   todayIsoDate,
   weekdayIndex,
 } from '../utils/date'
-import '../styles/components/DatePickerPopover.scss'
 
 interface DatePickerPopoverProps {
   id: string

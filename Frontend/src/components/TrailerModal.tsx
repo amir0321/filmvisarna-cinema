@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { getYouTubeEmbedUrl } from "../utils/movie";
-import "../styles/components/TrailerModal.scss";
 
 interface TrailerModalProps {
   isOpen: boolean;

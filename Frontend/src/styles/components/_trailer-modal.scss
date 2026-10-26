@@ -12,18 +12,12 @@
 
 .trailer-modal__content {
   padding: 1rem;
-  border: 1px solid var(--fv-border-default);
-  border-radius: var(--fv-radius-xl);
-  background: var(--fv-bg-surface);
-  box-shadow: var(--fv-shadow-overlay);
+  border: 1px solid $border-strong;
+  border-radius: $radius-modal;
+  background: $color-surface;
+  box-shadow: $shadow-card-lg;
 
   h2 {
-    color: var(--fv-text-heading);
-  }
-
-  .btn-close:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
-    box-shadow: none;
+    color: $text-heading;
   }
 }

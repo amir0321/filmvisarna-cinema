@@ -1,6 +1,5 @@
 import type { Movie, Screening } from '../../types'
 import MovieCard from './MovieCard'
-import '../../styles/components/home/RepertoireSection.scss'
 
 interface RepertoireSectionProps {
   heading: string

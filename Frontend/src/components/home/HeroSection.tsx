@@ -4,7 +4,6 @@ import type { Movie } from "../../types";
 import { formatDuration, formatDurationLong } from "../../utils/movie";
 import AgeBadge from "./AgeBadge";
 import TrailerModal from "../TrailerModal";
-import "../../styles/components/home/HeroSection.scss";
 
 interface HeroSectionProps {
   movie: Movie;

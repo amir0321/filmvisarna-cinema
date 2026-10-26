@@ -1,5 +1,4 @@
 import { formatAgeRating, getAgeRatingVariant } from '../../utils/movie'
-import '../../styles/components/home/AgeBadge.scss'
 
 interface AgeBadgeProps {
   ageRating: string | null

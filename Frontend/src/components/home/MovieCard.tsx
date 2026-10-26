@@ -3,7 +3,6 @@ import type { Movie, Screening } from '../../types'
 import { formatShowtimeDayLabel, formatTime, toCinemaIsoDate } from '../../utils/date'
 import { formatDuration, formatDurationLong } from '../../utils/movie'
 import AgeBadge from './AgeBadge'
-import '../../styles/components/home/MovieCard.scss'
 
 interface MovieCardProps {
   movie: Movie

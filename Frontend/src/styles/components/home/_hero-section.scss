@@ -1,15 +1,10 @@
-// Page background colour at the given opacity
-@function canvas-fade($percent) {
-  @return color-mix(in srgb, var(--fv-bg-canvas) $percent, transparent);
-}
-
 .hero-section {
   position: relative;
   display: flex;
   align-items: flex-end;
   min-height: max(520px, min(85vh, 720px));
   overflow: hidden;
-  background-color: var(--fv-bg-canvas);
+  background-color: $color-bg;
   isolation: isolate;
 
   // Mobile: dark gradient from the bottom
@@ -18,7 +13,7 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(to top, var(--fv-bg-canvas) 0%, canvas-fade(85%) 45%, canvas-fade(30%) 100%);
+    background: linear-gradient(to top, $color-bg 0%, rgba($color-bg, 0.85) 45%, rgba($color-bg, 0.3) 100%);
   }
 
   // Desktop: dark gradient from the left, behind the text
@@ -27,13 +22,13 @@
 
     &::after {
       background:
-        linear-gradient(to top, var(--fv-bg-canvas) 0%, transparent 25%),
+        linear-gradient(to top, $color-bg 0%, transparent 25%),
         linear-gradient(
           to right,
-          canvas-fade(95%) 0%,
-          canvas-fade(75%) 35%,
-          canvas-fade(25%) 70%,
-          canvas-fade(50%) 100%
+          rgba($color-bg, 0.95) 0%,
+          rgba($color-bg, 0.75) 35%,
+          rgba($color-bg, 0.25) 70%,
+          rgba($color-bg, 0.5) 100%
         );
     }
   }
@@ -64,19 +59,19 @@
 .hero-section__genre {
   padding: 0.4em 0.9em;
   background-color: rgba(255, 255, 255, 0.12);
-  color: var(--fv-text-heading);
+  color: $text-heading;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .hero-section__duration {
-  color: var(--fv-text-body);
+  color: $text-secondary;
   font-size: 0.875rem;
 }
 
 .hero-section__title {
-  color: var(--fv-text-heading);
+  color: $text-heading;
   font-size: clamp(2.25rem, 5vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
@@ -89,7 +84,7 @@
   -webkit-line-clamp: 3;
   line-clamp: 3;
   overflow: hidden;
-  color: var(--fv-text-body);
+  color: $text-secondary;
   line-height: 1.6;
 }
 
@@ -97,40 +92,34 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--fv-touch-target);
+  min-height: 44px;
   padding-inline: 1.5rem;
-  border-radius: var(--fv-radius-lg);
+  border-radius: $radius-lg;
   font-weight: 600;
-
-  &:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
-    box-shadow: none;
-  }
 }
 
 .btn-hero-primary {
-  --bs-btn-color: var(--fv-text-heading);
-  --bs-btn-bg: var(--fv-brand-primary);
-  --bs-btn-border-color: var(--fv-brand-primary);
-  --bs-btn-hover-color: var(--fv-text-heading);
-  --bs-btn-hover-bg: var(--fv-brand-primary-hover);
-  --bs-btn-hover-border-color: var(--fv-brand-primary-hover);
-  --bs-btn-active-color: var(--fv-text-heading);
-  --bs-btn-active-bg: var(--fv-brand-primary-hover);
-  --bs-btn-active-border-color: var(--fv-brand-primary-hover);
+  --bs-btn-color: #{$text-heading};
+  --bs-btn-bg: #{$color-primary};
+  --bs-btn-border-color: #{$color-primary};
+  --bs-btn-hover-color: #{$text-heading};
+  --bs-btn-hover-bg: #{$color-primary-dark};
+  --bs-btn-hover-border-color: #{$color-primary-dark};
+  --bs-btn-active-color: #{$text-heading};
+  --bs-btn-active-bg: #{$color-primary-dark};
+  --bs-btn-active-border-color: #{$color-primary-dark};
   font-weight: 700;
 }
 
 .btn-hero-secondary {
-  --bs-btn-color: var(--fv-text-heading);
-  --bs-btn-bg: var(--fv-bg-secondary);
+  --bs-btn-color: #{$text-heading};
+  --bs-btn-bg: #{$color-surface-2};
   --bs-btn-border-width: 1px;
   --bs-btn-border-color: rgba(255, 255, 255, 0.7);
-  --bs-btn-hover-color: var(--fv-text-heading);
+  --bs-btn-hover-color: #{$text-heading};
   --bs-btn-hover-bg: #28365c;
-  --bs-btn-hover-border-color: var(--fv-text-heading);
-  --bs-btn-active-color: var(--fv-text-heading);
+  --bs-btn-hover-border-color: #{$text-heading};
+  --bs-btn-active-color: #{$text-heading};
   --bs-btn-active-bg: #30406c;
-  --bs-btn-active-border-color: var(--fv-text-heading);
+  --bs-btn-active-border-color: #{$text-heading};
 }

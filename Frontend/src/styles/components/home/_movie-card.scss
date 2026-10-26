@@ -3,17 +3,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--fv-border-default);
-  border-radius: var(--fv-radius-card);
-  background-color: var(--fv-bg-surface);
-  box-shadow: var(--fv-shadow-card);
+  border: 1px solid $border-strong;
+  border-radius: $radius-card;
+  background-color: $color-surface;
+  box-shadow: $shadow-card-md;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: var(--fv-border-strong);
+    border-color: $white-overlay-25;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -34,13 +34,13 @@
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  background-color: var(--fv-bg-canvas);
+  background-color: $color-bg;
 
   &--empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--fv-text-subtle);
+    color: $text-muted;
     font-size: 3rem;
   }
 }
@@ -64,35 +64,29 @@
 }
 
 .movie-card__title-link {
-  color: var(--fv-text-heading);
+  color: $text-heading;
   text-decoration: none;
 
   &:hover {
     text-decoration: underline;
   }
-
-  &:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--fv-radius-xs);
-  }
 }
 
 .movie-card__meta {
-  color: var(--fv-text-subtle);
+  color: $text-muted;
   font-size: 0.8125rem;
 }
 
 .movie-card__genre {
   padding: 0.15rem 0.5rem;
-  border-radius: var(--fv-radius-sm);
-  background-color: var(--fv-bg-chip);
-  color: var(--fv-text-body);
+  border-radius: $radius-sm;
+  background-color: $color-surface-chip;
+  color: $text-secondary;
   font-size: 0.75rem;
 }
 
 .movie-card__day-label {
-  color: var(--fv-text-subtle);
+  color: $text-muted;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -102,12 +96,12 @@
 .showtime-pill {
   display: inline-flex;
   align-items: center;
-  min-height: var(--fv-touch-target);
+  min-height: 44px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--fv-border-strong);
-  border-radius: var(--fv-radius-lg);
-  background-color: var(--fv-bg-chip);
-  color: var(--fv-text-heading);
+  border: 1px solid $white-overlay-25;
+  border-radius: $radius-lg;
+  background-color: $color-surface-chip;
+  color: $text-heading;
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
@@ -118,26 +112,21 @@
 
   &:hover {
     border-color: rgba(255, 255, 255, 0.5);
-    background-color: var(--fv-bg-chip-hover);
-    color: var(--fv-text-heading);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
+    background-color: $color-surface-chip-hover;
+    color: $text-heading;
   }
 
   &--sold-out,
   &--sold-out:hover {
-    border-color: var(--fv-border-subtle);
+    border-color: $border-default;
     background-color: transparent;
-    color: var(--fv-text-subtle);
+    color: $text-muted;
     text-decoration: line-through;
   }
 }
 
 .showtime-pill__seats {
-  color: var(--fv-status-warning);
+  color: $color-warning;
   font-weight: 600;
 }
 

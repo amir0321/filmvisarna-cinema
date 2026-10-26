@@ -5,7 +5,6 @@ import RepertoireSection from '../components/home/RepertoireSection'
 import { useMovies, useScreenings } from '../hooks'
 import type { ScreeningWhen } from '../types'
 import { capitalize, formatDateLong } from '../utils/date'
-import './Home.scss'
 
 const DATE_PRESET_HEADINGS: Record<ScreeningWhen, string> = {
   today: 'Idag',

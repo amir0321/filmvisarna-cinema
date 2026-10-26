@@ -1,19 +1,18 @@
 .date-picker-popover {
   position: fixed;
   // Below the sticky header
-  z-index: 1010;
+  z-index: $fv-z-sticky;
   width: min(21rem, calc(100vw - 16px));
   padding: 0.75rem;
-  border: 1px solid var(--fv-border-default);
-  border-radius: var(--fv-radius-xl);
-  background-color: var(--fv-bg-surface);
-  box-shadow: var(--fv-shadow-overlay);
-  color: var(--fv-text-strong);
+  border: 1px solid $border-strong;
+  border-radius: $radius-modal;
+  background-color: $color-surface;
+  box-shadow: $shadow-card-lg;
+  color: $text-primary;
 }
 
 .date-picker-popover__month {
-  color: var(--fv-text-heading);
-  font-family: var(--bs-font-sans-serif);
+  color: $text-heading;
   font-size: 0.95rem;
   font-weight: 600;
 }
@@ -22,19 +21,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--fv-touch-target);
-  height: var(--fv-touch-target);
+  width: 44px;
+  height: 44px;
   border: 0;
-  border-radius: var(--fv-radius-lg);
+  border-radius: $radius-lg;
   background: transparent;
-  color: var(--fv-text-heading);
+  color: $text-heading;
 
   &:hover:not(:disabled) {
-    background-color: var(--fv-bg-secondary);
+    background-color: $color-surface-2;
   }
 
   &:disabled {
-    color: var(--fv-text-subtle);
+    color: $text-muted;
     opacity: 0.5;
   }
 }
@@ -46,7 +45,7 @@
 
   th {
     padding-bottom: 0.35rem;
-    color: var(--fv-text-subtle);
+    color: $text-muted;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -59,41 +58,37 @@
 
 .date-picker-popover__day {
   width: 100%;
-  max-width: var(--fv-touch-target);
+  max-width: 44px;
   aspect-ratio: 1;
   border: 1px solid transparent;
-  border-radius: var(--fv-radius-pill);
+  border-radius: $radius-full;
   background: transparent;
-  color: var(--fv-text-strong);
+  color: $text-primary;
   font-size: 0.875rem;
 
   &:hover:not(:disabled) {
-    background-color: var(--fv-bg-secondary);
+    background-color: $color-surface-2;
   }
 
   &:disabled {
-    color: var(--fv-text-subtle);
+    color: $text-muted;
     opacity: 0.45;
   }
 
   &--today {
-    border-color: var(--fv-border-strong);
+    border-color: $white-overlay-25;
     font-weight: 600;
   }
 
   &--selected,
   &--selected:hover:not(:disabled) {
-    border-color: var(--fv-brand-primary);
-    background-color: var(--fv-brand-primary);
-    color: var(--fv-text-heading);
+    border-color: $color-primary;
+    background-color: $color-primary;
+    color: $text-heading;
     font-weight: 700;
   }
 }
 
 .date-picker-popover__nav,
 .date-picker-popover__day {
-  &:focus-visible {
-    outline: 2px solid var(--fv-focus-ring);
-    outline-offset: 2px;
-  }
 }
