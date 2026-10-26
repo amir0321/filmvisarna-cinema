@@ -1,65 +1,72 @@
-import { useState, useMemo } from 'react'
-import { useMovies } from '../hooks'
-import { AgeBadge, Badge, StarRatingBadge } from '../components/Badge'
-import { FilterPillGroup } from '../components/Pills'
-import { Poster } from '../components/Poster'
-import { MovieGridSkeleton } from '../components/Skeleton'
-import { EmptyState } from '../components/EmptyState'
+import { useState, useMemo } from "react";
+import { useMovies } from "../hooks";
+import { AgeBadge, Badge, StarRatingBadge } from "../components/Badge";
+import { FilterPillGroup } from "../components/Pills";
+import { Poster } from "../components/Poster";
+import { MovieGridSkeleton } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
+import { useScreenings } from "../hooks/useScreenings";
 
 const AGE_OPTIONS = [
-  { value: 'all', label: 'Alla åldrar' },
-  { value: '0', label: 'Barntillåten' },
-  { value: '7', label: 'Från 7 år' },
-  { value: '11', label: 'Från 11 år' },
-  { value: '15', label: 'Från 15 år' },
-]
+  { value: "all", label: "Alla åldrar" },
+  { value: "0", label: "Barntillåten" },
+  { value: "7", label: "Från 7 år" },
+  { value: "11", label: "Från 11 år" },
+  { value: "15", label: "Från 15 år" },
+];
 
 export default function Movies() {
-  const { data: movies, loading, error, refetch } = useMovies()
-  const [selectedGenre, setSelectedGenre] = useState<string>('all')
-  const [selectedAge, setSelectedAge] = useState<string>('all')
+  const { data: movies, loading, error, refetch } = useMovies();
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
+  const [selectedAge, setSelectedAge] = useState<string>("all");
+  const { data: screenings } = useScreenings();
 
-  const movieList = useMemo(() => movies || [], [movies])
+  const movieList = useMemo(() => movies || [], [movies]);
 
   // Extract unique genres from movies
   const genreOptions = useMemo(() => {
-    const genresSet = new Set<string>()
+    const genresSet = new Set<string>();
     movieList.forEach((movie) => {
-      movie.genres?.forEach((g) => genresSet.add(g))
-    })
-    const list = Array.from(genresSet).sort().map((g) => ({
-      value: g,
-      label: g,
-    }))
-    return [{ value: 'all', label: 'Alla genrer' }, ...list]
-  }, [movieList])
+      movie.genres?.forEach((g) => genresSet.add(g));
+    });
+    const list = Array.from(genresSet)
+      .sort()
+      .map((g) => ({
+        value: g,
+        label: g,
+      }));
+    return [{ value: "all", label: "Alla genrer" }, ...list];
+  }, [movieList]);
 
   // Filter movies based on selected genre and age
   const filteredMovies = useMemo(() => {
     return movieList.filter((movie) => {
-      if (selectedGenre !== 'all' && !movie.genres?.includes(selectedGenre)) {
-        return false
+      if (selectedGenre !== "all" && !movie.genres?.includes(selectedGenre)) {
+        return false;
       }
-      if (selectedAge !== 'all') {
-        const rawAge = movie.age_rating != null ? String(movie.age_rating).trim() : ''
-        const movieAge = parseInt(rawAge, 10) || 0
-        const targetAge = parseInt(selectedAge, 10)
+      if (selectedAge !== "all") {
+        const rawAge =
+          movie.age_rating != null ? String(movie.age_rating).trim() : "";
+        const movieAge = parseInt(rawAge, 10) || 0;
+        const targetAge = parseInt(selectedAge, 10);
 
-        if (targetAge === 0 && movieAge !== 0) return false
-        if (targetAge > 0 && movieAge > targetAge) return false
+        if (targetAge === 0 && movieAge !== 0) return false;
+        if (targetAge > 0 && movieAge > targetAge) return false;
       }
-      return true
-    })
-  }, [movieList, selectedGenre, selectedAge])
+      return true;
+    });
+  }, [movieList, selectedGenre, selectedAge]);
 
-  const hasActiveFilters = selectedGenre !== 'all' || selectedAge !== 'all'
+  const hasActiveFilters = selectedGenre !== "all" || selectedAge !== "all";
 
   return (
     <div className="py-4">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <div>
           <h1 className="h2 fw-bold mb-1">Aktuella filmer</h1>
-          <p className="text-secondary mb-0">Här visas alla filmer som går på bio just nu.</p>
+          <p className="text-secondary mb-0">
+            Här visas alla filmer som går på bio just nu.
+          </p>
         </div>
       </div>
 
@@ -67,7 +74,10 @@ export default function Movies() {
       {!loading && !error && movieList.length > 0 ? (
         <div className="d-flex flex-column gap-3 mb-4">
           <div className="d-flex flex-column gap-2">
-            <span className="text-secondary small text-uppercase fw-semibold" style={{ letterSpacing: '0.05em' }}>
+            <span
+              className="text-secondary small text-uppercase fw-semibold"
+              style={{ letterSpacing: "0.05em" }}
+            >
               Genre
             </span>
             <FilterPillGroup
@@ -80,7 +90,10 @@ export default function Movies() {
           </div>
 
           <div className="d-flex flex-column gap-2">
-            <span className="text-secondary small text-uppercase fw-semibold" style={{ letterSpacing: '0.05em' }}>
+            <span
+              className="text-secondary small text-uppercase fw-semibold"
+              style={{ letterSpacing: "0.05em" }}
+            >
               Åldersgräns
             </span>
             <FilterPillGroup
@@ -95,9 +108,7 @@ export default function Movies() {
       ) : null}
 
       {/* Loading state */}
-      {loading ? (
-        <MovieGridSkeleton count={8} />
-      ) : null}
+      {loading ? <MovieGridSkeleton count={8} /> : null}
 
       {/* Error state */}
       {error ? (
@@ -117,15 +128,15 @@ export default function Movies() {
           title="Inga filmer hittades"
           description={
             hasActiveFilters
-              ? 'Inga filmer matchar dina valda filter. Prova att återställa filtreringen.'
-              : 'Det finns inga aktuella filmer på repertoaren just nu.'
+              ? "Inga filmer matchar dina valda filter. Prova att återställa filtreringen."
+              : "Det finns inga aktuella filmer på repertoaren just nu."
           }
-          actionLabel={hasActiveFilters ? 'Rensa filter' : undefined}
+          actionLabel={hasActiveFilters ? "Rensa filter" : undefined}
           onAction={
             hasActiveFilters
               ? () => {
-                  setSelectedGenre('all')
-                  setSelectedAge('all')
+                  setSelectedGenre("all");
+                  setSelectedAge("all");
                 }
               : undefined
           }
@@ -136,20 +147,26 @@ export default function Movies() {
       {!loading && !error && filteredMovies.length > 0 ? (
         <div className="row g-4">
           {filteredMovies.map((movie) => {
-            const duration = movie.duration_minutes ?? movie.duration
-            const genre = movie.genres?.[0] || 'Långfilm'
+            const duration = movie.duration_minutes ?? movie.duration;
+            const movieScreenings = (screenings ?? []).filter(
+              (screening) => screening.movieId === movie.id,
+            );
 
             return (
               <div key={movie.id} className="col-12 col-md-6 col-lg-3">
                 <div className="card h-100 shadow-sm border-0 bg-card text-light overflow-hidden">
                   <Poster
-                    src={movie.poster_url}
+                    src={movie.landscape_image_url || movie.poster_url}
                     alt={movie.title}
                     title={movie.title}
+                    aspectRatio="16/9"
                     hoverZoom={true}
                     topLeftBadge={
                       movie.age_rating ? (
-                        <AgeBadge ageRating={movie.age_rating} variant="poster-filmer" />
+                        <AgeBadge
+                          ageRating={movie.age_rating}
+                          variant="poster-filmer"
+                        />
                       ) : null
                     }
                     topRightBadge={
@@ -160,29 +177,70 @@ export default function Movies() {
                   />
                   <div className="card-body d-flex flex-column p-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <Badge variant="danger">{genre}</Badge>
+                      <div className="d-flex flex-wrap gap-1">
+                        {movie.genres?.map((genre) => (
+                          <Badge key={genre} variant="danger">
+                            {genre}
+                          </Badge>
+                        ))}
+                      </div>
+
                       {movie.imdb_rating ? (
                         <StarRatingBadge rating={movie.imdb_rating} />
                       ) : null}
                     </div>
-                    <h2 className="card-title h5 fw-bold text-white mb-2">{movie.title}</h2>
+                    <h2 className="card-title h5 fw-bold text-white mb-2">
+                      {movie.title}
+                    </h2>
                     {duration ? (
                       <p className="text-secondary small mb-3">
-                        <i className="bi bi-clock me-1" aria-hidden="true"></i> {duration} minuter
+                        <i className="bi bi-clock me-1" aria-hidden="true"></i>{" "}
+                        {duration} minuter
                       </p>
                     ) : null}
+
+                    <div className="mb-3">
+                      <span className="text-secondary small fw-semibold">
+                        Visningstider
+                      </span>
+                      <div className="d-flex flex-wrap gap-2 mt-2">
+                        {movieScreenings.length > 0 ? (
+                          movieScreenings.map((screening) => (
+                            <Badge key={screening.id} variant="runtime">
+                              {new Date(screening.startsAt).toLocaleString(
+                                "sv-SE",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-secondary small">
+                            Inga kommande visningar
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="mt-auto pt-2">
-                      <button type="button" className="btn btn-outline-danger w-100 btn-sm">
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger w-100 btn-sm"
+                      >
                         Boka biljetter
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       ) : null}
     </div>
-  )
+  );
 }
