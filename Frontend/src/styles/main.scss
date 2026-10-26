@@ -1,0 +1,278 @@
+@import './tokens';
+@import './bootstrap-overrides';
+@import 'bootstrap/scss/bootstrap';
+@import './components';
+@import './navigation';
+
+html,
+body {
+  background-color: var(--color-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  outline: $focus-ring-width solid $focus-ring-color;
+  outline-offset: $focus-ring-offset;
+}
+
+::-webkit-scrollbar {
+  width: $scrollbar-width;
+  height: $scrollbar-width;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $scrollbar-thumb;
+  border-radius: $radius-full;
+}
+
+.bg-surface {
+  background-color: $color-surface;
+}
+
+.bg-card {
+  background-color: $fv-card-bg;
+}
+
+.age-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $fv-radius-sm;
+  font-size: $font-size-12;
+  font-weight: 700;
+  color: $fv-white;
+}
+
+.age-badge-all {
+  background-color: $fv-success;
+}
+
+.age-badge-mid {
+  background-color: $fv-warning;
+  color: $fv-bg;
+}
+
+.age-badge-high {
+  background-color: $fv-primary;
+}
+
+.app-navbar {
+  min-height: $fv-nav-height;
+  background-color: $fv-nav-bg;
+  backdrop-filter: $fv-blur-glass;
+  -webkit-backdrop-filter: $fv-blur-glass;
+  border-bottom: 1px solid $fv-border;
+}
+
+.app-navbar-admin {
+  min-height: $fv-admin-nav-height;
+  background-color: $admin-nav-surface-bg;
+  border-bottom: 2px solid $fv-primary;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  font-family: $fv-font-display;
+  font-weight: 700;
+  font-size: $font-size-16;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: $fv-fg;
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    margin-bottom: 6px;
+    border-radius: $radius-circle;
+    background-color: $fv-primary;
+  }
+}
+
+.brand-logo-admin {
+  font-size: $font-size-13;
+  letter-spacing: 0.16em;
+
+  @media (min-width: $fv-bp-md) {
+    font-size: $font-size-14;
+  }
+
+  &::after {
+    width: 5px;
+    height: 5px;
+    margin-bottom: 5px;
+  }
+}
+
+.backoffice-badge {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background-color: rgba($fv-primary, 0.15);
+  color: $fv-primary;
+  font-size: $font-size-10;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.mw-480 {
+  max-width: 480px;
+}
+
+.mw-520 {
+  max-width: 520px;
+}
+
+.mw-600 {
+  max-width: 600px;
+}
+
+.poster-img {
+  height: 320px;
+  object-fit: cover;
+}
+
+.bg-surface-2 {
+  background-color: $color-surface-2;
+}
+
+.bg-surface-muted {
+  background-color: $color-surface-muted;
+}
+
+.font-display {
+  font-family: $font-heading;
+}
+
+.font-mono {
+  font-family: $font-mono;
+}
+
+.glass {
+  background: $glass-bg;
+  backdrop-filter: $glass-blur;
+  -webkit-backdrop-filter: $glass-blur;
+  border: 1px solid $glass-border;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: $radius-pill;
+  font-size: $font-size-13;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.chip-inactive {
+  background-color: $color-surface;
+  color: $text-muted;
+  border: 1px solid $border-default;
+
+  &:hover {
+    border-color: $white-overlay-20;
+    color: $text-primary;
+  }
+}
+
+.chip-active {
+  background-color: $color-primary;
+  color: $color-white;
+  border: 1px solid transparent;
+}
+
+.seat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  border-radius: $radius-seat;
+  border: 1px solid transparent;
+  transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+  padding: 0;
+}
+
+.seat-available {
+  background-color: $seat-available-bg;
+  border-color: rgba($seat-available-border, 0.35);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    transform: scale(1.15);
+    border-color: $seat-available-border;
+  }
+}
+
+.seat-selected {
+  background-color: $seat-selected-bg;
+  border-color: $seat-selected-border;
+  box-shadow: $seat-selected-glow;
+  color: $color-white;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    transform: scale(1.15);
+  }
+}
+
+.seat-occupied {
+  background-color: $seat-occupied-bg;
+  border-color: rgba($seat-occupied-border, 0.4);
+  opacity: 0.4;
+  cursor: not-allowed;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      transparent 40%,
+      rgba($color-white, 0.3) 40%,
+      rgba($color-white, 0.3) 60%,
+      transparent 60%
+    );
+  }
+}

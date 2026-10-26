@@ -1,16 +1,20 @@
+import { EmptyState } from '../../components/EmptyState'
+
 export default function AdminScreenings() {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Visningsschema</h2>
+          <h1 className="h2 fw-bold mb-1">Visningsschema</h1>
           <p className="text-secondary mb-0">Schemalägg nya föreställningar och hantera salongstider.</p>
         </div>
       </div>
 
-      <div className="card bg-black border-secondary border-opacity-25 p-4 text-center">
-        <p className="text-secondary mb-0">Visningsschemamodulen är under utveckling.</p>
-      </div>
+      <EmptyState
+        icon="bi-calendar3"
+        title="Visningsschema"
+        description="Schemaläggningsmodulen för administration av visningar är under utveckling."
+      />
     </div>
   )
 }

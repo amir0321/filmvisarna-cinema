@@ -3,7 +3,12 @@ import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
+import Salonger from './pages/Salonger'
+import About from './pages/About'
 import MyBookings from './pages/MyBookings'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminBookings from './pages/admin/AdminBookings'
@@ -19,7 +24,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'movies', element: <Movies /> },
+      { path: 'salonger', element: <Salonger /> },
+      { path: 'om-oss', element: <About /> },
       { path: 'my-bookings', element: <MyBookings /> },
+      { path: 'login', element: <Login /> },
+      { path: 'register', element: <Register /> },
+      { path: 'profile', element: <Profile /> },
     ],
   },
   // Backoffice administration layout

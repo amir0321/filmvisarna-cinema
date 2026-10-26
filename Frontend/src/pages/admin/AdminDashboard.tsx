@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Badge } from '../../components/Badge'
 
 export default function AdminDashboard() {
   const cards = [
@@ -44,11 +45,11 @@ export default function AdminDashboard() {
       <div className="row g-4">
         {cards.map((c) => (
           <div key={c.path} className="col-12 col-md-6 col-lg-3">
-            <div className="card h-100 bg-black border-secondary border-opacity-25 shadow-sm">
+            <div className="card h-100 bg-card border-secondary border-opacity-25 shadow-sm">
               <div className="card-body d-flex flex-column p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <i className={`bi ${c.icon} text-danger fs-2`}></i>
-                  <span className="badge bg-secondary">{c.badge}</span>
+                  <Badge variant="muted">{c.badge}</Badge>
                 </div>
                 <h5 className="card-title fw-bold text-white mb-2">{c.title}</h5>
                 <p className="card-text text-secondary small flex-grow-1">{c.description}</p>
