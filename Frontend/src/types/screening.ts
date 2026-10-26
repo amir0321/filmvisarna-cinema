@@ -14,9 +14,12 @@ export interface Screening {
   availableSeats?: number
 }
 
+export type ScreeningWhen = 'today' | 'tomorrow' | 'weekend'
+
+// Matches the query params of GET /api/screenings. Use either `when` or `date`, not both.
 export interface ScreeningFilters {
-  from?: string
-  to?: string
+  when?: ScreeningWhen
+  date?: string // YYYY-MM-DD
   movieId?: number
   cinemaId?: number
   age?: number
