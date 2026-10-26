@@ -3,14 +3,13 @@ import type { Movie, Screening } from '../../types'
 import { formatShowtimeDayLabel, formatTime, toCinemaIsoDate } from '../../utils/date'
 import { formatDuration, formatDurationLong } from '../../utils/movie'
 import AgeBadge from './AgeBadge'
-import './MovieCard.scss'
+import '../../styles/components/home/MovieCard.scss'
 
 interface MovieCardProps {
   movie: Movie
   screenings: Screening[]
 }
 
-// Show "(X kvar)" when this few seats or fewer are left
 const LOW_SEATS_THRESHOLD = 10
 
 // "Stora Salongen" -> "Stora"
@@ -18,14 +17,15 @@ function shortCinemaName(cinema: string): string {
   return cinema.replace(/\s*salongen$/i, '') || cinema
 }
 
-// Groups screenings per calendar day so each day gets its own label ("Idag 21 okt")
-function groupScreeningsByDay(screenings: Screening[]): { date: string; screenings: Screening[] }[] {
+function groupScreeningsByDay(screenings: Screening[]) {
   const groups = new Map<string, Screening[]>()
   for (const screening of screenings) {
     const date = toCinemaIsoDate(screening.startsAt)
-    groups.set(date, [...(groups.get(date) ?? []), screening])
+    const dayScreenings = groups.get(date) ?? []
+    dayScreenings.push(screening)
+    groups.set(date, dayScreenings)
   }
-  return [...groups.entries()].map(([date, dayScreenings]) => ({ date, screenings: dayScreenings }))
+  return [...groups.entries()]
 }
 
 export default function MovieCard({ movie, screenings }: MovieCardProps) {
@@ -34,7 +34,7 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
 
   return (
     <article className="movie-card h-100">
-      {/* Image duplicates the title link, so it is hidden from keyboard and screen readers */}
+      {/* Hidden from keyboard and screen readers since the title already links to the movie */}
       <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-hidden="true">
         {image ? (
           <img src={image} alt="" className="movie-card__image" loading="lazy" />
@@ -76,18 +76,17 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
           </ul>
         )}
 
-        {/* mt-auto anchors the showtimes to the bottom so cards in a row line up */}
         <div className="mt-auto d-flex flex-column gap-3">
-          {groupScreeningsByDay(screenings).map((day) => {
-            const dayLabel = formatShowtimeDayLabel(day.date)
-            const labelId = `showtimes-${movie.id}-${day.date}`
+          {groupScreeningsByDay(screenings).map(([date, dayScreenings]) => {
+            const dayLabel = formatShowtimeDayLabel(date)
+            const labelId = `showtimes-${movie.id}-${date}`
             return (
-              <div key={day.date}>
+              <div key={date}>
                 <p id={labelId} className="movie-card__day-label mb-2">
                   {dayLabel}
                 </p>
                 <ul className="list-unstyled d-flex flex-wrap gap-2 mb-0" aria-labelledby={labelId}>
-                  {day.screenings.map((screening) => (
+                  {dayScreenings.map((screening) => (
                     <li key={screening.id}>
                       <ShowtimePill screening={screening} dayLabel={dayLabel} />
                     </li>
@@ -111,34 +110,26 @@ function ShowtimePill({ screening, dayLabel }: ShowtimePillProps) {
   const time = formatTime(screening.startsAt)
   const seatsLeft = screening.availableSeats
   const isSoldOut = seatsLeft === 0
-  const isLowOnSeats = seatsLeft !== undefined && seatsLeft > 0 && seatsLeft <= LOW_SEATS_THRESHOLD
-  const spokenTime = `${dayLabel.toLowerCase()} ${time} i ${screening.cinema}`
-
-  const visibleText = (
-    <>
-      {time} · {shortCinemaName(screening.cinema)}
-      {isLowOnSeats && <span className="showtime-pill__seats"> ({seatsLeft} kvar)</span>}
-      {isSoldOut && <span className="showtime-pill__seats"> (Fullbokad)</span>}
-    </>
-  )
+  const isLowOnSeats = !isSoldOut && seatsLeft !== undefined && seatsLeft <= LOW_SEATS_THRESHOLD
+  const label = `${dayLabel.toLowerCase()} ${time} i ${screening.cinema}`
 
   if (isSoldOut) {
     return (
-      <span className="showtime-pill showtime-pill--sold-out" aria-label={`${spokenTime}, fullbokad`}>
-        {visibleText}
+      <span className="showtime-pill showtime-pill--sold-out" aria-label={`${label}, fullbokad`}>
+        {time} · {shortCinemaName(screening.cinema)}
+        <span className="showtime-pill__seats"> (Fullbokad)</span>
       </span>
     )
   }
-
-  const seatsLabel = isLowOnSeats ? `, ${seatsLeft} platser kvar` : ''
 
   return (
     <Link
       to={`/booking/${screening.id}`}
       className="showtime-pill"
-      aria-label={`Boka ${spokenTime}${seatsLabel}`}
+      aria-label={`Boka ${label}${isLowOnSeats ? `, ${seatsLeft} platser kvar` : ''}`}
     >
-      {visibleText}
+      {time} · {shortCinemaName(screening.cinema)}
+      {isLowOnSeats && <span className="showtime-pill__seats"> ({seatsLeft} kvar)</span>}
     </Link>
   )
 }

@@ -1,6 +1,4 @@
-// Design tokens from "Filmvisarna – Designsystem, gränssnitt och tillgänglighet".
-// Only defines CSS variables; nothing is styled until a component uses them.
-// Add more tokens from the document here as new pages need them.
+// Colours, radii and shadows from the Filmvisarna design system
 :root {
   // Surfaces
   --fv-bg-canvas: #0b0f19;
@@ -21,7 +19,7 @@
   --fv-text-strong: #f8fafc;
   --fv-text-body: #cbd5e1;
   --fv-text-subtle: #94a3b8;
-  --fv-text-on-light: #0b0f19; // dark text for light badges (success/warning)
+  --fv-text-on-light: #0b0f19;
 
   // Borders
   --fv-border-default: rgba(255, 255, 255, 0.18);

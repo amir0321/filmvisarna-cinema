@@ -1,27 +1,31 @@
-import { useEffect, useRef } from 'react'
-import { getYouTubeEmbedUrl } from '../../utils/movie'
-import './TrailerModal.scss'
+import { useEffect, useRef } from "react";
+import { getYouTubeEmbedUrl } from "../utils/movie";
+import "../styles/components/TrailerModal.scss";
 
 interface TrailerModalProps {
-  isOpen: boolean
-  onClose: () => void
-  trailerUrl: string
-  movieTitle: string
+  isOpen: boolean;
+  onClose: () => void;
+  trailerUrl: string;
+  movieTitle: string;
 }
 
-// Uses the native <dialog> element, which gives focus trapping, Escape-to-close
-// and focus return to the trigger button for free.
-export default function TrailerModal({ isOpen, onClose, trailerUrl, movieTitle }: TrailerModalProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const embedUrl = getYouTubeEmbedUrl(trailerUrl)
+// <dialog> handles focus and closing with Escape for us
+export default function TrailerModal({
+  isOpen,
+  onClose,
+  trailerUrl,
+  movieTitle,
+}: TrailerModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const embedUrl = getYouTubeEmbedUrl(trailerUrl);
 
   useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
+    const dialog = dialogRef.current;
+    if (!dialog) return;
 
-    if (isOpen && !dialog.open) dialog.showModal()
-    if (!isOpen && dialog.open) dialog.close()
-  }, [isOpen])
+    if (isOpen && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog.open) dialog.close();
+  }, [isOpen]);
 
   return (
     <dialog
@@ -30,8 +34,7 @@ export default function TrailerModal({ isOpen, onClose, trailerUrl, movieTitle }
       aria-labelledby="trailer-modal-title"
       onClose={onClose}
       onClick={(event) => {
-        // Clicking the backdrop (the dialog itself, outside the content) closes it
-        if (event.target === dialogRef.current) onClose()
+        if (event.target === dialogRef.current) onClose();
       }}
     >
       <div className="trailer-modal__content">
@@ -47,7 +50,7 @@ export default function TrailerModal({ isOpen, onClose, trailerUrl, movieTitle }
           />
         </div>
 
-        {/* Only mount the iframe while open so playback stops on close */}
+        {/* Only render the video while open so it stops playing on close */}
         {isOpen &&
           (embedUrl ? (
             <div className="ratio ratio-16x9 rounded-3 overflow-hidden bg-black">
@@ -60,13 +63,18 @@ export default function TrailerModal({ isOpen, onClose, trailerUrl, movieTitle }
             </div>
           ) : (
             <p className="text-light mb-0">
-              Trailern kan inte visas här.{' '}
-              <a href={trailerUrl} target="_blank" rel="noopener noreferrer" className="link-danger">
+              Trailern kan inte visas här.{" "}
+              <a
+                href={trailerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-danger"
+              >
                 Öppna trailern i en ny flik
               </a>
             </p>
           ))}
       </div>
     </dialog>
-  )
+  );
 }

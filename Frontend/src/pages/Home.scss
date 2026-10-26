@@ -1,9 +1,7 @@
-// Design system bg-canvas for the home page only; other pages keep the layout background
 .home-page {
   background-color: var(--fv-bg-canvas);
 }
 
-// Content width used by the filter strip and repertoire, matching the design
 .home-container {
   max-width: 1140px;
 }

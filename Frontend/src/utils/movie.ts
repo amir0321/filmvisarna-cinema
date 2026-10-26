@@ -1,6 +1,6 @@
 export type AgeRatingVariant = 'success' | 'warning' | 'danger'
 
-// Formats a runtime in minutes as "2h 45m" (matches the design).
+// "2h 45m"
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
@@ -8,7 +8,7 @@ export function formatDuration(minutes: number): string {
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
 }
 
-// Spoken version of the runtime for screen readers, e.g. "2 timmar 45 minuter".
+// "2 timmar 45 minuter", for screen readers
 export function formatDurationLong(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
@@ -18,42 +18,30 @@ export function formatDurationLong(minutes: number): string {
   return parts.join(' ')
 }
 
-function parseAgeLimit(ageRating: string | null): number | null {
-  if (!ageRating) return null
-  const value = Number.parseInt(ageRating, 10)
-  return Number.isNaN(value) ? null : value
+function getAgeLimit(ageRating: string | null): number {
+  const limit = Number.parseInt(ageRating ?? '', 10)
+  return Number.isNaN(limit) ? 0 : limit
 }
 
-// Converts the backend age rating ("15", "7", "0", null) into a UI label.
+// "15" -> "15 år", "0" or null -> "Barntillåten"
 export function formatAgeRating(ageRating: string | null): string {
-  const limit = parseAgeLimit(ageRating)
-  return limit === null || limit === 0 ? 'Barntillåten' : `${limit} år`
+  const limit = getAgeLimit(ageRating)
+  return limit === 0 ? 'Barntillåten' : `${limit} år`
 }
 
-// Badge colour per age limit, using the design system's status colours
 export function getAgeRatingVariant(ageRating: string | null): AgeRatingVariant {
-  const limit = parseAgeLimit(ageRating)
-  if (limit === null || limit === 0) return 'success'
+  const limit = getAgeLimit(ageRating)
+  if (limit === 0) return 'success'
   if (limit <= 11) return 'warning'
   return 'danger'
 }
 
-// Turns a YouTube watch/short/embed URL into an embeddable URL, or null if unsupported.
-export function getYouTubeEmbedUrl(url: string | null): string | null {
-  if (!url) return null
-
+// Turns a YouTube link into an embed link, or returns null if it isn't a YouTube link
+export function getYouTubeEmbedUrl(url: string): string | null {
   try {
     const parsed = new URL(url)
-    const host = parsed.hostname.replace(/^www\./, '')
-    let videoId: string | null = null
-
-    if (host === 'youtu.be') {
-      videoId = parsed.pathname.slice(1)
-    } else if (host === 'youtube.com' || host === 'm.youtube.com') {
-      videoId = parsed.pathname.startsWith('/embed/')
-        ? parsed.pathname.split('/')[2]
-        : parsed.searchParams.get('v')
-    }
+    const videoId =
+      parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.searchParams.get('v')
 
     return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0` : null
   } catch {

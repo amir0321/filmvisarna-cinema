@@ -10,7 +10,7 @@ import {
   todayIsoDate,
   weekdayIndex,
 } from '../utils/date'
-import './DatePickerPopover.scss'
+import '../styles/components/DatePickerPopover.scss'
 
 interface DatePickerPopoverProps {
   id: string
@@ -22,40 +22,28 @@ interface DatePickerPopoverProps {
   onClose: () => void
 }
 
-const WEEKDAYS = [
-  { short: 'Mån', long: 'måndag' },
-  { short: 'Tis', long: 'tisdag' },
-  { short: 'Ons', long: 'onsdag' },
-  { short: 'Tor', long: 'torsdag' },
-  { short: 'Fre', long: 'fredag' },
-  { short: 'Lör', long: 'lördag' },
-  { short: 'Sön', long: 'söndag' },
-]
+const WEEKDAYS = ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön']
+const GAP = 8
 
-const VIEWPORT_MARGIN = 8
-const ANCHOR_GAP = 8
-
-function clampDate(isoDate: string, min: string, max: string): string {
-  if (isoDate < min) return min
-  if (isoDate > max) return max
-  return isoDate
+function clampDate(date: string, min: string, max: string): string {
+  if (date < min) return min
+  if (date > max) return max
+  return date
 }
 
-// Calendar dates for the month, padded with nulls so the 1st lands on the right weekday
-function buildMonthWeeks(monthStart: string): (string | null)[][] {
-  const cells: (string | null)[] = Array(weekdayIndex(monthStart)).fill(null)
-  for (let day = 0; day < daysInMonth(monthStart); day++) {
-    cells.push(addDaysToIsoDate(monthStart, day))
+// Returns the month as weeks, with null for empty cells before the 1st and after the last day
+function getWeeks(monthStart: string): (string | null)[][] {
+  const days: (string | null)[] = Array(weekdayIndex(monthStart)).fill(null)
+  for (let i = 0; i < daysInMonth(monthStart); i++) {
+    days.push(addDaysToIsoDate(monthStart, i))
   }
-  while (cells.length % 7 !== 0) cells.push(null)
+  while (days.length % 7 !== 0) days.push(null)
 
-  const weeks: (string | null)[][] = []
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  const weeks = []
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
   return weeks
 }
 
-// Mount only while open. Uses position: fixed and follows the anchor on scroll/resize,
-// so it is never clipped by a parent with overflow hidden.
 export default function DatePickerPopover({
   id,
   anchorRef,
@@ -66,17 +54,13 @@ export default function DatePickerPopover({
   onClose,
 }: DatePickerPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
-  const shouldFocusDayRef = useRef(true)
+  const shouldFocusDay = useRef(true)
   const today = todayIsoDate()
-  const [focusedDate, setFocusedDate] = useState(() =>
-    clampDate(selectedDate ?? today, minDate, maxDate),
-  )
+  const [focusedDate, setFocusedDate] = useState(() => clampDate(selectedDate ?? today, minDate, maxDate))
 
   const monthStart = startOfMonthIsoDate(focusedDate)
-  const canGoToPreviousMonth = monthStart > startOfMonthIsoDate(minDate)
-  const canGoToNextMonth = monthStart < startOfMonthIsoDate(maxDate)
 
-  // Keep the popover attached to the button. Writes styles directly to avoid re-rendering on every scroll.
+  // Place the popover under the button and follow it when the page scrolls
   useLayoutEffect(() => {
     function updatePosition() {
       const anchor = anchorRef.current
@@ -84,13 +68,12 @@ export default function DatePickerPopover({
       if (!anchor || !popover) return
 
       const rect = anchor.getBoundingClientRect()
-      const maxLeft = window.innerWidth - popover.offsetWidth - VIEWPORT_MARGIN
-      popover.style.top = `${rect.bottom + ANCHOR_GAP}px`
-      popover.style.left = `${Math.max(VIEWPORT_MARGIN, Math.min(rect.left, maxLeft))}px`
+      const maxLeft = window.innerWidth - popover.offsetWidth - GAP
+      popover.style.top = `${rect.bottom + GAP}px`
+      popover.style.left = `${Math.max(GAP, Math.min(rect.left, maxLeft))}px`
     }
 
     updatePosition()
-    // Capture phase also catches scrolling inside nested scroll containers, not only the page
     window.addEventListener('scroll', updatePosition, { capture: true, passive: true })
     window.addEventListener('resize', updatePosition)
     return () => {
@@ -99,7 +82,7 @@ export default function DatePickerPopover({
     }
   }, [anchorRef])
 
-  // Close when clicking outside the popover and its button
+  // Close on click outside
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node
@@ -111,10 +94,10 @@ export default function DatePickerPopover({
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [anchorRef, onClose])
 
-  // Move keyboard focus to the active day (on open and after arrow-key navigation)
+  // Focus the active day when opening and when using the arrow keys
   useEffect(() => {
-    if (!shouldFocusDayRef.current) return
-    shouldFocusDayRef.current = false
+    if (!shouldFocusDay.current) return
+    shouldFocusDay.current = false
     popoverRef.current?.querySelector<HTMLButtonElement>(`[data-date="${focusedDate}"]`)?.focus()
   }, [focusedDate])
 
@@ -123,27 +106,21 @@ export default function DatePickerPopover({
     anchorRef.current?.focus()
   }
 
-  function moveFocus(nextDate: string) {
-    shouldFocusDayRef.current = true
-    setFocusedDate(clampDate(nextDate, minDate, maxDate))
+  function changeMonth(months: number) {
+    setFocusedDate(clampDate(addMonthsToIsoDate(focusedDate, months), minDate, maxDate))
   }
 
-  function handleGridKeyDown(event: KeyboardEvent<HTMLTableElement>) {
-    const keyMoves: Record<string, () => string> = {
-      ArrowLeft: () => addDaysToIsoDate(focusedDate, -1),
-      ArrowRight: () => addDaysToIsoDate(focusedDate, 1),
-      ArrowUp: () => addDaysToIsoDate(focusedDate, -7),
-      ArrowDown: () => addDaysToIsoDate(focusedDate, 7),
-      Home: () => addDaysToIsoDate(focusedDate, -weekdayIndex(focusedDate)),
-      End: () => addDaysToIsoDate(focusedDate, 6 - weekdayIndex(focusedDate)),
-      PageUp: () => addMonthsToIsoDate(focusedDate, -1),
-      PageDown: () => addMonthsToIsoDate(focusedDate, 1),
-    }
+  function handleKeyDown(event: KeyboardEvent<HTMLTableElement>) {
+    let days: number
+    if (event.key === 'ArrowLeft') days = -1
+    else if (event.key === 'ArrowRight') days = 1
+    else if (event.key === 'ArrowUp') days = -7
+    else if (event.key === 'ArrowDown') days = 7
+    else return
 
-    const move = keyMoves[event.key]
-    if (!move) return
     event.preventDefault()
-    moveFocus(move())
+    shouldFocusDay.current = true
+    setFocusedDate(clampDate(addDaysToIsoDate(focusedDate, days), minDate, maxDate))
   }
 
   return (
@@ -154,13 +131,10 @@ export default function DatePickerPopover({
       aria-label="Välj datum"
       className="date-picker-popover"
       onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.stopPropagation()
-          closeAndReturnFocus()
-        }
+        if (event.key === 'Escape') closeAndReturnFocus()
       }}
       onBlur={(event) => {
-        // Close when keyboard focus leaves the popover (e.g. tabbing past it)
+        // Close when tabbing out of the popover
         const next = event.relatedTarget as Node | null
         if (next && !popoverRef.current?.contains(next) && !anchorRef.current?.contains(next)) {
           onClose()
@@ -172,8 +146,8 @@ export default function DatePickerPopover({
           type="button"
           className="date-picker-popover__nav"
           aria-label="Föregående månad"
-          disabled={!canGoToPreviousMonth}
-          onClick={() => setFocusedDate(clampDate(addMonthsToIsoDate(focusedDate, -1), minDate, maxDate))}
+          disabled={monthStart <= startOfMonthIsoDate(minDate)}
+          onClick={() => changeMonth(-1)}
         >
           <i className="bi bi-chevron-left" aria-hidden="true"></i>
         </button>
@@ -184,48 +158,43 @@ export default function DatePickerPopover({
           type="button"
           className="date-picker-popover__nav"
           aria-label="Nästa månad"
-          disabled={!canGoToNextMonth}
-          onClick={() => setFocusedDate(clampDate(addMonthsToIsoDate(focusedDate, 1), minDate, maxDate))}
+          disabled={monthStart >= startOfMonthIsoDate(maxDate)}
+          onClick={() => changeMonth(1)}
         >
           <i className="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
       </div>
 
-      <table className="date-picker-popover__grid" onKeyDown={handleGridKeyDown}>
+      <table className="date-picker-popover__grid" onKeyDown={handleKeyDown}>
         <thead>
           <tr>
             {WEEKDAYS.map((weekday) => (
-              <th key={weekday.short} scope="col" abbr={weekday.long}>
-                {weekday.short}
+              <th key={weekday} scope="col">
+                {weekday}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {buildMonthWeeks(monthStart).map((week, weekIndex) => (
+          {getWeeks(monthStart).map((week, weekIndex) => (
             <tr key={weekIndex}>
               {week.map((date, dayIndex) => {
                 if (!date) return <td key={dayIndex}></td>
 
-                const isDisabled = date < minDate || date > maxDate
                 const isSelected = date === selectedDate
                 const isToday = date === today
+                let className = 'date-picker-popover__day'
+                if (isSelected) className += ' date-picker-popover__day--selected'
+                if (isToday) className += ' date-picker-popover__day--today'
 
                 return (
                   <td key={date}>
                     <button
                       type="button"
                       data-date={date}
-                      className={[
-                        'date-picker-popover__day',
-                        isSelected && 'date-picker-popover__day--selected',
-                        isToday && 'date-picker-popover__day--today',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      // Roving tabindex: only one day is in the tab order, arrows move between days
+                      className={className}
                       tabIndex={date === focusedDate ? 0 : -1}
-                      disabled={isDisabled}
+                      disabled={date < minDate || date > maxDate}
                       aria-pressed={isSelected}
                       aria-current={isToday ? 'date' : undefined}
                       aria-label={capitalize(formatDateLong(date))}

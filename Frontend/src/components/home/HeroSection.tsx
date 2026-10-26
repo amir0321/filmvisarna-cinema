@@ -1,37 +1,46 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
-import type { Movie } from '../../types'
-import { formatDuration, formatDurationLong } from '../../utils/movie'
-import AgeBadge from './AgeBadge'
-import TrailerModal from './TrailerModal'
-import './HeroSection.scss'
+import { useState } from "react";
+import { Link } from "react-router";
+import type { Movie } from "../../types";
+import { formatDuration, formatDurationLong } from "../../utils/movie";
+import AgeBadge from "./AgeBadge";
+import TrailerModal from "../TrailerModal";
+import "../../styles/components/home/HeroSection.scss";
 
 interface HeroSectionProps {
-  movie: Movie
+  movie: Movie;
 }
 
 export default function HeroSection({ movie }: HeroSectionProps) {
-  const [isTrailerOpen, setIsTrailerOpen] = useState(false)
-  const backgroundImage = movie.landscape_image_url ?? movie.poster_url
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const backgroundImage = movie.landscape_image_url ?? movie.poster_url;
 
   return (
     <section className="hero-section" aria-labelledby="hero-title">
-      {/* Decorative: the title is already given as text, so alt is intentionally empty */}
       {backgroundImage && (
-        <img src={backgroundImage} alt="" className="hero-section__image" fetchPriority="high" />
+        <img
+          src={backgroundImage}
+          alt=""
+          className="hero-section__image"
+          fetchPriority="high"
+        />
       )}
 
       <div className="hero-section__content container-fluid px-3 px-md-5">
         <div className="hero-section__text">
           <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-3">
             {movie.genres.map((genre) => (
-              <span key={genre} className="badge rounded-pill hero-section__genre">
+              <span
+                key={genre}
+                className="badge rounded-pill hero-section__genre"
+              >
                 {genre}
               </span>
             ))}
             <AgeBadge ageRating={movie.age_rating} />
             <span className="hero-section__duration">
-              <span aria-hidden="true">{formatDuration(movie.duration_minutes)}</span>
+              <span aria-hidden="true">
+                {formatDuration(movie.duration_minutes)}
+              </span>
               <span className="visually-hidden">
                 Speltid: {formatDurationLong(movie.duration_minutes)}
               </span>
@@ -43,7 +52,9 @@ export default function HeroSection({ movie }: HeroSectionProps) {
           </h1>
 
           {movie.description && (
-            <p className="hero-section__description mb-4">{movie.description}</p>
+            <p className="hero-section__description mb-4">
+              {movie.description}
+            </p>
           )}
 
           <div className="d-flex flex-wrap gap-3">
@@ -78,13 +89,17 @@ export default function HeroSection({ movie }: HeroSectionProps) {
         />
       )}
     </section>
-  )
+  );
 }
 
-// Placeholder shown while the featured movie is loading, same height as the hero to avoid layout shift.
+// Shown while the movie is loading
 export function HeroSectionSkeleton() {
   return (
-    <section className="hero-section" aria-busy="true" aria-label="Laddar utvald film">
+    <section
+      className="hero-section"
+      aria-busy="true"
+      aria-label="Laddar utvald film"
+    >
       <div className="hero-section__content container-fluid px-3 px-md-5">
         <div className="hero-section__text placeholder-glow" aria-hidden="true">
           <span className="placeholder col-4 mb-3 rounded"></span>
@@ -95,5 +110,5 @@ export function HeroSectionSkeleton() {
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -34,7 +34,7 @@ export default function Home() {
     age: ageFilter ?? undefined,
   })
 
-  // Feature the first movie that has a landscape still, falling back to the first movie
+  // Use the first movie with a landscape image in the hero
   const featuredMovie = movies?.find((movie) => movie.landscape_image_url) ?? movies?.[0] ?? null
 
   return (

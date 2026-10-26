@@ -1,4 +1,4 @@
-// Fades from the page background colour (bg-canvas) at the given strength
+// Page background colour at the given opacity
 @function canvas-fade($percent) {
   @return color-mix(in srgb, var(--fv-bg-canvas) $percent, transparent);
 }
@@ -12,7 +12,7 @@
   background-color: var(--fv-bg-canvas);
   isolation: isolate;
 
-  // Mobile: darken from the bottom up, since the text spans the full width
+  // Mobile: dark gradient from the bottom
   &::after {
     content: '';
     position: absolute;
@@ -21,7 +21,7 @@
     background: linear-gradient(to top, var(--fv-bg-canvas) 0%, canvas-fade(85%) 45%, canvas-fade(30%) 100%);
   }
 
-  // Desktop: darken from the left where the text sits, like the design
+  // Desktop: dark gradient from the left, behind the text
   @media (min-width: 768px) {
     align-items: center;
 
@@ -75,7 +75,6 @@
   font-size: 0.875rem;
 }
 
-// Design system: hero clamp(36px, 5vw, 48px), weight 700–800
 .hero-section__title {
   color: var(--fv-text-heading);
   font-size: clamp(2.25rem, 5vw, 3rem);
@@ -83,7 +82,7 @@
   line-height: 1.15;
 }
 
-// Clamp the synopsis to 3 lines with an ellipsis
+// Max 3 lines
 .hero-section__description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -103,7 +102,6 @@
   border-radius: var(--fv-radius-lg);
   font-weight: 600;
 
-  // Design system: 2px focus ring with offset instead of Bootstrap's glow
   &:focus-visible {
     outline: 2px solid var(--fv-focus-ring);
     outline-offset: 2px;

@@ -58,7 +58,6 @@
   padding: 1rem;
 }
 
-// Design system: H3 18–20 px, 600–700, Poppins (via Bootstrap's heading font)
 .movie-card__title {
   font-size: 1.125rem;
   font-weight: 700;
@@ -100,7 +99,6 @@
   text-transform: uppercase;
 }
 
-// Design system: chip background, 25 % white border, white semibold text, hover #1E293B
 .showtime-pill {
   display: inline-flex;
   align-items: center;
@@ -138,7 +136,6 @@
   }
 }
 
-// Design system: status-warning for "few seats left"
 .showtime-pill__seats {
   color: var(--fv-status-warning);
   font-weight: 600;

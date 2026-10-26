@@ -1,6 +1,6 @@
 import type { Movie, Screening } from '../../types'
 import MovieCard from './MovieCard'
-import './RepertoireSection.scss'
+import '../../styles/components/home/RepertoireSection.scss'
 
 interface RepertoireSectionProps {
   heading: string
@@ -15,8 +15,7 @@ interface MovieWithScreenings {
   screenings: Screening[]
 }
 
-// Groups screenings per movie. Screenings arrive sorted by start time,
-// so movies end up ordered by their earliest screening.
+// Screenings come sorted by time, so movies end up ordered by their first screening
 function groupScreeningsByMovie(movies: Movie[], screenings: Screening[]): MovieWithScreenings[] {
   const moviesById = new Map(movies.map((movie) => [movie.id, movie]))
   const groups = new Map<number, MovieWithScreenings>()
@@ -57,7 +56,7 @@ export default function RepertoireSection({
         {heading}
       </h2>
 
-      {/* Announces result changes to screen readers when the filters change */}
+      {/* Read out by screen readers when the filters change */}
       <p className="visually-hidden" role="status">
         {statusMessage}
       </p>

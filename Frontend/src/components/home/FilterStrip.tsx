@@ -1,45 +1,46 @@
-import { useCallback, useRef, useState } from 'react'
-import type { ScreeningWhen } from '../../types'
-import { addDaysToIsoDate, formatDateLong, formatDateShort, todayIsoDate } from '../../utils/date'
-import DatePickerPopover from '../DatePickerPopover'
-import './FilterStrip.scss'
+import { useCallback, useRef, useState } from "react";
+import type { ScreeningWhen } from "../../types";
+import {
+  addDaysToIsoDate,
+  formatDateLong,
+  formatDateShort,
+  todayIsoDate,
+} from "../../utils/date";
+import DatePickerPopover from "../DatePickerPopover";
+import "../../styles/components/home/FilterStrip.scss";
 
-export type DateFilter = { kind: 'preset'; when: ScreeningWhen } | { kind: 'date'; date: string }
+export type DateFilter =
+  | { kind: "preset"; when: ScreeningWhen }
+  | { kind: "date"; date: string };
 
-// null = no age filter ("Alla")
-export type AgeFilter = number | null
+// null = "Alla"
+export type AgeFilter = number | null;
 
 interface FilterStripProps {
-  dateFilter: DateFilter
-  ageFilter: AgeFilter
-  onDateFilterChange: (filter: DateFilter) => void
-  onAgeFilterChange: (filter: AgeFilter) => void
+  dateFilter: DateFilter;
+  ageFilter: AgeFilter;
+  onDateFilterChange: (filter: DateFilter) => void;
+  onAgeFilterChange: (filter: AgeFilter) => void;
 }
 
 const DATE_PRESETS: { when: ScreeningWhen; label: string }[] = [
-  { when: 'today', label: 'Idag' },
-  { when: 'tomorrow', label: 'Imorgon' },
-  { when: 'weekend', label: 'I helgen' },
-]
+  { when: "today", label: "Idag" },
+  { when: "tomorrow", label: "Imorgon" },
+  { when: "weekend", label: "I helgen" },
+];
 
 const AGE_OPTIONS: { value: AgeFilter; label: string }[] = [
-  { value: null, label: 'Alla' },
-  { value: 0, label: 'Barntillåten' },
-  { value: 7, label: '7 år' },
-  { value: 11, label: '11 år' },
-  { value: 15, label: '15 år' },
-]
+  { value: null, label: "Alla" },
+  { value: 0, label: "Barntillåten" },
+  { value: 7, label: "7 år" },
+  { value: 11, label: "11 år" },
+  { value: 15, label: "15 år" },
+];
 
-// How far ahead the calendar lets visitors pick a date
-const MAX_DAYS_AHEAD = 60
+const MAX_DAYS_AHEAD = 60;
 
 function pillClassName(isActive: boolean): string {
-  return `filter-pill${isActive ? ' filter-pill--active' : ''}`
-}
-
-// The checkmark shows the selected filter without relying on colour alone
-function ActiveCheck({ isActive }: { isActive: boolean }) {
-  return isActive ? <i className="bi bi-check2 me-1" aria-hidden="true"></i> : null
+  return `filter-pill${isActive ? " filter-pill--active" : ""}`;
 }
 
 export default function FilterStrip({
@@ -48,11 +49,11 @@ export default function FilterStrip({
   onDateFilterChange,
   onAgeFilterChange,
 }: FilterStripProps) {
-  const datePickerButtonRef = useRef<HTMLButtonElement>(null)
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), [])
-  const today = todayIsoDate()
-  const customDate = dateFilter.kind === 'date' ? dateFilter.date : null
+  const datePickerButtonRef = useRef<HTMLButtonElement>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), []);
+  const today = todayIsoDate();
+  const customDate = dateFilter.kind === "date" ? dateFilter.date : null;
 
   return (
     <div className="filter-strip">
@@ -66,19 +67,24 @@ export default function FilterStrip({
             Datum
           </span>
           {DATE_PRESETS.map((preset) => {
-            const isActive = dateFilter.kind === 'preset' && dateFilter.when === preset.when
+            const isActive =
+              dateFilter.kind === "preset" && dateFilter.when === preset.when;
             return (
               <button
                 key={preset.when}
                 type="button"
                 className={pillClassName(isActive)}
                 aria-pressed={isActive}
-                onClick={() => onDateFilterChange({ kind: 'preset', when: preset.when })}
+                onClick={() =>
+                  onDateFilterChange({ kind: "preset", when: preset.when })
+                }
               >
-                <ActiveCheck isActive={isActive} />
+                {isActive && (
+                  <i className="bi bi-check2 me-1" aria-hidden="true"></i>
+                )}
                 {preset.label}
               </button>
-            )
+            );
           })}
 
           <button
@@ -88,12 +94,18 @@ export default function FilterStrip({
             aria-pressed={customDate !== null}
             aria-haspopup="dialog"
             aria-expanded={isDatePickerOpen}
-            aria-controls={isDatePickerOpen ? 'date-picker-popover' : undefined}
-            aria-label={customDate ? `Valt datum: ${formatDateLong(customDate)}. Byt datum` : 'Välj datum'}
+            aria-controls={isDatePickerOpen ? "date-picker-popover" : undefined}
+            aria-label={
+              customDate
+                ? `Valt datum: ${formatDateLong(customDate)}. Byt datum`
+                : "Välj datum"
+            }
             onClick={() => setIsDatePickerOpen((isOpen) => !isOpen)}
           >
             <i className="bi bi-calendar3" aria-hidden="true"></i>
-            {customDate && <span className="ms-2">{formatDateShort(customDate)}</span>}
+            {customDate && (
+              <span className="ms-2">{formatDateShort(customDate)}</span>
+            )}
           </button>
           {isDatePickerOpen && (
             <DatePickerPopover
@@ -102,13 +114,16 @@ export default function FilterStrip({
               selectedDate={customDate}
               minDate={today}
               maxDate={addDaysToIsoDate(today, MAX_DAYS_AHEAD)}
-              onSelect={(date) => onDateFilterChange({ kind: 'date', date })}
+              onSelect={(date) => onDateFilterChange({ kind: "date", date })}
               onClose={closeDatePicker}
             />
           )}
         </div>
 
-        <span className="filter-strip__divider d-none d-md-block" aria-hidden="true"></span>
+        <span
+          className="filter-strip__divider d-none d-md-block"
+          aria-hidden="true"
+        ></span>
 
         <div
           role="group"
@@ -119,7 +134,7 @@ export default function FilterStrip({
             Åldersgräns
           </span>
           {AGE_OPTIONS.map((option) => {
-            const isActive = ageFilter === option.value
+            const isActive = ageFilter === option.value;
             return (
               <button
                 key={option.label}
@@ -128,13 +143,15 @@ export default function FilterStrip({
                 aria-pressed={isActive}
                 onClick={() => onAgeFilterChange(option.value)}
               >
-                <ActiveCheck isActive={isActive} />
+                {isActive && (
+                  <i className="bi bi-check2 me-1" aria-hidden="true"></i>
+                )}
                 {option.label}
               </button>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }

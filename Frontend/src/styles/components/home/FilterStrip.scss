@@ -3,7 +3,6 @@
   border-block: 1px solid var(--fv-border-subtle);
 }
 
-// Chips wrap onto new lines on narrow screens, as in the mobile design
 .filter-strip__group {
   display: flex;
   flex-wrap: wrap;
@@ -27,7 +26,6 @@
   background-color: var(--fv-border-subtle);
 }
 
-// Design system: chip background, 25 % white border, white semibold text, radius-lg
 .filter-pill {
   display: inline-flex;
   flex-shrink: 0;
