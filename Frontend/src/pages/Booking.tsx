@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router'
 import QuantityPicker from '../components/QuantityPicker'
 import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek, sumLines } from '../utils/price'
-import type { KioskItem } from '../types/kisok.ts'
+import type { KioskItem } from '../types/kisok'
+import apiClient, {ApiError} from '../api/client'
 
 export const hideFromNav = true
 
@@ -30,6 +31,9 @@ export default function Booking() {
   const [kiosk, setKiosk] = useState<KioskItem[]>([])
   const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
   const [kioskError, setKioskError] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [reference, setReference] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/kiosk')
@@ -55,7 +59,30 @@ export default function Booking() {
   const kioskTotal = sumLines(
     kiosk.map(i => ({ price: i.price, quantity: kioskQty[i.id] ?? 0 })),
   )
+    async function handleConfirm() {
+    if (!booking) return
+    setMessage(null)
 
+    // Temporary fixed ids, they match the rebuilt database
+    const groupIds = { adult: 2, senior: 3, child: 1 }
+    const perSeat = TICKET_TYPES.flatMap(t => Array<number>(counts[t.type]).fill(groupIds[t.type]))
+    const tickets = booking.seatIds.map((seatId, i) => ({ seatId, priceGroupId: perSeat[i] }))
+    const items = kiosk
+      .filter(i => (kioskQty[i.id] ?? 0) > 0)
+      .map(i => ({ itemId: i.id, quantity: kioskQty[i.id] }))
+
+    try {
+      const created = await apiClient.post<{ bookingRef: string }>('/bookings', {
+        screeningId: booking.screeningId,
+        email,
+        tickets,
+        items,
+      })
+      setReference(created.bookingRef)
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
+    }
+  }
   return (
     <section>
       <Link to="/">Home</Link>
@@ -88,7 +115,25 @@ export default function Booking() {
 
       <h2>Totalt: {formatSek(ticketTotal + kioskTotal)}</h2>
 
-      <button disabled={!ticketsDone}>confirm booking</button>
+            <label>
+        E-post för bokningsbekräftelse
+        <input
+          type="email"
+          placeholder="din@epost.se"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+      </label>
+
+            {message && <p role="alert">{message}</p>}
+      {reference && <p>Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong></p>}
+
+      <button
+        onClick={handleConfirm}
+        disabled={!ticketsDone || email.trim() === '' || reference !== null}
+      >
+        Bekräfta bokning
+      </button>
     </section>
   )
 }
