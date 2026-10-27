@@ -1,6 +1,7 @@
+import { getBookingUrl } from '../utils/links'
 import { useMemo } from 'react'
 import { useScreenings } from '../hooks/useScreenings'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useMovie } from '../hooks/useMovies'
 
 export default function MovieDetails() {
@@ -176,13 +177,11 @@ export default function MovieDetails() {
                                 {screening.availableSeats ?? '-'} platser lediga
                               </span>
 
-                              <button
-                                type='button'
-                                className='btn btn-danger'
-                                disabled
-                                title='Bokningsflödet kan kopplas in senare'>
+                              <Link
+                                to={getBookingUrl(screening.id)}
+                                className='btn btn-danger'>
                                 Boka
-                              </button>
+                              </Link>
                             </div>
                           </div>
                         </div>
