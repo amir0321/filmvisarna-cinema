@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import type { Movie, Screening } from '../../types'
 import { formatShowtimeDayLabel, formatTime, toCinemaIsoDate } from '../../utils/date'
 import { formatDuration, formatDurationLong } from '../../utils/movie'
+import { getBookingUrl, getMovieUrl } from '../../utils/links'
 import AgeBadge from './AgeBadge'
 
 interface MovieCardProps {
@@ -28,12 +29,12 @@ function groupScreeningsByDay(screenings: Screening[]) {
 }
 
 export default function MovieCard({ movie, screenings }: MovieCardProps) {
-  const movieUrl = `/movies/${movie.id}`
+  const movieUrl = getMovieUrl(movie.id)
   const image = movie.poster_url ?? movie.landscape_image_url
 
   return (
     <article className="movie-card h-100">
-      {/* Hidden from keyboard and screen readers since the title already links to the movie */}
+      {/* The title already links to the movie */}
       <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-hidden="true">
         {image ? (
           <img src={image} alt="" className="movie-card__image" loading="lazy" />
@@ -123,7 +124,7 @@ function ShowtimePill({ screening, dayLabel }: ShowtimePillProps) {
 
   return (
     <Link
-      to={`/booking/${screening.id}`}
+      to={getBookingUrl(screening.id)}
       className="showtime-pill"
       aria-label={`Boka ${label}${isLowOnSeats ? `, ${seatsLeft} platser kvar` : ''}`}
     >

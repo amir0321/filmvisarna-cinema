@@ -7,7 +7,6 @@
   background-color: $color-bg;
   isolation: isolate;
 
-  // Mobile: dark gradient from the bottom
   &::after {
     content: '';
     position: absolute;
@@ -16,7 +15,6 @@
     background: linear-gradient(to top, $color-bg 0%, rgba($color-bg, 0.85) 45%, rgba($color-bg, 0.3) 100%);
   }
 
-  // Desktop: dark gradient from the left, behind the text
   @media (min-width: 768px) {
     align-items: center;
 
@@ -77,7 +75,6 @@
   line-height: 1.15;
 }
 
-// Max 3 lines
 .hero-section__description {
   display: -webkit-box;
   -webkit-box-orient: vertical;

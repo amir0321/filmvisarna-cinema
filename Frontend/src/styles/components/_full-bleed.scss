@@ -1,0 +1,8 @@
+// Cancels the layout padding so a section can go edge to edge
+.full-bleed {
+  margin: -1.5rem -1rem 0;
+
+  @media (min-width: 768px) {
+    margin-inline: -3rem;
+  }
+}
