@@ -6,6 +6,7 @@ import { Poster } from "../components/Poster";
 import { MovieGridSkeleton } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
 import { useScreenings } from "../hooks/useScreenings";
+import { Link } from "react-router";
 
 const AGE_OPTIONS = [
   { value: "all", label: "Alla åldrar" },
@@ -159,7 +160,7 @@ export default function Movies() {
                     src={movie.landscape_image_url || movie.poster_url}
                     alt={movie.title}
                     title={movie.title}
-                    aspectRatio="16/9"
+                    aspectRatio="2/3"
                     hoverZoom={true}
                     topLeftBadge={
                       movie.age_rating ? (
@@ -206,17 +207,23 @@ export default function Movies() {
                       <div className="d-flex flex-wrap gap-2 mt-2">
                         {movieScreenings.length > 0 ? (
                           movieScreenings.map((screening) => (
-                            <Badge key={screening.id} variant="runtime">
-                              {new Date(screening.startsAt).toLocaleString(
-                                "sv-SE",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
-                              )}
-                            </Badge>
+                            <Link
+                              key={screening.id}
+                              to={`/booking/${screening.id}`}
+                              className="text-decoration-none"
+                            >
+                              <Badge variant="runtime">
+                                {new Date(screening.startsAt).toLocaleString(
+                                  "sv-SE",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </Badge>
+                            </Link>
                           ))
                         ) : (
                           <span className="text-secondary small">
