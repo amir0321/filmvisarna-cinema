@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import type { Movie } from "../../types";
 import { formatDuration, formatDurationLong } from "../../utils/movie";
+import { getMovieUrl } from "../../utils/links";
 import AgeBadge from "./AgeBadge";
 import TrailerModal from "../TrailerModal";
 
@@ -68,7 +69,7 @@ export default function HeroSection({ movie }: HeroSectionProps) {
               </button>
             )}
             <Link
-              to={`/movies/${movie.id}`}
+              to={getMovieUrl(movie.id)}
               className="btn hero-section__button btn-hero-primary"
               aria-label={`Boka biljett till ${movie.title}`}
             >

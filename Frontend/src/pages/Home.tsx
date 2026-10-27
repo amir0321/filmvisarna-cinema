@@ -37,7 +37,7 @@ export default function Home() {
   const featuredMovie = movies?.find((movie) => movie.landscape_image_url) ?? movies?.[0] ?? null
 
   return (
-    <div className="home-page">
+    <div className="full-bleed">
       {moviesLoading && <HeroSectionSkeleton />}
       {!moviesLoading && featuredMovie && <HeroSection movie={featuredMovie} />}
 
