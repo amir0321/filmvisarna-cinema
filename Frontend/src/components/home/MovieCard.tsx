@@ -34,7 +34,7 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
 
   return (
     <article className="movie-card h-100">
-      {/* Hidden from keyboard and screen readers since the title already links to the movie */}
+      {/* The title already links to the movie */}
       <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-hidden="true">
         {image ? (
           <img src={image} alt="" className="movie-card__image" loading="lazy" />

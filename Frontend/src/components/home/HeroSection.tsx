@@ -92,7 +92,6 @@ export default function HeroSection({ movie }: HeroSectionProps) {
   );
 }
 
-// Shown while the movie is loading
 export function HeroSectionSkeleton() {
   return (
     <section

@@ -1,4 +1,3 @@
-// Show all times in Swedish time, no matter where the visitor is
 export const CINEMA_TIME_ZONE = 'Europe/Stockholm'
 
 const isoDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -14,7 +13,6 @@ const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
   minute: '2-digit',
 })
 
-// Plain dates (YYYY-MM-DD) are parsed as UTC, so these format in UTC too
 const dateLongFormatter = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'UTC',
   weekday: 'long',
@@ -68,22 +66,18 @@ export function addDaysToIsoDate(isoDate: string, days: number): string {
   return date.toISOString().slice(0, 10)
 }
 
-// "20:00"
 export function formatTime(isoDateTime: string): string {
   return timeFormatter.format(new Date(isoDateTime))
 }
 
-// "onsdag 28 oktober"
 export function formatDateLong(isoDate: string): string {
   return dateLongFormatter.format(parseIsoDate(isoDate))
 }
 
-// "ons 28 okt"
 export function formatDateShort(isoDate: string): string {
   return removeDots(dateShortFormatter.format(parseIsoDate(isoDate)))
 }
 
-// "Idag 21 okt", "Imorgon 22 okt" or "lör 24 okt"
 export function formatShowtimeDayLabel(isoDate: string): string {
   const today = todayIsoDate()
   const dayMonth = removeDots(dayMonthFormatter.format(parseIsoDate(isoDate)))
@@ -100,7 +94,6 @@ export function formatDayChipLabel(isoDate: string): string {
   return `${capitalize(weekdayLongFormatter.format(parseIsoDate(isoDate)))} (${dayMonth})`
 }
 
-// "oktober 2026"
 export function formatMonthYear(isoDate: string): string {
   return monthYearFormatter.format(parseIsoDate(isoDate))
 }
@@ -114,7 +107,6 @@ export function daysInMonth(isoDate: string): number {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
 }
 
-// Keeps the day within the new month, e.g. 31 jan + 1 month = 28 feb
 export function addMonthsToIsoDate(isoDate: string, months: number): string {
   const date = parseIsoDate(isoDate)
   const firstOfMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1, 12))
@@ -123,7 +115,6 @@ export function addMonthsToIsoDate(isoDate: string, months: number): string {
   return `${monthIso.slice(0, 8)}${String(day).padStart(2, '0')}`
 }
 
-// Monday = 0, Sunday = 6
 export function weekdayIndex(isoDate: string): number {
   return (parseIsoDate(isoDate).getUTCDay() + 6) % 7
 }

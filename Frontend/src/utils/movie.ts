@@ -8,7 +8,7 @@ export function formatDuration(minutes: number): string {
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
 }
 
-// "2 timmar 45 minuter", for screen readers
+// "2 timmar 45 minuter"
 export function formatDurationLong(minutes: number): string {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
@@ -36,7 +36,6 @@ export function getAgeRatingVariant(ageRating: string | null): AgeRatingVariant 
   return 'danger'
 }
 
-// Turns a YouTube link into an embed link, or returns null if it isn't a YouTube link
 export function getYouTubeEmbedUrl(url: string): string | null {
   try {
     const parsed = new URL(url)

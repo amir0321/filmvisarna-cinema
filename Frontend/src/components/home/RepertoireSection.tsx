@@ -14,7 +14,7 @@ interface MovieWithScreenings {
   screenings: Screening[]
 }
 
-// Screenings come sorted by time, so movies end up ordered by their first screening
+// Ordered by each movie's first screening
 function groupScreeningsByMovie(movies: Movie[], screenings: Screening[]): MovieWithScreenings[] {
   const moviesById = new Map(movies.map((movie) => [movie.id, movie]))
   const groups = new Map<number, MovieWithScreenings>()
@@ -55,7 +55,6 @@ export default function RepertoireSection({
         {heading}
       </h2>
 
-      {/* Read out by screen readers when the filters change */}
       <p className="visually-hidden" role="status">
         {statusMessage}
       </p>
