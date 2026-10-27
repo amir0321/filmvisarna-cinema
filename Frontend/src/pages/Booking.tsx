@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router'
 import QuantityPicker from '../components/QuantityPicker'
 import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek, sumLines } from '../utils/price'
-import type { KioskItem } from '../types'
+import type { KioskItem } from '../types/kisok.ts'
 
 export const hideFromNav = true
 
 interface BookingState {
-  screeningId: string
+  screeningId: number
   seatIds: number[]
 }
 
@@ -16,13 +16,14 @@ interface BookingState {
 function isBookingState(v: unknown): v is BookingState {
   return (
     typeof v === 'object' && v !== null &&
-    'screeningId' in v && typeof v.screeningId === 'string' &&
+    'screeningId' in v && typeof v.screeningId === 'number' &&
     'seatIds' in v && Array.isArray(v.seatIds)
   )
 }
 
 export default function Booking() {
   const location = useLocation()
+  console.log('state:', location.state)
   const booking = isBookingState(location.state) ? location.state : null
 
   const [counts, setCounts] = useState<Record<TicketType, number>>({ adult: 0, senior: 0, child: 0 })

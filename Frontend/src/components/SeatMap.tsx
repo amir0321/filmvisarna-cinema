@@ -1,7 +1,7 @@
-import type { Seat } from '../types'
+import type { ScreeningSeatStatus } from '../types'
 
 interface Props {
-  seats: Seat[]
+  seats: ScreeningSeatStatus[]
   selectedIds: number[]
   onToggle: (seatId: number) => void
 }
@@ -19,6 +19,7 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
             .filter(s => s.row_label === row)
             .sort((a, b) => b.seat_number - a.seat_number) // seat 1 is on the right
             .map(s => {
+              //const taken = s.status === 'available' 
               const taken = s.status !== 'available'
               const selected = selectedIds.includes(s.id)
               return (

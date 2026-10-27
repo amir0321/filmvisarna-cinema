@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import SeatMap from '../components/SeatMap'
-import type { SeatsResponse } from '../types'
+import type { SeatsResponse } from '../types/screeningSeat'
 
 function isSeatsResponse(v: unknown): v is SeatsResponse {
   return typeof v === 'object' && v !== null && 'seats' in v && Array.isArray(v.seats)
 }
 
 export default function ScreeningDetail() {
-  const { id } = useParams()
+  const { id: idParam } = useParams()
+  const id = idParam ? Number (idParam) : NaN
   const navigate = useNavigate()
   const [data, setData] = useState<SeatsResponse | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) return
+    if (Number.isNaN(id)) return
     fetch(`/api/screenings/${id}/seats`)
       .then(res => {
         if (!res.ok) throw new Error(`Status ${res.status}`)
@@ -28,9 +29,9 @@ export default function ScreeningDetail() {
       .catch(err => setError(String(err)))
   }, [id])
 
-  if (!id) return <p>Invalid showing <Link to="/">Home</Link></p>
-  if (error) return <p>Cannot find the seats: {error} <Link to="/">Home</Link></p>
-  if (!data) return <p>Loading...</p>
+  if (Number.isNaN(id)) return <p>Ogiltig visning. <Link to="/">Till startsidan</Link></p>
+    if (error) return <p>Kunde inte hämta stolarna. Försök igen senare. <Link to="/">Till startsidan</Link></p>
+  if (!data) return <p>Laddar...</p>
 
   const toggle = (seatId: number) =>
     setSelectedIds(cur => (cur.includes(seatId) ? cur.filter(x => x !== seatId) : [...cur, seatId]))
