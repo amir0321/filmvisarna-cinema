@@ -18,7 +18,7 @@ export function formatDurationLong(minutes: number): string {
   return parts.join(' ')
 }
 
-function getAgeLimit(ageRating: string | null): number {
+export function getAgeLimit(ageRating: string | null): number {
   const limit = Number.parseInt(ageRating ?? '', 10)
   return Number.isNaN(limit) ? 0 : limit
 }

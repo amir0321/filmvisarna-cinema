@@ -35,6 +35,11 @@ const dayMonthFormatter = new Intl.DateTimeFormat('sv-SE', {
   month: 'short',
 })
 
+const weekdayLongFormatter = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'UTC',
+  weekday: 'long',
+})
+
 const monthYearFormatter = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'UTC',
   month: 'long',
@@ -85,6 +90,14 @@ export function formatShowtimeDayLabel(isoDate: string): string {
   if (isoDate === today) return `Idag ${dayMonth}`
   if (isoDate === addDaysToIsoDate(today, 1)) return `Imorgon ${dayMonth}`
   return formatDateShort(isoDate)
+}
+
+export function formatDayChipLabel(isoDate: string): string {
+  const today = todayIsoDate()
+  const dayMonth = removeDots(dayMonthFormatter.format(parseIsoDate(isoDate)))
+  if (isoDate === today) return `Idag (${dayMonth})`
+  if (isoDate === addDaysToIsoDate(today, 1)) return `Imorgon (${dayMonth})`
+  return `${capitalize(weekdayLongFormatter.format(parseIsoDate(isoDate)))} (${dayMonth})`
 }
 
 // "oktober 2026"
