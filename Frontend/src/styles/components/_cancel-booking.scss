@@ -1,0 +1,60 @@
+// Filmvisarna – Avbokning & Cancel Booking Modal (_cancel-booking.scss)
+
+.fv-cancel-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 16px;
+  min-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  @media (max-width: ($fv-bp-md - 0.02px)) {
+    padding: 24px 16px 80px 16px;
+  }
+}
+
+.fv-cancel-modal-icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba($fv-primary, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fv-cancel-booking-card {
+  background: rgba($fv-secondary, 0.4);
+  border-color: $fv-border !important;
+}
+
+.fv-cancel-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba($fv-success, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  color: $fv-success;
+  font-size: 32px;
+}
+
+.fv-cancel-receipt-card {
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+  box-shadow: $fv-shadow-card-md;
+  overflow: hidden;
+}
+
+.fv-cancel-ref-badge {
+  font-family: $fv-font-mono;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid $fv-border;
+  padding: 4px 10px;
+  border-radius: $radius-sm;
+}
