@@ -11,7 +11,7 @@ export default function MovieDetails() {
     loading: screeningsLoading,
     error: screeningsError,
     refetch: refetchScreenings,
-  } = useScreenings(id)
+  } = useScreenings({ movieId: Number(id) })
 
   const screeningsByDate = useMemo(() => {
     const groups = new Map<string, typeof screenings>()
