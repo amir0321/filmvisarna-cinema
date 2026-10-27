@@ -61,7 +61,7 @@ export default function Movies() {
 
   return (
     <div className="py-4">
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h2 fw-bold mb-1">Aktuella filmer</h1>
           <p className="text-secondary mb-0">
