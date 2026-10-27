@@ -1,253 +1,222 @@
-import { useState, useMemo } from "react";
-import { useMovies } from "../hooks";
-import { AgeBadge, Badge, StarRatingBadge } from "../components/Badge";
-import { FilterPillGroup } from "../components/Pills";
-import { Poster } from "../components/Poster";
+import { useState } from "react";
+import { useMovies, useScreenings } from "../hooks";
+import type { Movie, Screening } from "../types";
 import { MovieGridSkeleton } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
-import { useScreenings } from "../hooks/useScreenings";
-import { Link } from "react-router";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "../components/Tabs";
+import MovieFilters, {
+  type MovieSort,
+} from "../components/movies/MovieFilters";
+import MovieListCard from "../components/movies/MovieListCard";
+import {
+  addDaysToIsoDate,
+  formatDayChipLabel,
+  toCinemaIsoDate,
+  todayIsoDate,
+} from "../utils/date";
+import { getAgeLimit } from "../utils/movie";
 
-const AGE_OPTIONS = [
-  { value: "all", label: "Alla åldrar" },
-  { value: "0", label: "Barntillåten" },
-  { value: "7", label: "Från 7 år" },
-  { value: "11", label: "Från 11 år" },
-  { value: "15", label: "Från 15 år" },
-];
+type MoviesTab = "now" | "upcoming";
+
+const DAYS_SHOWN = 4;
+
+function compareMovies(
+  a: Movie,
+  b: Movie,
+  sort: MovieSort,
+  bookedSeats: Map<number, number>,
+) {
+  const ratingDiff = (b.imdb_rating ?? 0) - (a.imdb_rating ?? 0);
+
+  switch (sort) {
+    case "title":
+      return a.title.localeCompare(b.title, "sv");
+    case "newest":
+      return (b.release_date ?? "").localeCompare(a.release_date ?? "");
+    case "rating":
+      return ratingDiff;
+    case "popular":
+      // Most booked seats first, then rating
+      return (
+        (bookedSeats.get(b.id) ?? 0) - (bookedSeats.get(a.id) ?? 0) ||
+        ratingDiff
+      );
+  }
+}
+
+function isUpcoming(movie: Movie, today: string): boolean {
+  return (
+    movie.release_date !== null && toCinemaIsoDate(movie.release_date) > today
+  );
+}
+
+function matchesSearch(movie: Movie, search: string): boolean {
+  const query = search.trim().toLowerCase();
+  if (!query) return true;
+  return [movie.title, movie.director ?? "", ...movie.genres].some((text) =>
+    text.toLowerCase().includes(query),
+  );
+}
 
 export default function Movies() {
+  const today = todayIsoDate();
+  const [tab, setTab] = useState<MoviesTab>("now");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<MovieSort>("popular");
+  const [genre, setGenre] = useState("all");
+  const [age, setAge] = useState("all");
+  const [date, setDate] = useState(today);
+
   const { data: movies, loading, error, refetch } = useMovies();
-  const [selectedGenre, setSelectedGenre] = useState<string>("all");
-  const [selectedAge, setSelectedAge] = useState<string>("all");
-  const { data: screenings } = useScreenings();
+  const { data: screenings } = useScreenings({ date });
 
-  const movieList = useMemo(() => movies || [], [movies]);
+  const allMovies = movies ?? [];
+  const nowShowing = allMovies.filter((movie) => !isUpcoming(movie, today));
+  const upcoming = allMovies.filter((movie) => isUpcoming(movie, today));
+  const tabMovies = tab === "now" ? nowShowing : upcoming;
 
-  // Extract unique genres from movies
-  const genreOptions = useMemo(() => {
-    const genresSet = new Set<string>();
-    movieList.forEach((movie) => {
-      movie.genres?.forEach((g) => genresSet.add(g));
-    });
-    const list = Array.from(genresSet)
-      .sort()
-      .map((g) => ({
-        value: g,
-        label: g,
-      }));
-    return [{ value: "all", label: "Alla genrer" }, ...list];
-  }, [movieList]);
+  const genres = [...new Set(tabMovies.flatMap((movie) => movie.genres))].sort(
+    (a, b) => a.localeCompare(b, "sv"),
+  );
+  const genreOptions = [
+    { value: "all", label: "Alla" },
+    ...genres.map((name) => ({ value: name, label: name })),
+  ];
 
-  // Filter movies based on selected genre and age
-  const filteredMovies = useMemo(() => {
-    return movieList.filter((movie) => {
-      if (selectedGenre !== "all" && !movie.genres?.includes(selectedGenre)) {
-        return false;
-      }
-      if (selectedAge !== "all") {
-        const rawAge =
-          movie.age_rating != null ? String(movie.age_rating).trim() : "";
-        const movieAge = parseInt(rawAge, 10) || 0;
-        const targetAge = parseInt(selectedAge, 10);
+  const dateOptions = Array.from({ length: DAYS_SHOWN }, (_, index) => {
+    const isoDate = addDaysToIsoDate(today, index);
+    return { value: isoDate, label: formatDayChipLabel(isoDate) };
+  });
 
-        if (targetAge === 0 && movieAge !== 0) return false;
-        if (targetAge > 0 && movieAge > targetAge) return false;
-      }
-      return true;
-    });
-  }, [movieList, selectedGenre, selectedAge]);
+  const screeningsByMovie = new Map<number, Screening[]>();
+  const bookedSeats = new Map<number, number>();
+  for (const screening of screenings ?? []) {
+    const { movieId } = screening;
+    screeningsByMovie.set(movieId, [
+      ...(screeningsByMovie.get(movieId) ?? []),
+      screening,
+    ]);
+    bookedSeats.set(
+      movieId,
+      (bookedSeats.get(movieId) ?? 0) + (screening.bookedSeats ?? 0),
+    );
+  }
 
-  const hasActiveFilters = selectedGenre !== "all" || selectedAge !== "all";
+  const filteredMovies = tabMovies
+    .filter((movie) => genre === "all" || movie.genres.includes(genre))
+    .filter(
+      (movie) => age === "all" || getAgeLimit(movie.age_rating) <= Number(age),
+    )
+    .filter((movie) => tab === "upcoming" || screeningsByMovie.has(movie.id))
+    .filter((movie) => matchesSearch(movie, search))
+    .sort((a, b) => compareMovies(a, b, sort, bookedSeats));
+
+  const hasActiveFilters = search !== "" || genre !== "all" || age !== "all";
+
+  function changeTab(nextTab: string) {
+    setTab(nextTab as MoviesTab);
+    setGenre("all");
+  }
+
+  function clearFilters() {
+    setSearch("");
+    setGenre("all");
+    setAge("all");
+  }
 
   return (
-    <div className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="h2 fw-bold mb-1">Aktuella filmer</h1>
-          <p className="text-secondary mb-0">
-            Här visas alla filmer som går på bio just nu.
+    <Tabs value={tab} onChange={changeTab}>
+      <header className="movies-header full-bleed px-3 px-md-5">
+        <div className="container movies-container">
+          <h1 className="movies-header__title">Filmer &amp; Repertoar</h1>
+          <p className="movies-header__subtitle">
+            Vad vill du se?
+            {!loading &&
+              ` Vi spelar nu ${nowShowing.length} ${nowShowing.length === 1 ? "film" : "filmer"} på FILMVISARNA.`}
           </p>
-        </div>
-      </div>
 
-      {/* Filter bars using FilterPillGroup */}
-      {!loading && !error && movieList.length > 0 ? (
-        <div className="d-flex flex-column gap-3 mb-4">
-          <div className="d-flex flex-column gap-2">
-            <span
-              className="text-secondary small text-uppercase fw-semibold"
-              style={{ letterSpacing: "0.05em" }}
+          <TabsList ariaLabel="Filmer">
+            <TabsTrigger value="now">På bio nu</TabsTrigger>
+            <TabsTrigger
+              value="upcoming"
+              badge={
+                <span className="movies-header__count">
+                  {upcoming.length}
+                  <span className="visually-hidden"> filmer</span>
+                </span>
+              }
             >
-              Genre
-            </span>
-            <FilterPillGroup
-              ariaLabel="Filtrera efter genre"
-              variant="genre"
-              options={genreOptions}
-              value={selectedGenre}
-              onChange={setSelectedGenre}
-            />
-          </div>
-
-          <div className="d-flex flex-column gap-2">
-            <span
-              className="text-secondary small text-uppercase fw-semibold"
-              style={{ letterSpacing: "0.05em" }}
-            >
-              Åldersgräns
-            </span>
-            <FilterPillGroup
-              ariaLabel="Filtrera efter åldersgräns"
-              variant="age"
-              options={AGE_OPTIONS}
-              value={selectedAge}
-              onChange={setSelectedAge}
-            />
-          </div>
+              Kommande premiärer
+            </TabsTrigger>
+          </TabsList>
         </div>
-      ) : null}
+      </header>
 
-      {/* Loading state */}
-      {loading ? <MovieGridSkeleton count={8} /> : null}
-
-      {/* Error state */}
-      {error ? (
-        <EmptyState
-          variant="error"
-          title="Kunde inte ladda filmer"
-          description={error}
-          actionLabel="Försök igen"
-          onAction={refetch}
+      <TabsPanel value={tab} className="container movies-container py-4">
+        <MovieFilters
+          search={search}
+          onSearchChange={setSearch}
+          sort={sort}
+          onSortChange={setSort}
+          genre={genre}
+          genreOptions={genreOptions}
+          onGenreChange={setGenre}
+          age={age}
+          onAgeChange={setAge}
+          date={tab === "now" ? date : null}
+          dateOptions={dateOptions}
+          onDateChange={setDate}
         />
-      ) : null}
 
-      {/* Empty state when no movies match filters */}
-      {!loading && !error && filteredMovies.length === 0 ? (
-        <EmptyState
-          variant="empty"
-          title="Inga filmer hittades"
-          description={
-            hasActiveFilters
-              ? "Inga filmer matchar dina valda filter. Prova att återställa filtreringen."
-              : "Det finns inga aktuella filmer på repertoaren just nu."
-          }
-          actionLabel={hasActiveFilters ? "Rensa filter" : undefined}
-          onAction={
-            hasActiveFilters
-              ? () => {
-                  setSelectedGenre("all");
-                  setSelectedAge("all");
-                }
-              : undefined
-          }
-        />
-      ) : null}
+        <div className="pt-4">
+          {loading && <MovieGridSkeleton count={10} />}
 
-      {/* Movie grid */}
-      {!loading && !error && filteredMovies.length > 0 ? (
-        <div className="row g-4">
-          {filteredMovies.map((movie) => {
-            const duration = movie.duration_minutes ?? movie.duration;
-            const movieScreenings = (screenings ?? []).filter(
-              (screening) => screening.movieId === movie.id,
-            );
+          {error && (
+            <EmptyState
+              variant="error"
+              title="Kunde inte ladda filmer"
+              description={error}
+              actionLabel="Försök igen"
+              onAction={refetch}
+            />
+          )}
 
-            return (
-              <div key={movie.id} className="col-12 col-md-6 col-lg-3">
-                <div className="card h-100 shadow-sm border-0 bg-card text-light overflow-hidden">
-                  <Poster
-                    src={movie.landscape_image_url || movie.poster_url}
-                    alt={movie.title}
-                    title={movie.title}
-                    aspectRatio="2/3"
-                    hoverZoom={true}
-                    topLeftBadge={
-                      movie.age_rating ? (
-                        <AgeBadge
-                          ageRating={movie.age_rating}
-                          variant="poster-filmer"
-                        />
-                      ) : null
-                    }
-                    topRightBadge={
-                      duration ? (
-                        <Badge variant="runtime">{duration} min</Badge>
-                      ) : null
-                    }
+          {!loading && !error && (
+            <p className="movies-results__count" role="status">
+              Visar <strong>{filteredMovies.length}</strong> av{" "}
+              {tabMovies.length} {tabMovies.length === 1 ? "film" : "filmer"}
+            </p>
+          )}
+
+          {!loading && !error && filteredMovies.length === 0 && (
+            <EmptyState
+              variant="empty"
+              title="Inga filmer hittades"
+              description={
+                hasActiveFilters
+                  ? "Inga filmer matchar dina valda filter. Prova att återställa filtreringen."
+                  : "Det finns inga filmer att visa här just nu."
+              }
+              actionLabel={hasActiveFilters ? "Rensa filter" : undefined}
+              onAction={hasActiveFilters ? clearFilters : undefined}
+            />
+          )}
+
+          {!loading && !error && filteredMovies.length > 0 && (
+            <ul className="list-unstyled row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 mb-0">
+              {filteredMovies.map((movie) => (
+                <li key={movie.id} className="col">
+                  <MovieListCard
+                    movie={movie}
+                    screenings={screeningsByMovie.get(movie.id) ?? []}
+                    dayLabel={tab === "now" ? formatDayChipLabel(date) : null}
                   />
-                  <div className="card-body d-flex flex-column p-3">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <div className="d-flex flex-wrap gap-1">
-                        {movie.genres?.map((genre) => (
-                          <Badge key={genre} variant="danger">
-                            {genre}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {movie.imdb_rating ? (
-                        <StarRatingBadge rating={movie.imdb_rating} />
-                      ) : null}
-                    </div>
-                    <h2 className="card-title h5 fw-bold text-white mb-2">
-                      {movie.title}
-                    </h2>
-                    {duration ? (
-                      <p className="text-secondary small mb-3">
-                        <i className="bi bi-clock me-1" aria-hidden="true"></i>{" "}
-                        {duration} minuter
-                      </p>
-                    ) : null}
-
-                    <div className="mb-3">
-                      <span className="text-secondary small fw-semibold">
-                        Visningstider
-                      </span>
-                      <div className="d-flex flex-wrap gap-2 mt-2">
-                        {movieScreenings.length > 0 ? (
-                          movieScreenings.map((screening) => (
-                            <Link
-                              key={screening.id}
-                              to={`/booking/${screening.id}`}
-                              className="text-decoration-none"
-                            >
-                              <Badge variant="runtime">
-                                {new Date(screening.startsAt).toLocaleString(
-                                  "sv-SE",
-                                  {
-                                    day: "numeric",
-                                    month: "short",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                )}
-                              </Badge>
-                            </Link>
-                          ))
-                        ) : (
-                          <span className="text-secondary small">
-                            Inga kommande visningar
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-auto pt-2">
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger w-100 btn-sm"
-                      >
-                        Boka biljetter
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      ) : null}
-    </div>
+      </TabsPanel>
+    </Tabs>
   );
 }

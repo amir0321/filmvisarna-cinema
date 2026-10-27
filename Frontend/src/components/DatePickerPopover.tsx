@@ -30,7 +30,6 @@ function clampDate(date: string, min: string, max: string): string {
   return date
 }
 
-// Returns the month as weeks, with null for empty cells before the 1st and after the last day
 function getWeeks(monthStart: string): (string | null)[][] {
   const days: (string | null)[] = Array(weekdayIndex(monthStart)).fill(null)
   for (let i = 0; i < daysInMonth(monthStart); i++) {
@@ -59,7 +58,7 @@ export default function DatePickerPopover({
 
   const monthStart = startOfMonthIsoDate(focusedDate)
 
-  // Place the popover under the button and follow it when the page scrolls
+  // Follow the button when the page scrolls
   useLayoutEffect(() => {
     function updatePosition() {
       const anchor = anchorRef.current
@@ -81,7 +80,6 @@ export default function DatePickerPopover({
     }
   }, [anchorRef])
 
-  // Close on click outside
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node
@@ -93,7 +91,6 @@ export default function DatePickerPopover({
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [anchorRef, onClose])
 
-  // Focus the active day when opening and when using the arrow keys
   useEffect(() => {
     if (!shouldFocusDay.current) return
     shouldFocusDay.current = false
@@ -133,7 +130,6 @@ export default function DatePickerPopover({
         if (event.key === 'Escape') closeAndReturnFocus()
       }}
       onBlur={(event) => {
-        // Close when tabbing out of the popover
         const next = event.relatedTarget as Node | null
         if (next && !popoverRef.current?.contains(next) && !anchorRef.current?.contains(next)) {
           onClose()
