@@ -25,7 +25,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'movies', element: <Movies /> },
-      { path: 'filmer/:id', element: <MovieDetails /> },
+      { path: 'movies/:id', element: <MovieDetails /> },
       { path: 'salonger', element: <Salonger /> },
       { path: 'om-oss', element: <About /> },
       { path: 'my-bookings', element: <MyBookings /> },
