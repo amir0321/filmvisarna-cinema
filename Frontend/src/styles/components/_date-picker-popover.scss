@@ -1,6 +1,5 @@
 .date-picker-popover {
   position: fixed;
-  // Below the sticky header
   z-index: $fv-z-sticky;
   width: min(21rem, calc(100vw - 16px));
   padding: 0.75rem;

@@ -8,7 +8,6 @@ interface TrailerModalProps {
   movieTitle: string;
 }
 
-// <dialog> handles focus and closing with Escape for us
 export default function TrailerModal({
   isOpen,
   onClose,
@@ -49,7 +48,7 @@ export default function TrailerModal({
           />
         </div>
 
-        {/* Only render the video while open so it stops playing on close */}
+        {/* Unmount the video so it stops playing */}
         {isOpen &&
           (embedUrl ? (
             <div className="ratio ratio-16x9 rounded-3 overflow-hidden bg-black">

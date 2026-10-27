@@ -14,6 +14,11 @@
 @import './components/poster';
 @import './components/date-picker-popover';
 @import './components/trailer-modal';
+@import './components/full-bleed';
+
+// Movies page
+@import './components/movies/movies-page';
+@import './components/movies/movie-list-card';
 
 // Home page
 @import './components/home/home-page';

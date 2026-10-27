@@ -16,7 +16,7 @@ export interface Screening {
 
 export type ScreeningWhen = 'today' | 'tomorrow' | 'weekend'
 
-// Matches the query params of GET /api/screenings. Use either `when` or `date`, not both.
+// Use either `when` or `date`, not both
 export interface ScreeningFilters {
   when?: ScreeningWhen
   date?: string // YYYY-MM-DD
