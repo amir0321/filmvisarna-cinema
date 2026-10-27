@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
       { path: 'register', element: <Register /> },
       { path: 'profile', element: <Profile /> },
       { path: 'screeningdetail/:id', element: <ScreeningDetail /> },
-      { path: 'booking', element: <Booking /> },
+      { path: 'booking/:screeningId', element: <Booking /> },
     ],
   },
   // Backoffice administration layout

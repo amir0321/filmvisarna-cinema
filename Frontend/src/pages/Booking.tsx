@@ -1,31 +1,29 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import QuantityPicker from '../components/QuantityPicker'
 import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek, sumLines } from '../utils/price'
-import type { KioskItem } from '../types/kisok'
+import type { KioskItem } from '../types/kiosk'
 import apiClient, {ApiError} from '../api/client'
+import {getPriceGroups} from '../api/priceGroups'
+import {getKioskItems} from '../api/kiosk'
 
 export const hideFromNav = true
 
-interface BookingState {
-  screeningId: number
-  seatIds: number[]
-}
-
-// A type guard checks the data at runtime instead of using "as"
-function isBookingState(v: unknown): v is BookingState {
-  return (
-    typeof v === 'object' && v !== null &&
-    'screeningId' in v && typeof v.screeningId === 'number' &&
-    'seatIds' in v && Array.isArray(v.seatIds)
-  )
-}
-
 export default function Booking() {
-  const location = useLocation()
-  console.log('state:', location.state)
-  const booking = isBookingState(location.state) ? location.state : null
+    const { screeningId: idParam } = useParams()
+  const [searchParams] = useSearchParams()
+
+  const screeningId = Number(idParam)
+  const seatIds = (searchParams.get('seats') ?? '')
+    .split(',')
+    .map(Number)
+    .filter(n => Number.isInteger(n) && n > 0)
+
+  const booking =
+    Number.isInteger(screeningId) && screeningId > 0 && seatIds.length > 0
+      ? { screeningId, seatIds }
+      : null
 
   const [counts, setCounts] = useState<Record<TicketType, number>>({ adult: 0, senior: 0, child: 0 })
   const [kiosk, setKiosk] = useState<KioskItem[]>([])
@@ -34,19 +32,22 @@ export default function Booking() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [reference, setReference] = useState<string | null>(null)
+  const [groupIds, setGroupIds] = useState<Record<string, number>>({})
 
-  useEffect(() => {
-    fetch('/api/kiosk')
-      .then(res => {
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        return res.json()
-      })
-      .then((body: { data: KioskItem[] }) => setKiosk(body.data.filter(i => i.is_available)))
-      .catch(err => setKioskError(String(err)))
+   useEffect(() => {
+    getKioskItems()
+      .then(items => setKiosk(items.filter(i => i.is_available)))
+      .catch(() => setKioskError('Kunde inte hämta kiosken.'))
+  }, [])
+
+    useEffect(() => {
+    getPriceGroups()
+      .then(groups => setGroupIds(Object.fromEntries(groups.map(g => [g.name, g.id]))))
+      .catch(() => setMessage('Kunde inte hämta biljettyper.'))
   }, [])
 
   if (!booking) {
-    return <p>No booking selected <Link to="/">Home</Link></p>
+    return <p>Ingen bokning vald<Link to="/">Till startsidan</Link></p>
   }
 
   const seatCount = booking.seatIds.length
@@ -63,9 +64,10 @@ export default function Booking() {
     if (!booking) return
     setMessage(null)
 
-    // Temporary fixed ids, they match the rebuilt database
-    const groupIds = { adult: 2, senior: 3, child: 1 }
-    const perSeat = TICKET_TYPES.flatMap(t => Array<number>(counts[t.type]).fill(groupIds[t.type]))
+        const dbName = { adult: 'adult', senior: 'elder', child: 'child' } as const
+    const perSeat = TICKET_TYPES.flatMap(t =>
+      Array<number>(counts[t.type]).fill(groupIds[dbName[t.type]]),
+    )
     const tickets = booking.seatIds.map((seatId, i) => ({ seatId, priceGroupId: perSeat[i] }))
     const items = kiosk
       .filter(i => (kioskQty[i.id] ?? 0) > 0)
@@ -85,13 +87,14 @@ export default function Booking() {
   }
   return (
     <section>
-      <Link to="/">Home</Link>
-      <h1>Your Booking</h1>
-      <p>Selected Seats: {seatCount}</p>
+      <Link to="/">Till startsidan</Link>
+      <h1>Din bokning</h1>
+      <p>Valda stolar: {seatCount}</p>
 
-      <h2>Tickets</h2>
-      {TICKET_TYPES.map(t => (
-        <QuantityPicker
+     <div className="fv-card">
+        <h2>Biljetter</h2>
+        {TICKET_TYPES.map(t => (
+          <QuantityPicker
           key={t.type}
           label={`${t.label} (${formatSek(t.price)})`}
           value={counts[t.type]}
@@ -99,10 +102,11 @@ export default function Booking() {
           onChange={next => setCounts(c => ({ ...c, [t.type]: next }))}
         />
       ))}
-      {!ticketsDone && <p>Select ticket type for all {seatCount} seats ({ticketCount}/{seatCount}).</p>}
+      {!ticketsDone && <p>Välja biljettyp för alla {seatCount} stolar ({ticketCount}/{seatCount}).</p>}
+      </div>
 
       <h2>Kiosk</h2>
-      {kioskError && <p>Cannot find the kisok: {kioskError}</p>}
+      {kioskError && <p>{kioskError}</p>}
       {kiosk.map(i => (
         <QuantityPicker
           key={i.id}
@@ -115,25 +119,28 @@ export default function Booking() {
 
       <h2>Totalt: {formatSek(ticketTotal + kioskTotal)}</h2>
 
-            <label>
-        E-post för bokningsbekräftelse
-        <input
-          type="email"
-          placeholder="din@epost.se"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
-      </label>
+                  <div className="fv-checkout">
+        <label className="fv-checkout__field">
+          E-post för bokningsbekräftelse
+          <input
+            type="email"
+            placeholder="din@epost.se"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+        </label>
 
-            {message && <p role="alert">{message}</p>}
-      {reference && <p>Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong></p>}
+        {message && <p role="alert">{message}</p>}
+        {reference && <p>Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong></p>}
 
-      <button
-        onClick={handleConfirm}
-        disabled={!ticketsDone || email.trim() === '' || reference !== null}
-      >
-        Bekräfta bokning
-      </button>
+        <button
+          className="fv-checkout__btn"
+          onClick={handleConfirm}
+          disabled={Object.keys(groupIds).length === 0 || !ticketsDone || email.trim() === '' || reference !== null}
+        >
+          Bekräfta bokning
+        </button>
+      </div>
     </section>
   )
 }
