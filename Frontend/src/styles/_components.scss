@@ -13,3 +13,18 @@
 @import './components/empty-state';
 @import './components/poster';
 @import './components/booking';
+@import './components/date-picker-popover';
+@import './components/trailer-modal';
+@import './components/full-bleed';
+
+// Movies page
+@import './components/movies/movies-page';
+@import './components/movies/movie-list-card';
+
+// Home page
+@import './components/home/home-page';
+@import './components/home/age-badge';
+@import './components/home/filter-strip';
+@import './components/home/hero-section';
+@import './components/home/movie-card';
+@import './components/home/repertoire-section';
