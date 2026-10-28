@@ -17,6 +17,8 @@ import AdminBookings from './pages/admin/AdminBookings'
 import AdminScreenings from './pages/admin/AdminScreenings'
 import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
+import ScreeningDetail from './pages/ScreeningDetail'
+import Booking from './pages/Booking'
 
 export const router = createBrowserRouter([
   // Public application layout
@@ -33,6 +35,8 @@ export const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'profile', element: <Profile /> },
+      { path: 'screeningdetail/:id', element: <ScreeningDetail /> },
+      { path: 'booking/:screeningId', element: <Booking /> },
       { path: 'cancel/:token', element: <CancelBooking /> },
       { path: 'cancel', element: <CancelBooking /> },
     ],

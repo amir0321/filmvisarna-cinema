@@ -1,0 +1,206 @@
+// ============================================================================
+// Filmvisarna – Seat map (_booking.scss)
+// Follows design/pages/seat-selection.md
+// ============================================================================
+
+.fv-seatmap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+
+  &__screen {
+    width: 80%;
+    margin-bottom: 16px;
+    padding-top: 6px;
+    text-align: center;
+    letter-spacing: 0.3em;
+    font-size: 12px;
+    color: $fv-muted-fg;
+    border-top: 4px solid $fv-muted-fg;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__label {
+    width: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: $fv-muted-fg;
+  }
+
+  &__seats {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__legend {
+    display: flex;
+    gap: 24px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: $fv-muted-fg;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+}
+
+.fv-seat {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 11px;
+  color: $fv-fg;
+  border: 1px solid transparent;
+  border-radius: $radius-seat;
+
+  &--free {
+    background: $seat-available-bg;
+    border-color: $seat-available-border;
+    cursor: pointer;
+  }
+
+  &--selected {
+    background: $seat-selected-bg;
+    border-color: $seat-selected-border;
+    box-shadow: $seat-selected-glow;
+    cursor: pointer;
+  }
+
+  &--booked {
+    background: $seat-occupied-bg;
+    border-color: $seat-occupied-border;
+    color: $seat-occupied-strike;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  &--wheelchair {
+    background: $color-info;
+    cursor: pointer;
+  }
+}
+// ----------------------------------------------------------------------------
+// Quantity picker (tickets and kiosk)
+// ----------------------------------------------------------------------------
+
+.fv-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid $border-faint;
+
+  &__label {
+    color: $fv-fg;
+    font-size: 14px;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__value {
+    min-width: 20px;
+    text-align: center;
+    font-weight: 600;
+    color: $fv-fg;
+  }
+
+  &__btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    color: $fv-fg;
+    background: $white-overlay-08;
+    border: 1px solid $border-strong;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: $white-overlay-15;
+      border-color: $border-strong;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+}
+// ----------------------------------------------------------------------------
+// Card used by the booking page sections
+// ----------------------------------------------------------------------------
+
+.fv-card {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: $fv-card-bg;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-card;
+
+  h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+  }
+}
+// ----------------------------------------------------------------------------
+// Email field and confirm button
+// ----------------------------------------------------------------------------
+
+.fv-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: $fv-fg;
+
+    input {
+      padding: 10px 12px;
+      color: $fv-fg;
+      background: $color-surface-chip;
+      border: 1px solid $border-strong;
+      border-radius: $radius-md;
+    }
+  }
+
+  &__btn {
+    padding: 12px 16px;
+    font-weight: 600;
+    color: $fv-white;
+    background: $fv-primary;
+    border: 0;
+    border-radius: $radius-md;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}

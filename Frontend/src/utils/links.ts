@@ -4,5 +4,5 @@ export function getMovieUrl(movieId: number): string {
 
 // Update when the booking flow is merged
 export function getBookingUrl(screeningId: number): string {
-  return `/booking/${screeningId}`
+  return `/screeningdetail/${screeningId}`
 }
