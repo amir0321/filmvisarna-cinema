@@ -33,3 +33,33 @@ export interface Booking {
   status: BookingStatus
   createdAt?: string
 }
+
+export interface CancelPreviewResult {
+  bookingRef: string
+  movieTitle: string
+  posterUrl: string | null
+  cinemaName: string
+  screeningStartsAt: string
+  seats: string[]
+  status: string
+  canCancel: boolean
+}
+
+export interface CancelBookingResponse {
+  success: boolean
+  message: string
+  booking: {
+    id: number
+    reference: string
+    status: string
+  }
+}
+
+export interface CancelBookingDetails {
+  bookingRef: string
+  movieTitle: string
+  posterUrl?: string | null
+  cinemaName: string
+  screeningStartsAt: string
+  seats: string[]
+}

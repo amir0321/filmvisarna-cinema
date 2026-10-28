@@ -10,6 +10,7 @@ import MyBookings from './pages/MyBookings'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
+import CancelBooking from './pages/CancelBooking'
 import NotFound from './pages/NotFound'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminBookings from './pages/admin/AdminBookings'
@@ -32,6 +33,8 @@ export const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'profile', element: <Profile /> },
+      { path: 'cancel/:token', element: <CancelBooking /> },
+      { path: 'cancel', element: <CancelBooking /> },
     ],
   },
   // Backoffice administration layout

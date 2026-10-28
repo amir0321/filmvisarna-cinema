@@ -30,6 +30,21 @@
       background: rgba($fv-primary, 0.12);
       color: $fv-danger-light;
     }
+
+    &.is-warning {
+      background: rgba($fv-warning, 0.12);
+      color: $fv-warning;
+    }
+
+    &.is-info {
+      background: rgba($fv-info, 0.12);
+      color: $fv-info-light;
+    }
+
+    &.is-success {
+      background: rgba($fv-success, 0.12);
+      color: $fv-success;
+    }
   }
 
   .fv-empty-title {
