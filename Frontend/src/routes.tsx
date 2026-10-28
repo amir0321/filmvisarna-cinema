@@ -3,6 +3,7 @@ import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
+import MovieDetails from './pages/MovieDetails'
 import Salonger from './pages/Salonger'
 import About from './pages/About'
 import MyBookings from './pages/MyBookings'
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'movies', element: <Movies /> },
+      { path: 'movies/:id', element: <MovieDetails /> },
       { path: 'salonger', element: <Salonger /> },
       { path: 'om-oss', element: <About /> },
       { path: 'my-bookings', element: <MyBookings /> },
