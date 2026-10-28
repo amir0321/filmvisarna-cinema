@@ -25,7 +25,15 @@ export default function Booking() {
       ? { screeningId, seatIds }
       : null
 
-  const [counts, setCounts] = useState<Record<TicketType, number>>({ adult: 0, senior: 0, child: 0 })
+    const countFromUrl = (key: string) => {
+    const n = Number(searchParams.get(key))
+    return Number.isInteger(n) && n > 0 ? n : 0
+  }
+  const counts: Record<TicketType, number> = {
+    adult: countFromUrl('adult'),
+    senior: countFromUrl('senior'),
+    child: countFromUrl('child'),
+  }
   const [kiosk, setKiosk] = useState<KioskItem[]>([])
   const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
   const [kioskError, setKioskError] = useState<string | null>(null)
@@ -47,12 +55,13 @@ export default function Booking() {
   }, [])
 
   if (!booking) {
-    return <p>Ingen bokning vald<Link to="/">Till startsidan</Link></p>
+    return <p>Ingen bokning vald. <Link to="/">Till startsidan</Link></p>
   }
 
   const seatCount = booking.seatIds.length
   const ticketCount = counts.adult + counts.senior + counts.child
   const ticketsDone = ticketCount === seatCount
+  const backUrl = `/screeningdetail/${booking.screeningId}?seats=${seatIds.join(',')}&adult=${counts.adult}&senior=${counts.senior}&child=${counts.child}`
 
   const ticketTotal = sumLines(
     TICKET_TYPES.map(t => ({ price: t.price, quantity: counts[t.type] })),
@@ -60,6 +69,8 @@ export default function Booking() {
   const kioskTotal = sumLines(
     kiosk.map(i => ({ price: i.price, quantity: kioskQty[i.id] ?? 0 })),
   )
+    const kioskCount = Object.values(kioskQty).reduce((sum, n) => sum + n, 0)
+
     async function handleConfirm() {
     if (!booking) return
     setMessage(null)
@@ -88,34 +99,40 @@ export default function Booking() {
   return (
     <section>
       <Link to="/">Till startsidan</Link>
+      <Link to={backUrl}>← Ändra stolar och biljetter</Link>
       <h1>Din bokning</h1>
       <p>Valda stolar: {seatCount}</p>
 
-     <div className="fv-card">
+        <div className="fv-card">
         <h2>Biljetter</h2>
-        {TICKET_TYPES.map(t => (
-          <QuantityPicker
-          key={t.type}
-          label={`${t.label} (${formatSek(t.price)})`}
-          value={counts[t.type]}
-          max={seatCount - (ticketCount - counts[t.type])}
-          onChange={next => setCounts(c => ({ ...c, [t.type]: next }))}
-        />
-      ))}
-      {!ticketsDone && <p>Välja biljettyp för alla {seatCount} stolar ({ticketCount}/{seatCount}).</p>}
+        {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
+          <p key={t.type}>
+            {counts[t.type]} × {t.label} ({formatSek(t.price)})
+          </p>
+        ))}
+        {!ticketsDone && (
+          <p>
+            Välj biljettyper för alla {seatCount} stolar på stolsidan.{' '}
+            <Link to={`/screeningdetail/${booking.screeningId}`}>Till stolsidan</Link>
+          </p>
+        )}
       </div>
 
-      <h2>Kiosk</h2>
-      {kioskError && <p>{kioskError}</p>}
-      {kiosk.map(i => (
-        <QuantityPicker
-          key={i.id}
-          label={`${i.name} (${formatSek(i.price)})`}
-          value={kioskQty[i.id] ?? 0}
-          max={20}
-          onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
-        />
-      ))}
+       <details className="fv-card">
+        <summary>
+          Bio-Kiosken (valfritt){kioskCount > 0 ? ` – ${kioskCount} valda` : ''}
+        </summary>
+        {kioskError && <p>{kioskError}</p>}
+        {kiosk.map(i => (
+          <QuantityPicker
+            key={i.id}
+            label={`${i.name} (${formatSek(i.price)})`}
+            value={kioskQty[i.id] ?? 0}
+            max={20}
+            onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
+          />
+        ))}
+      </details>
 
       <h2>Totalt: {formatSek(ticketTotal + kioskTotal)}</h2>
 
