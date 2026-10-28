@@ -3,12 +3,14 @@ INSERT INTO cinema (name, format, tech, screen_size, opened_year) VALUES
   ('Lilla Salongen', '2D Intimt', '2K Digital, Dolby 5.1, Rullstolsanpassad', '10×4,5 m', 2019);
 
 INSERT INTO seat (cinema_id, row_label, seat_number)
-SELECT (SELECT id FROM cinema WHERE name = 'Stora Salongen'), chr(64 + r), n
-FROM generate_series(1, 8) r, generate_series(1, 10) n;
+SELECT (SELECT id FROM cinema WHERE name = 'Stora Salongen'), v.row_label, n
+FROM (VALUES ('A',8),('B',9),('C',10),('D',10),('E',11),('F',11),('G',11),('H',10)) v (row_label, seats),
+     generate_series(1, v.seats) n;
 
 INSERT INTO seat (cinema_id, row_label, seat_number)
-SELECT (SELECT id FROM cinema WHERE name = 'Lilla Salongen'), chr(64 + r), n
-FROM generate_series(1, 5) r, generate_series(1, 8) n;
+SELECT (SELECT id FROM cinema WHERE name = 'Lilla Salongen'), v.row_label, n
+FROM (VALUES ('A',6),('B',7),('C',8),('D',9),('E',10)) v (row_label, seats),
+     generate_series(1, v.seats) n;
 
 INSERT INTO price_group (name, price) VALUES
   ('child', 80.00),
