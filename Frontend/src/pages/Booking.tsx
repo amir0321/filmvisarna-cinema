@@ -38,6 +38,7 @@ export default function Booking() {
   const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
   const [kioskError, setKioskError] = useState<string | null>(null)
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [reference, setReference] = useState<string | null>(null)
   const [groupIds, setGroupIds] = useState<Record<string, number>>({})
@@ -87,6 +88,7 @@ export default function Booking() {
     try {
       const created = await apiClient.post<{ bookingRef: string }>('/bookings', {
         screeningId: booking.screeningId,
+        guestName: name.trim(),
         email,
         tickets,
         items,
@@ -135,8 +137,17 @@ export default function Booking() {
       </details>
 
       <h2>Totalt: {formatSek(ticketTotal + kioskTotal)}</h2>
+         <div className="fv-checkout">
+        <label className="fv-checkout__field">
+          Namn
+          <input
+            type="text"
+            placeholder="Förnamn Efternamn"
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+        </label>
 
-                  <div className="fv-checkout">
         <label className="fv-checkout__field">
           E-post för bokningsbekräftelse
           <input
@@ -146,7 +157,6 @@ export default function Booking() {
             onChange={e => setEmail(e.target.value)}
           />
         </label>
-
         {message && <p role="alert">{message}</p>}
         {reference && <p>Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong></p>}
 
