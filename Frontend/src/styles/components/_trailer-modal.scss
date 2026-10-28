@@ -1,0 +1,23 @@
+.trailer-modal {
+  width: min(960px, calc(100% - 2rem));
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+
+.trailer-modal__content {
+  padding: 1rem;
+  border: 1px solid $border-strong;
+  border-radius: $radius-modal;
+  background: $color-surface;
+  box-shadow: $shadow-card-lg;
+
+  h2 {
+    color: $text-heading;
+  }
+}

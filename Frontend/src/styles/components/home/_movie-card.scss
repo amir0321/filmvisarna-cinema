@@ -1,0 +1,135 @@
+.movie-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid $border-strong;
+  border-radius: $radius-card;
+  background-color: $color-surface;
+  box-shadow: $shadow-card-md;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: $white-overlay-25;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.movie-card__image-link {
+  display: block;
+}
+
+.movie-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background-color: $color-bg;
+
+  &--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $text-muted;
+    font-size: 3rem;
+  }
+}
+
+.movie-card__age {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+}
+
+.movie-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.movie-card__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.movie-card__title-link {
+  color: $text-heading;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.movie-card__meta {
+  color: $text-muted;
+  font-size: 0.8125rem;
+}
+
+.movie-card__genre {
+  padding: 0.15rem 0.5rem;
+  border-radius: $radius-sm;
+  background-color: $color-surface-chip;
+  color: $text-secondary;
+  font-size: 0.75rem;
+}
+
+.movie-card__day-label {
+  color: $text-muted;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.showtime-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid $white-overlay-25;
+  border-radius: $radius-lg;
+  background-color: $color-surface-chip;
+  color: $text-heading;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background-color: $color-surface-chip-hover;
+    color: $text-heading;
+  }
+
+  &--sold-out,
+  &--sold-out:hover {
+    border-color: $border-default;
+    background-color: transparent;
+    color: $text-muted;
+    text-decoration: line-through;
+  }
+}
+
+.showtime-pill__seats {
+  color: $color-warning;
+  font-weight: 600;
+}
+
+.showtime-pill--sold-out .showtime-pill__seats {
+  color: inherit;
+}

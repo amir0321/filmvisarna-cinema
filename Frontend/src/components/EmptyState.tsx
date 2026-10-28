@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router'
 
-export type EmptyStateVariant = 'empty' | 'error'
+export type EmptyStateVariant = 'empty' | 'error' | 'warning' | 'info' | 'success'
 
 export interface EmptyStateProps {
   variant?: EmptyStateVariant
@@ -31,14 +31,28 @@ export function EmptyState({
   children,
 }: EmptyStateProps) {
   const isError = variant === 'error'
+  const isWarning = variant === 'warning'
+  const isInfo = variant === 'info'
+  const isSuccess = variant === 'success'
 
-  const defaultIcon = isError ? 'bi-exclamation-triangle' : 'bi-film'
+  const defaultIcon = isError
+    ? 'bi-exclamation-triangle'
+    : isWarning
+      ? 'bi-exclamation-circle'
+      : isInfo
+        ? 'bi-info-circle'
+        : isSuccess
+          ? 'bi-check-circle'
+          : 'bi-film'
   const chosenIcon = icon || defaultIcon
 
   const combinedClass = ['fv-empty-state', className].filter(Boolean).join(' ')
   const iconClass = [
     'fv-empty-icon',
     isError ? 'is-error' : '',
+    isWarning ? 'is-warning' : '',
+    isInfo ? 'is-info' : '',
+    isSuccess ? 'is-success' : '',
   ]
     .filter(Boolean)
     .join(' ')
