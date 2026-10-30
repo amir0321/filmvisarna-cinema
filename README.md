@@ -4,6 +4,27 @@ A modern full-stack cinema booking application built with React, TypeScript, Exp
 
 ---
 
+## Mina tekniska beslut, arkitekturval & lärdomar (Ameer)
+
+Det här är ett grupparbete där vi bygger ett komplett bokningssystem för en biograf (både publik bokningsvy och ett admin-backoffice). Jag har tagit ett stort ansvar för helhetsarkitekturen, kopplingen mellan frontend och backend, databasreglerna och att omsätta vår Figma-design till återanvändbara komponenter i React och SCSS.
+
+### Vad jag/vi valde och varför
+
+1. **Databastransaktioner för att förhindra dubbelbokning (`409 Conflict`):**
+   Ett av de viktigaste problemen i ett bokningssystem är vad som händer om två besökare klickar på samma stol samtidigt. Vi valde att inte bara lita på att frontend visar lediga platser, utan kör hela bokningen i en PostgreSQL-transaktion på serversidan. Om en stol redan hunnit bli bokad när transaktionen körs avbryts allt (`ROLLBACK`) och API:et svarar med `409 Conflict`, så att frontend direkt kan uppdatera platskartan och be användaren välja en annan stol.
+2. **Egenbyggd interaktiv salongskarta (Seat Map) istället för färdigt bibliotek:**
+   Vi valde att bygga platskartan från grunden i React och SCSS istället för att ta in ett externt bibliotek. Det gav oss full kontroll över hur rader (`A`–`Z`) och stolar hämtas dynamiskt från databasen för olika salonger, gjorde det enklare att bygga in tangentbordsnavigering och fokus-states för tillgänglighet (WCAG AA), och lät oss återanvända komponenten i både bokningsflödet och adminpanelen.
+3. **Filbaserad routing med `import.meta.glob` i Vite:**
+   Eftersom vi jobbar flera personer parallellt i samma repo ville vi slippa konstanta merge-konflikter i en central router-fil. Därför satte vi upp `routes.tsx` så att den automatiskt upptäcker nya sidor i `Frontend/src/pages/` och bygger menyn utifrån enkla exporter (`navTitle`, `navOrder`, `hideFromNav`).
+4. **Säker gästavbokning via signerad mejllänk:**
+   Eftersom gäster ska kunna boka biobiljetter utan att tvingas skapa konto kan de inte heller logga in på "Mina sidor" för att avboka. Jag löste det flödet genom en signerad JWT-länk i bokningsbekräftelsen (`/cancel-booking?token=...`) som först hämtar en förhandsgranskning (`GET /api/bookings/cancel-preview`) och sedan avbokar och släpper stolarna fria – förutsatt att det är minst 2 timmar kvar till visningsstart.
+5. **Tydliga affärsregler i backend (20 min städmarginal & beroendekontroller):**
+   När en admin schemalägger en visning kontrollerar backend automatiskt att filmen + 20 minuters städtid inte krockar med en annan visning i samma salong (`409 Conflict`). På samma sätt kan man inte radera en film eller salong som har aktiva visningar eller bokningar.
+6. **Hur jag har använt AI i projektet:**
+   Jag använder AI som ett verktyg och bollplank för att bryta ner krav i mindre tasks (FE-1 till FE-33), få fart på boilerplate/SCSS-variabler och skriva enhetstester – men det är jag som styr arkitekturen, API-kontraktet mellan frontend och backend och hur affärslogiken ska fungera.
+
+---
+
 ## Tech Stack
 
 ### Frontend
