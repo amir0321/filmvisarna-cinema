@@ -6,10 +6,8 @@ import QuantityPicker from '../components/QuantityPicker'
 import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek } from '../utils/price'
 import {useScreenings} from '../hooks/useScreenings'
+import {getScreeningSeats} from '../api/screeningSeats'
 
-function isSeatsResponse(v: unknown): v is SeatsResponse {
-  return typeof v === 'object' && v !== null && 'seats' in v && Array.isArray(v.seats)
-}
 
 export default function ScreeningDetail() {
   const { id: idParam } = useParams()
@@ -35,18 +33,11 @@ export default function ScreeningDetail() {
     child: countFromUrl('child'),
   })
     const { data: screenings } = useScreenings()
-  // 1. Load the seats once when the page opens
+    // 1. Load the seats once when the page opens
   useEffect(() => {
     if (Number.isNaN(id)) return
-    fetch(`/api/screenings/${id}/seats`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        return res.json()
-      })
-      .then((body: unknown) => {
-        if (!isSeatsResponse(body)) throw new Error('Oväntat svar')
-        setData(body)
-      })
+    getScreeningSeats(id)
+      .then(setData)
       .catch(err => setError(String(err)))
   }, [id])
 
@@ -54,10 +45,8 @@ export default function ScreeningDetail() {
   useEffect(() => {
     if (Number.isNaN(id)) return
     const timer = setInterval(() => {
-      fetch(`/api/screenings/${id}/seats`)
-        .then(res => (res.ok ? res.json() : null))
-        .then((body: unknown) => {
-          if (!body || !isSeatsResponse(body)) return
+      getScreeningSeats(id)
+        .then(body => {
           setData(body)
 
           const taken = new Set(
@@ -85,6 +74,10 @@ export default function ScreeningDetail() {
   if (!data) return <p>Laddar...</p>
 
   const toggle = (seatId: number) => {
+    if (!selectedIds.includes(seatId) && selectedIds.length >= 10) {
+      setNotice('Du kan välja högst 10 platser.')
+      return
+    }
     setNotice(null)
     setSelectedIds(cur =>
       cur.includes(seatId) ? cur.filter(x => x !== seatId) : [...cur, seatId],
@@ -132,7 +125,7 @@ export default function ScreeningDetail() {
           key={t.type}
           label={`${t.label} (${t.price} kr)`}
           value={counts[t.type]}
-          max={8}
+          max={10 - (ticketCount - counts[t.type])}
           onChange={n => setCounts(c => ({ ...c, [t.type]: n }))}
         />
       ))}
