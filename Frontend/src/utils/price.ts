@@ -18,4 +18,4 @@ export function assignTickets(
 }
 
 export const formatSek = (n: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(n)
+  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 }).format(n)

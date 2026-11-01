@@ -7,7 +7,9 @@ import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek } from '../utils/price'
 import {useScreenings} from '../hooks/useScreenings'
 import {getScreeningSeats} from '../api/screeningSeats'
-
+import StepIndicator from '../components/StepIndicator'
+import { getMovieUrl } from '../utils/links'
+import { pickBestSeats } from '../utils/seats'
 
 export default function ScreeningDetail() {
   const { id: idParam } = useParams()
@@ -74,23 +76,28 @@ export default function ScreeningDetail() {
   if (!data) return <p>Laddar...</p>
 
   const toggle = (seatId: number) => {
-    if (!selectedIds.includes(seatId) && selectedIds.length >= 10) {
-      setNotice('Du kan välja högst 10 platser.')
-      return
-    }
     setNotice(null)
-    setSelectedIds(cur =>
-      cur.includes(seatId) ? cur.filter(x => x !== seatId) : [...cur, seatId],
-    )
+    setSelectedIds(cur => {
+      if (cur.includes(seatId)) return cur.filter(x => x !== seatId)
+      if (cur.length < ticketCount) return [...cur, seatId]
+      if (ticketCount === 0) return cur
+      return [...cur.slice(0, -1), seatId]
+    })
+  }
+
+  const changeCount = (type: TicketType, n: number) => {
+    const next = { ...counts, [type]: n }
+    setCounts(next)
+    setSelectedIds(pickBestSeats(data.seats, next.adult + next.senior + next.child))
   }
     const ticketCount = counts.adult + counts.senior + counts.child
     const ticketTotal = TICKET_TYPES.reduce((sum, t) => sum + counts[t.type] * t.price, 0)
 
       const selectedLabels = data.seats
     .filter(s => selectedIds.includes(s.id))
-    .map(s => `${s.row_label}${s.seat_number}`)
-    .sort()
-    .join(', ')
+    .sort((a, b) => a.row_label.localeCompare(b.row_label) || a.seat_number - b.seat_number)
+    .map(s => `Rad ${s.row_label}, Stol ${s.seat_number}`)
+    .join(' · ')
 
       const screening = screenings?.find(s => s.id === id)
   const when = screening
@@ -103,46 +110,128 @@ export default function ScreeningDetail() {
         timeZone: 'Europe/Stockholm',
       })
     : ''
+      const endTime = screening
+    ? new Date(screening.endsAt).toLocaleTimeString('sv-SE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Stockholm',
+      })
+    : ''
+  const seatsLeft = ticketCount - selectedIds.length
+  const ctaLabel =
+    ticketCount === 0
+      ? 'Välj biljetter'
+      : seatsLeft > 0
+        ? `Välj ${seatsLeft} ${seatsLeft === 1 ? 'plats' : 'platser'} till`
+        : seatsLeft < 0
+          ? 'Fler platser än biljetter'
+          : 'Slutför bokning'
 
-    return (
+         return (
     <section>
-      <Link to="/">← Till startsidan</Link>
-      <h1>Välj stolar</h1>
-            {screening && (
-        <p>
-          <strong>{screening.movieTitle}</strong> · {screening.cinema} · {when}
-        </p>
+      <div className="fv-booking__top">
+        <Link
+          to={screening ? getMovieUrl(screening.movieId) : '/'}
+          className="fv-booking__back"
+        >
+          ‹ {screening ? screening.movieTitle : 'Tillbaka'}
+        </Link>
+        <StepIndicator current={ticketCount === 0 ? 1 : 2} />
+      </div>
+
+      {screening && (
+        <div className="fv-movie-mini">
+          {screening.posterUrl && (
+            <img className="fv-movie-mini__poster" src={screening.posterUrl} alt="" />
+          )}
+          <div>
+            <h1 className="fv-movie-mini__title">{screening.movieTitle}</h1>
+            <p className="fv-movie-mini__meta">
+              {screening.cinema} · {when}–{endTime}
+            </p>
+          </div>
+        </div>
       )}
+
       {notice && <p role="alert">{notice}</p>}
-      <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
-            <p>
-        Valda stolar ({selectedIds.length}): {selectedLabels || 'inga ännu'}
-      </p>
 
-      <h2>Biljetter</h2>
-      {TICKET_TYPES.map(t => (
-        <QuantityPicker
-          key={t.type}
-          label={`${t.label} (${t.price} kr)`}
-          value={counts[t.type]}
-          max={10 - (ticketCount - counts[t.type])}
-          onChange={n => setCounts(c => ({ ...c, [t.type]: n }))}
-        />
-      ))}
-      <p>
-        Biljetter: {ticketCount} av {selectedIds.length} stolar · Totalt {formatSek(ticketTotal)}
-      </p>
+      <div className="fv-booking__grid">
+        <div>
+          <div className="fv-card">
+            <h2>1. Välj biljetter</h2>
+            <p>Välj antal biljetter per kategori</p>
+            {TICKET_TYPES.map(t => (
+              <QuantityPicker
+                key={t.type}
+                label={`${t.label} (${t.price} kr)`}
+                value={counts[t.type]}
+                max={10 - (ticketCount - counts[t.type])}
+                onChange={n => changeCount(t.type, n)}
+              />
+            ))}
+            {ticketCount > 0 && (
+              <p>
+                Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
+                {ticketCount === 1 ? 'biljett' : 'biljetter'}
+              </p>
+            )}
+          </div>
 
-      <button
-        disabled={selectedIds.length === 0 || ticketCount !== selectedIds.length}
-        onClick={() =>
-          navigate(
-            `/booking/${id}?seats=${selectedIds.join(',')}&adult=${counts.adult}&senior=${counts.senior}&child=${counts.child}`,
-          )
-        }
-      >
-        Fortsätt
-      </button>
+          {ticketCount > 0 && (
+            <div className="fv-card">
+              <h2>2. Välj platser</h2>
+              <p>Klicka på en stol för att välja den</p>
+              <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
+            </div>
+          )}
+        </div>
+
+          <aside className="fv-booking__aside">
+          <div className="fv-card">
+            <h2>Din bokning</h2>
+
+            {selectedIds.length > 0 && (
+              <div className="fv-selected">
+                <span>{screening?.cinema}</span>
+                <strong>{selectedLabels}</strong>
+              </div>
+            )}
+
+            {ticketCount > 0 && (
+              <div className="fv-summary">
+                {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
+                  <div key={t.type} className="fv-summary__row">
+                    <span>
+                      {counts[t.type]}× {t.label}
+                    </span>
+                    <span>{formatSek(counts[t.type] * t.price)}</span>
+                  </div>
+                ))}
+                <div className="fv-summary__row fv-summary__row--total">
+                  <span>Totalt</span>
+                  <span>{formatSek(ticketTotal)}</span>
+                </div>
+              </div>
+            )}
+
+            <p className="fv-notice">
+              Ingen onlinebetalning krävs. Biljetterna betalas och hämtas ut i kassan
+              senast 15 minuter innan föreställningen börjar.
+            </p>
+            <button
+              className="fv-checkout__btn"
+              disabled={ticketCount === 0 || seatsLeft !== 0}
+              onClick={() =>
+                navigate(
+                  `/booking/${id}?seats=${selectedIds.join(',')}&adult=${counts.adult}&senior=${counts.senior}&child=${counts.child}`,
+                )
+              }
+            >
+              {ctaLabel}
+            </button>
+          </div>
+        </aside>
+      </div>
     </section>
   )
 }

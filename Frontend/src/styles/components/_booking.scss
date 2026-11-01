@@ -9,15 +9,18 @@
   align-items: center;
   gap: 6px;
 
-  &__screen {
+ &__screen {
     width: 80%;
-    margin-bottom: 16px;
-    padding-top: 6px;
+    margin-bottom: 20px;
+    padding: 10px 0;
     text-align: center;
     letter-spacing: 0.3em;
     font-size: 12px;
     color: $fv-muted-fg;
-    border-top: 4px solid $fv-muted-fg;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+    border-top: 3px solid $fv-muted-fg;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    box-shadow: 0 -8px 24px rgba(255, 255, 255, 0.08);
   }
 
   &__row {
@@ -78,10 +81,16 @@
   }
 
   &--booked {
-    background: $seat-occupied-bg;
+    background-color: $seat-occupied-bg;
+    background-image: linear-gradient(
+      to top right,
+      transparent calc(50% - 1px),
+      $seat-occupied-strike calc(50% - 1px),
+      $seat-occupied-strike calc(50% + 1px),
+      transparent calc(50% + 1px)
+    );
     border-color: $seat-occupied-border;
-    color: $seat-occupied-strike;
-    text-decoration: line-through;
+    color: transparent;
     cursor: not-allowed;
   }
 
@@ -201,6 +210,177 @@
     &:disabled {
       opacity: 0.4;
       cursor: not-allowed;
+    }
+  }
+}
+.fv-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: $fv-muted-fg;
+  }
+
+  &__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+  }
+
+  &__item--current {
+    color: $fv-fg;
+    .fv-steps__num {
+      background: $fv-primary;
+      border-color: $fv-primary;
+      color: $fv-white;
+    }
+  }
+
+  &__item--done {
+    color: $fv-fg;
+    .fv-steps__num {
+      background: $seat-selected-bg;
+      border-color: $seat-selected-bg;
+      color: $fv-white;
+    }
+  }
+}
+.fv-card {
+  margin-bottom: 24px;
+  padding: 24px;
+}
+
+.fv-steps {
+  margin: 16px 0 24px;
+}
+.fv-booking {
+  &__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  &__back {
+    font-size: 14px;
+    color: $fv-muted-fg;
+    text-decoration: none;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  &__aside {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+  }
+}
+
+.fv-movie-mini {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 16px;
+  background: $fv-card-bg;
+  border-radius: 12px;
+
+  &__poster {
+    width: 48px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  &__meta {
+    margin: 0;
+    font-size: 14px;
+    color: $fv-muted-fg;
+  }
+}
+
+.fv-notice {
+  margin: 16px 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: $fv-fg;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 12px;
+}
+
+.fv-steps__item:not(:last-child)::after {
+  content: '';
+  width: 48px;
+  height: 1px;
+  margin-left: 8px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.fv-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+
+  span {
+    font-size: 12px;
+    color: $fv-muted-fg;
+  }
+
+  strong {
+    font-size: 14px;
+    font-weight: 500;
+    color: $fv-fg;
+  }
+}
+.fv-summary {
+  margin-bottom: 16px;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    color: $fv-fg;
+
+    &--total {
+      margin-top: 8px;
+      padding-top: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
     }
   }
 }

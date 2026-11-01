@@ -11,7 +11,7 @@ type SeatState = 'free' | 'selected' | 'booked' | 'wheelchair'
 const LABELS: Record<SeatState, string> = {
   free: 'Ledig',
   selected: 'Vald',
-  booked: 'Bokad',
+  booked: 'Upptagen',
   wheelchair: 'Rullstol',
 }
 
