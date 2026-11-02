@@ -1,0 +1,368 @@
+.fv-about {
+  padding-bottom: 4rem;
+}
+
+.fv-about__hero {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 5rem 1rem 4rem;
+}
+
+.fv-about__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgba($fv-primary, 0.4);
+  background: rgba($fv-primary, 0.12);
+  color: $fv-primary;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.fv-about__title {
+  margin: 1.5rem 0 1rem;
+  max-width: 14em;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: $fv-fg;
+}
+
+.fv-about__accent {
+  color: #ff6b6b;
+}
+
+.fv-about__lead {
+  max-width: 34rem;
+  font-size: 1.125rem;
+  color: $fv-muted-fg;
+}
+.fv-about__section {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4rem 1rem;
+}
+
+.fv-about__story {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  max-width: 1100px;
+  margin: 0 auto;
+
+  @media (min-width: 992px) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.fv-about__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #ff6b6b;
+
+  &::before {
+    content: '';
+    width: 28px;
+    height: 2px;
+    background: $fv-primary;
+  }
+}
+
+.fv-about__h2 {
+  margin: 1rem 0 1.25rem;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  color: $fv-fg;
+}
+
+.fv-about__text {
+  color: $fv-muted-fg;
+  line-height: 1.7;
+}
+
+.fv-about__features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fv-about__feature {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.fv-about__feature-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba($fv-primary, 0.15);
+}
+
+.fv-about__feature-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: $fv-fg;
+}
+
+.fv-about__feature-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: $fv-muted-fg;
+}
+.fv-about__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.fv-about__section--kiosk {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), transparent);
+}
+
+.fv-about__eyebrow--amber {
+  color: #f59e0b;
+
+  &::before {
+    background: #f59e0b;
+  }
+}
+
+.fv-about__text--narrow {
+  max-width: 44rem;
+}
+
+.fv-about__kiosk-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.fv-about__kiosk-card {
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.fv-about__kiosk-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fv-about__price {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+.fv-about__salong-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 2rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fv-about__salong {
+  --tone: #{$fv-primary};
+  background: $fv-card-bg;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+
+  &--amber {
+    --tone: #f59e0b;
+  }
+}
+
+.fv-about__salong-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  .fv-about__feature-text {
+    margin: 0;
+  }
+}
+
+.fv-about__salong-name {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $fv-fg;
+}
+
+.fv-about__salong-seats {
+  text-align: right;
+
+  strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+    color: $fv-fg;
+  }
+
+  span {
+    font-size: 0.75rem;
+    color: $fv-muted-fg;
+  }
+}
+
+.fv-about__salong-body {
+  padding: 1.5rem;
+}
+
+.fv-about__tag {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+}
+
+.fv-about__checks {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: $fv-fg;
+
+  li::before {
+    content: '✓';
+    margin-right: 0.6rem;
+    color: var(--tone);
+  }
+}
+
+.fv-about__cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.fv-about__cta-btn {
+  padding: 0.85rem 1.75rem;
+  border-radius: 10px;
+  background: $fv-primary;
+  color: $fv-white;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    color: $fv-white;
+    filter: brightness(1.1);
+  }
+}
+.fv-about__section--find {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fv-about__find {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+
+  @media (min-width: 992px) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.fv-about__map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background-color: #0f1626;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.fv-about__map-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: $fv-fg;
+}
+
+.fv-about__map-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $fv-primary;
+}
+
+.fv-about__info {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.fv-about__info-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.fv-about__info-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: $fv-muted-fg;
+}
+
+.fv-about__info-text {
+  margin: 0.15rem 0 0;
+  color: $fv-fg;
+}
