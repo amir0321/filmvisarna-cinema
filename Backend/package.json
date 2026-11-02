@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "create-admin": "tsx src/scripts/createAdmin.ts",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "migrate:auth": "tsx src/scripts/migrate-auth.ts"
   },
   "keywords": [],
   "author": "",

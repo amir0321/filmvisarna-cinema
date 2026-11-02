@@ -17,8 +17,8 @@ declare global {
 
 // Sign a JWT token for a user
 // The token is signed with the user's ID as the subject and expires according to the configuration
-export function signToken(userId: number): string {
-  return jwt.sign({}, config.jwtSecret, {
+export function signToken(userId: number, authVersion = 0): string {
+  return jwt.sign({ version: authVersion }, config.jwtSecret, {
     subject: String(userId),
     expiresIn: config.jwtExpiresIn as jwt.SignOptions["expiresIn"],
     algorithm: "HS256",
@@ -37,22 +37,26 @@ async function resolveUser(req: Request): Promise<AuthUser | undefined> {
   }
 
   let userId: number;
+  let authVersion: number;
   try {
     const payload = jwt.verify(token, config.jwtSecret, {
       algorithms: ["HS256"],
     });
     userId = Number(typeof payload === "string" ? NaN : payload.sub);
+    authVersion = typeof payload === 'string' ? -1 : payload.version ?? 0;
   } catch {
     throw new HttpError(401, "Ogiltig eller utgången token.");
   }
   if (!Number.isInteger(userId)) throw new HttpError(401, "Ogiltig token.");
 
-  const { rows } = await pool.query<AuthUser>(
-    "SELECT id, email, role FROM app_user WHERE id = $1",
+  const { rows } = await pool.query<AuthUser & { authVersion: number }>(
+    'SELECT id, email, role, auth_version AS "authVersion" FROM app_user WHERE id = $1',
     [userId],
   );
   if (!rows[0]) throw new HttpError(401, "Användaren finns inte längre.");
-  return rows[0];
+  if (rows[0].authVersion !== authVersion) throw new HttpError(401, 'Din session har gått ut. Logga in igen.');
+  const { authVersion: _version, ...user } = rows[0];
+  return user;
 }
 
 export async function optionalAuth(

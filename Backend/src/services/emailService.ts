@@ -1,4 +1,5 @@
 import nodemailer, { Transporter } from 'nodemailer';
+import type { AuthEmail } from './authActions.service.js';
 import {
   generateBookingConfirmationHtml,
   generateBookingConfirmationText,
@@ -29,6 +30,10 @@ async function getTransporter(): Promise<Transporter> {
       host: process.env.EMAIL_HOST,
       port,
       secure: port === 465,
+      requireTLS: port !== 465,
+      connectionTimeout: 15_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -78,4 +83,31 @@ export async function sendBookingConfirmation(bookingData: EmailPayload) {
   }
 
   return info;
+}
+
+export function isAuthEmailConfigured(): boolean {
+  return Boolean(process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+}
+
+export async function sendAuthEmail(data: AuthEmail): Promise<void> {
+  // Auth messages must reach a real inbox; never silently fall back to Ethereal.
+  if (!isAuthEmailConfigured()) throw new Error('Auth SMTP is not configured');
+  const transporter = await getTransporter();
+  const resetting = data.purpose === 'reset_password';
+  const title = resetting ? 'Återställ ditt lösenord' : 'Verifiera din e-postadress';
+  const description = resetting
+    ? 'Du har begärt att återställa lösenordet till ditt konto hos Filmvisarna.'
+    : 'Välkommen till Filmvisarna! Bekräfta att den här e-postadressen tillhör dig.';
+  const expiry = resetting ? '30 minuter' : '24 timmar';
+  const escapedUrl = data.url.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+  const info = await transporter.sendMail({
+    from: { name: 'Filmvisarna Cinema', address: process.env.EMAIL_FROM || process.env.EMAIL_USER! },
+    to: { address: data.email, name: '' },
+    subject: `${title} – Filmvisarna`,
+    text: `${description}\n\n${title}: ${data.url}\n\nLänken gäller i ${expiry} och kan bara användas en gång. Om du inte begärde detta kan du bortse från mejlet.`,
+    html: `<html lang="sv"><body><h1>${title}</h1><p>${description}</p><p><a href="${escapedUrl}">${title}</a></p><p>Länken gäller i ${expiry} och kan bara användas en gång.</p><p>Om du inte begärde detta kan du bortse från mejlet.</p><p>Filmvisarna Cinema</p></body></html>`,
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  });
+  if (info.rejected?.length) throw new Error('Auth email rejected');
 }

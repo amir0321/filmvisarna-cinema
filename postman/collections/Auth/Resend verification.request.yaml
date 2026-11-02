@@ -1,0 +1,7 @@
+$kind: http-request
+name: Resend verification
+url: http://localhost:3000/api/auth/resend-verification
+method: POST
+headers:
+  Authorization: Bearer {{user_token}}
+order: 5003

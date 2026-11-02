@@ -8,8 +8,24 @@ CREATE TABLE app_user (
   is_verified   boolean NOT NULL DEFAULT false,
   points        int NOT NULL DEFAULT 0 CHECK (points >= 0),
   role          text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  auth_version  integer NOT NULL DEFAULT 0,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE auth_action_token (
+  user_id integer NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  purpose text NOT NULL CHECK (purpose IN ('reset_password', 'verify_email')),
+  token_hash text NOT NULL UNIQUE,
+  expires_at timestamptz NOT NULL,
+  PRIMARY KEY (user_id, purpose)
+);
+
+CREATE TABLE auth_rate_limit (
+  key_hash text PRIMARY KEY,
+  window_start timestamptz NOT NULL,
+  attempts integer NOT NULL CHECK (attempts > 0)
+);
+CREATE INDEX auth_rate_limit_window_idx ON auth_rate_limit(window_start);
 
 -- ---------- MOVIE, GENRE, PERSON -------------------------------------
 CREATE TABLE movie (

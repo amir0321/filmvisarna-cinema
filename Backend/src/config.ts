@@ -2,6 +2,11 @@ import "dotenv/config";
 import { z } from "zod";
 
 const schema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  FRONTEND_URL: z.url().default('http://localhost:5173').refine(value => {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/';
+  }, 'must be an HTTP(S) origin without credentials, a path, query or fragment'),
   PORT: z.coerce.number().int().default(3000),
   JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
   JWT_EXPIRES_IN: z.string().default("7d"),
@@ -22,6 +27,8 @@ if (!parsed.success) {
 const env = parsed.data;
 
 export const config = {
+  nodeEnv: env.NODE_ENV,
+  frontendUrl: env.FRONTEND_URL,
   port: env.PORT,
   jwtSecret: env.JWT_SECRET,
   jwtExpiresIn: env.JWT_EXPIRES_IN,
@@ -30,3 +37,7 @@ export const config = {
   screeningBufferMinutes: env.SCREENING_BUFFER_MINUTES,
   cancellationDeadlineHours: env.CANCELLATION_DEADLINE_HOURS,
 };
+
+if (env.NODE_ENV === 'production' && !env.FRONTEND_URL.startsWith('https://')) {
+  throw new Error('FRONTEND_URL must use HTTPS in production');
+}

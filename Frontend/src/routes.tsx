@@ -9,6 +9,8 @@ import About from './pages/About'
 import MyBookings from './pages/MyBookings'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import Profile from './pages/Profile'
 import CancelBooking from './pages/CancelBooking'
 import NotFound from './pages/NotFound'
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
       { path: 'my-bookings', element: <MyBookings /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
+      { path: 'reset-password', element: <ResetPassword /> },
+      { path: 'verify-email', element: <VerifyEmail /> },
       { path: 'profile', element: <Profile /> },
       { path: 'cancel/:token', element: <CancelBooking /> },
       { path: 'cancel', element: <CancelBooking /> },

@@ -35,6 +35,9 @@ cp .env.example .env
 | `EMAIL_PORT` | SMTP port | `587` |
 | `EMAIL_USER` | SMTP username | *(optional)* |
 | `EMAIL_PASS` | SMTP password | *(optional)* |
+| `EMAIL_FROM` | Sender address allowed by your SMTP provider | defaults to `EMAIL_USER` |
+| `FRONTEND_URL` | Trusted public frontend origin used in auth email links; HTTPS required in production | `http://localhost:5173` |
+| `NODE_ENV` | Environment (`development`, `test`, `production`) | `development` |
 
 ---
 
@@ -72,6 +75,31 @@ All SQL migrations and initialization scripts are located in `Backend/sql/`:
 - `04_seed.sql`: Initial seed data for cinemas, movies, and kiosk menu items.
 
 ---
+
+## Password recovery and email verification
+
+Before starting the updated API against an **existing database**, run this additive migration from `Backend/`:
+
+```bash
+npm run migrate:auth
+```
+
+This uses the database configured in `.env`, adds `app_user.auth_version` and creates `auth_action_token` and `auth_rate_limit`. It does not delete accounts or bookings and can be repeated. New installations get the same definitions from `01_schema.sql` and `03_security.sql`. Do not run `00_drop.sql` to upgrade an existing database.
+
+Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` and an allowed `EMAIL_FROM` for real delivery, plus `FRONTEND_URL` pointing to the deployed SPA. SMTP on port 587 must support STARTTLS; port 465 uses TLS immediately. Auth emails never use the existing Ethereal fallback. Without SMTP, registration still creates the account and returns `verificationEmailSent: false`; mail request endpoints return 503. Password recovery acknowledges unknown and known accounts identically before background delivery. Delivery failures are logged without the recipient, token, link or SMTP message content.
+
+| Endpoint | Request | Behavior |
+| --- | --- | --- |
+| `POST /api/auth/forgot-password` | `{ email }` | Neutral 200 response, reset link by email for existing accounts |
+| `POST /api/auth/reset-password` | `{ token, password }` | Consumes a valid reset token, changes password, revokes existing JWT sessions |
+| `POST /api/auth/resend-verification` | Bearer JWT | Sends another verification link for the signed-in account |
+| `POST /api/auth/verify-email` | `{ token }` | Confirms ownership of the email; a Bearer JWT alone cannot verify it |
+
+Registration sends a verification email automatically. Verification does not block existing booking or login behavior; the frontend shows a notice with a resend action until the address is verified. Resetting a password requires signing in again and does not automatically log the user in. New passwords are validated at 8–72 characters and at most 72 UTF-8 bytes, including on the server.
+
+Links contain 32 random bytes in a URL **fragment**, which the SPA removes from browser history after reading. Only SHA-256 token hashes are stored. Reset links expire in 30 minutes; verification links in 24 hours. New links invalidate older links for the same purpose. Consumption and password updates happen atomically, including under parallel requests. Verification and reset tokens cannot be used interchangeably. POST auth requests are limited to 30 per IP per 15 minutes, and mail requests to 3 per account and purpose per 15 minutes, in PostgreSQL across workers. Do not enable a broad `trust proxy`: explicitly configure trusted proxy addresses before deploying behind one; otherwise rate limiting uses the direct peer IP. Periodically remove expired token records and rate buckets older than one day.
+
+The recovery controls follow the [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
 
 ## HTTP Status Codes Overview
 
