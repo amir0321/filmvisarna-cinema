@@ -34,7 +34,7 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
           <div className="fv-seatmap__seats">
             {seats
               .filter(s => s.row_label === row)
-              .sort((a, b) => b.seat_number - a.seat_number)
+              .sort((a, b) => a.seat_number - b.seat_number)
               .map(s => {
                 const state = seatState(s, selectedIds.includes(s.id))
                 return (
