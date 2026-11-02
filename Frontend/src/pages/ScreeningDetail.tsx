@@ -128,7 +128,7 @@ export default function ScreeningDetail() {
       .filter(i => (kioskQty[i.id] ?? 0) > 0)
       .map(i => ({ itemId: i.id, quantity: kioskQty[i.id] }))
     try {
-      const created = await apiClient.post<{ bookingRef: string }>('/bookings', {
+      const created = await apiClient.post<{ bookingRef: string; cancelToken?: string }>('/bookings', {
         screeningId: id,
         guestName: name.trim(),
         email,
@@ -156,6 +156,7 @@ export default function ScreeningDetail() {
           kioskTotal,
           total: ticketTotal + kioskTotal,
           email,
+          cancelToken: created.cancelToken,
         })
         navigate(`/bekraftelse/${created.bookingRef}`)
       } else {

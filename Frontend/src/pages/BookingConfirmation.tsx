@@ -119,10 +119,18 @@ export default function BookingConfirmation() {
               </div>
               <span>{data.bookingRef}</span>
             </div>
-
-            <button type="button" className="fv-ticket__btn" onClick={() => window.print()}>
+              <button type="button" className="fv-ticket__btn" onClick={() => window.print()}>
               Skriv ut / Spara som PDF
             </button>
+
+            {data.cancelToken && (
+              <Link
+                className="fv-ticket__cancel"
+                to={`/cancel?token=${encodeURIComponent(data.cancelToken)}`}
+              >
+                Avboka biljett
+              </Link>
+            )}
           </div>
         </>
       ) : (

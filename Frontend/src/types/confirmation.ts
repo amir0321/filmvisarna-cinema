@@ -12,4 +12,5 @@ export interface ConfirmationData {
   kioskTotal: number
   total: number
   email: string
+  cancelToken?: string
 }
