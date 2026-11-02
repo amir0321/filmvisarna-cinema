@@ -8,6 +8,7 @@ import MyBookingCard from "../components/MyBookingCard";
 import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import MyTicketModal from "../components/MyTicketModal";
+import { useMovies } from "../hooks/useMovies";
 
 function isCurrentBooking(booking: Booking): boolean {
   if (booking.status !== "confirmed" || !booking.screeningStartsAt) {
@@ -22,6 +23,7 @@ function isCurrentBooking(booking: Booking): boolean {
 export default function MyBookings() {
   const token = getAuthToken();
   const { user, loading } = useAuth();
+  const { data: movies } = useMovies();
 
   const [activeTab, setActiveTab] = useState<string>("active");
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -163,14 +165,24 @@ export default function MyBookings() {
         </p>
       ) : (
         <>
-          <div className="card mb-4">
-            <div className="card-body d-flex align-items-center gap-3">
+          <div
+            className="mb-4"
+            style={{
+              backgroundColor: "#161F30",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 32,
+            }}
+          >
+            <div className="d-flex align-items-center gap-3">
               <div
-                className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                className="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold"
                 style={{
-                  width: 56,
-                  height: 56,
+                  width: 64,
+                  height: 64,
                   flexShrink: 0,
+                  backgroundColor: "#E50914",
+                  fontSize: 20,
                 }}
                 aria-label="Profilavatar"
               >
@@ -178,12 +190,24 @@ export default function MyBookings() {
               </div>
 
               <div>
-                <h2 className="h5 fw-bold mb-1">{getUserDisplayName(user)}</h2>
+                <h2 className="h5 fw-bold text-light mb-1">
+                  {getUserDisplayName(user)}
+                </h2>
 
-                <p className="text-secondary mb-1">{user.email}</p>
+                <p className="mb-2" style={{ color: "#94A3B8" }}>
+                  {user.email}
+                </p>
 
-                <span className="badge bg-secondary">
-                  {user.role === "admin" ? "Administratör" : "Medlem"}
+                <span
+                  className="badge rounded-pill"
+                  style={{
+                    backgroundColor: "rgba(16, 185, 129, 0.15)",
+                    color: "#10B981",
+                    padding: "6px 12px",
+                    fontSize: 12,
+                  }}
+                >
+                  {user.role === "admin" ? "Administratör" : "Gästmedlem"}
                 </span>
               </div>
             </div>
@@ -225,6 +249,13 @@ export default function MyBookings() {
                           currentTime={currentTime}
                           onViewTicket={handleViewTicket}
                           onCancel={handleOpenCancel}
+                          posterUrl={
+                            movies?.find(
+                              (movie) =>
+                                movie.title.trim().toLowerCase() ===
+                                booking.movieTitle?.trim().toLowerCase(),
+                            )?.poster_url ?? null
+                          }
                         />
                       ))}
                     </div>
@@ -245,6 +276,13 @@ export default function MyBookings() {
                           key={booking.id}
                           booking={booking}
                           currentTime={currentTime}
+                          posterUrl={
+                            movies?.find(
+                              (movie) =>
+                                movie.title.trim().toLowerCase() ===
+                                booking.movieTitle?.trim().toLowerCase(),
+                            )?.poster_url ?? null
+                          }
                         />
                       ))}
                     </div>
