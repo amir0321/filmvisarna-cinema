@@ -2,9 +2,17 @@ import type { Booking } from "../types/booking";
 
 export interface MyBookingCardProps {
   booking: Booking;
+  onViewTicket?: (booking: Booking) => void;
+  onCancel?: (booking: Booking) => void;
+  currentTime: number;
 }
 
-export default function MyBookingCard({ booking }: MyBookingCardProps) {
+export default function MyBookingCard({
+  booking,
+  onViewTicket,
+  onCancel,
+  currentTime,
+}: MyBookingCardProps) {
   const {
     bookingRef,
     movieTitle,
@@ -31,6 +39,17 @@ export default function MyBookingCard({ booking }: MyBookingCardProps) {
 
     return `Plats-ID ${ticket.seatId}`;
   });
+  const isConfirmed = status === "confirmed";
+
+  const startsAt = screeningStartsAt
+    ? new Date(screeningStartsAt).getTime()
+    : NaN;
+
+  const canCancel =
+    isConfirmed &&
+    currentTime > 0 &&
+    Number.isFinite(startsAt) &&
+    startsAt - currentTime >= 2 * 60 * 60 * 1000;
   return (
     <article className="card mb-3">
       <div className="card-body">
@@ -72,6 +91,34 @@ export default function MyBookingCard({ booking }: MyBookingCardProps) {
             Kioskförbeställning ingår
           </span>
         )}
+        <div className="d-flex flex-wrap gap-2 mt-3">
+          {isConfirmed && (
+            <button
+              type="button"
+              className="btn btn-outline-light"
+              onClick={() => onViewTicket?.(booking)}
+              disabled={!onViewTicket}
+            >
+              Visa biljett
+            </button>
+          )}
+
+          {isConfirmed && (
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              onClick={() => onCancel?.(booking)}
+              disabled={!canCancel || !onCancel}
+              title={
+                !canCancel
+                  ? "Avbokning måste ske minst två timmar före visningen."
+                  : undefined
+              }
+            >
+              Avboka
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );

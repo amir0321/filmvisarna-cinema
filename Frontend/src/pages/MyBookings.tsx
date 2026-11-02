@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { getAuthToken } from "../api/client";
-import { getMyBookings } from "../api/bookings";
+import { getMyBookings, cancelMyBooking } from "../api/bookings";
 import type { Booking } from "../types/booking";
 import { Tabs } from "../components/Tabs";
 import { EmptyState } from "../components/EmptyState";
 import MyBookingCard from "../components/MyBookingCard";
 import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
+import { CancelBookingModal } from "../components/CancelBookingModal";
+import MyTicketModal from "../components/MyTicketModal";
 
 function isCurrentBooking(booking: Booking): boolean {
   if (booking.status !== "confirmed" || !booking.screeningStartsAt) {
@@ -25,7 +27,25 @@ export default function MyBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [bookingToView, setBookingToView] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(Date.now());
+    };
+
+    const timeoutId = window.setTimeout(updateTime, 0);
+    const intervalId = window.setInterval(updateTime, 60_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, []);
   useEffect(() => {
     if (!token || loading || !user) {
       return;
@@ -64,6 +84,50 @@ export default function MyBookings() {
       cancelled = true;
     };
   }, [token, loading, user]);
+
+  const handleViewTicket = (booking: Booking) => {
+    setBookingToView(booking);
+  };
+
+  const handleCloseTicket = () => {
+    setBookingToView(null);
+  };
+  const handleOpenCancel = (booking: Booking) => {
+    setBookingToCancel(booking);
+    setCancelError(null);
+  };
+  const handleCloseCancel = () => {
+    if (isCancelling) return;
+
+    setBookingToCancel(null);
+    setCancelError(null);
+  };
+  const handleConfirmCancel = async () => {
+    if (!bookingToCancel || isCancelling) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelMyBooking(bookingToCancel.id);
+
+      setBookings((previousBookings) =>
+        previousBookings.map((booking) =>
+          booking.id === bookingToCancel.id
+            ? { ...booking, status: "cancelled" as const }
+            : booking,
+        ),
+      );
+
+      setBookingToCancel(null);
+    } catch (error) {
+      setCancelError(
+        error instanceof Error ? error.message : "Kunde inte avboka bokningen.",
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const currentBookings = bookings.filter(isCurrentBooking);
   const historyBookings = bookings.filter(
@@ -155,7 +219,13 @@ export default function MyBookings() {
                   ) : (
                     <div>
                       {currentBookings.map((booking) => (
-                        <MyBookingCard key={booking.id} booking={booking} />
+                        <MyBookingCard
+                          key={booking.id}
+                          booking={booking}
+                          currentTime={currentTime}
+                          onViewTicket={handleViewTicket}
+                          onCancel={handleOpenCancel}
+                        />
                       ))}
                     </div>
                   )}
@@ -171,7 +241,11 @@ export default function MyBookings() {
                   ) : (
                     <div>
                       {historyBookings.map((booking) => (
-                        <MyBookingCard key={booking.id} booking={booking} />
+                        <MyBookingCard
+                          key={booking.id}
+                          booking={booking}
+                          currentTime={currentTime}
+                        />
                       ))}
                     </div>
                   )}
@@ -181,6 +255,36 @@ export default function MyBookings() {
           </Tabs>
         </>
       )}
+
+      <CancelBookingModal
+        isOpen={bookingToCancel !== null}
+        booking={
+          bookingToCancel
+            ? {
+                bookingRef: bookingToCancel.bookingRef,
+                movieTitle: bookingToCancel.movieTitle ?? "Okänd film",
+                cinemaName: bookingToCancel.cinemaName ?? "Okänd biograf",
+                screeningStartsAt: bookingToCancel.screeningStartsAt ?? "",
+                posterUrl: null,
+                seats: bookingToCancel.tickets.map((ticket) =>
+                  ticket.row && ticket.seatNumber != null
+                    ? `Rad ${ticket.row}, plats ${ticket.seatNumber}`
+                    : `Plats-ID ${ticket.seatId}`,
+                ),
+              }
+            : null
+        }
+        isSubmitting={isCancelling}
+        error={cancelError}
+        onConfirm={handleConfirmCancel}
+        onClose={handleCloseCancel}
+      />
+
+      <MyTicketModal
+        isOpen={bookingToView !== null}
+        booking={bookingToView}
+        onClose={handleCloseTicket}
+      />
     </div>
   );
 }
