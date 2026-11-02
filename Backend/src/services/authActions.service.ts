@@ -38,6 +38,10 @@ export function createAuthActionService(dependencies: {
     return result.rows[0].attempts <= maximum;
   }
 
+  async function clearLimit(key: string): Promise<void> {
+    await db.query('DELETE FROM auth_rate_limit WHERE key_hash = $1', [hashAuthToken(key)]);
+  }
+
   function assertEmailConfigured() {
     if (!canSendEmail()) throw new HttpError(503, 'E-posttjänsten är tillfälligt otillgänglig. Försök igen senare.');
   }
@@ -111,7 +115,7 @@ export function createAuthActionService(dependencies: {
   }
 
   return {
-    limit, assertEmailConfigured, sendLink,
+    limit, clearLimit, assertEmailConfigured, sendLink,
     verifyEmail: (token: string) => consume(token, 'verify_email'),
     async resetPassword(token: string, newPassword: string) {
       // Check syntax before the expensive hash; consumption still validates expiry atomically.

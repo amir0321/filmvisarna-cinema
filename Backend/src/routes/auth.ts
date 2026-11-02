@@ -98,6 +98,11 @@ export function createAuthRouter(actions = authActionService) {
   // Log in an existing user - POST /api/auth/login
   authRouter.post("/login", async (req, res) => {
     const body = loginBody.parse(req.body);
+    const loginLimitKey = `login:ip:${req.ip ?? req.socket.remoteAddress}:${body.email.toLowerCase()}`;
+    if (!await actions.limit(loginLimitKey, 10)) {
+      res.setHeader("Retry-After", "900");
+      throw new HttpError(429, "För många inloggningsförsök. Vänta 15 minuter och försök igen.");
+    }
 
     const [row] = await query<AuthUser & { passwordHash: string; authVersion: number }>(
       `SELECT ${user_columns}, password_hash AS "passwordHash", auth_version AS "authVersion" FROM app_user WHERE email = lower($1)`,
@@ -110,6 +115,7 @@ export function createAuthRouter(actions = authActionService) {
     );
     if (!row || !ok) throw new HttpError(401, "Felaktig e-postadress eller lösenord.");
 
+    await actions.clearLimit(loginLimitKey);
     const { passwordHash: _omit, authVersion, ...user } = row;
     res.json({ token: signToken(row.id, authVersion), user });
   });
