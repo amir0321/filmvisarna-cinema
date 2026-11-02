@@ -19,6 +19,7 @@ import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
 import ScreeningDetail from './pages/ScreeningDetail'
 import Booking from './pages/Booking'
+import BookingConfirmation from './pages/Bookingconfirmation'
 
 export const router = createBrowserRouter([
   // Public application layout
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: 'booking/:screeningId', element: <Booking /> },
       { path: 'cancel/:token', element: <CancelBooking /> },
       { path: 'cancel', element: <CancelBooking /> },
+      { path: 'bekraftelse/:kod', element: <BookingConfirmation /> },
     ],
   },
   // Backoffice administration layout

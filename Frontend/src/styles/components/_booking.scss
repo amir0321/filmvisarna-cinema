@@ -384,3 +384,239 @@
     }
   }
 }
+.fv-ticket {
+  max-width: 512px;
+  margin: 32px auto;
+  overflow: hidden;
+  background: #161f30;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+
+  &__top {
+    padding: 40px 32px 32px;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);
+
+    h1 {
+      margin: 16px 0 8px;
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: $fv-muted-fg;
+    }
+
+    strong {
+      font-weight: 500;
+      color: #f8fafc;
+    }
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    font-size: 36px;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid rgba(16, 185, 129, 0.4);
+    border-radius: 50%;
+  }
+
+  &__code {
+    padding: 0 32px 24px;
+  }
+
+  &__label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__codebox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+  }
+
+  &__ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+
+    @media (max-width: 480px) {
+      font-size: 22px;
+    }
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    color: $fv-fg;
+    background: rgba(255, 255, 255, 0.08);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+}
+.fv-ticket {
+  &__divider {
+    position: relative;
+    margin: 0 24px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: -12px;
+      width: 24px;
+      height: 24px;
+      background: #0b0f19;
+      border-radius: 50%;
+    }
+
+    &::before {
+      left: -36px;
+    }
+
+    &::after {
+      right: -36px;
+    }
+  }
+
+  &__body {
+    padding: 24px 32px 32px;
+  }
+
+  &__movie {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    img {
+      width: 56px;
+      height: 84px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: $fv-muted-fg;
+    }
+  }
+
+  &__time {
+    color: #f8fafc !important;
+  }
+
+  &__seats p {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #f8fafc;
+  }
+
+  &__prices {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #f8fafc;
+
+    &--total {
+      margin-top: 8px;
+      padding-top: 12px;
+      font-weight: 600;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+      span:first-child {
+        font-weight: 400;
+        color: $fv-muted-fg;
+      }
+
+      span:last-child {
+        color: #10b981;
+      }
+    }
+  }
+}
+.fv-ticket {
+  &__qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: $fv-muted-fg;
+    }
+
+    span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: $fv-muted-fg;
+    }
+  }
+
+  &__qrbox {
+    width: 112px;
+    height: 112px;
+    padding: 8px;
+    background: #fff;
+    border-radius: 12px;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &__btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    color: $fv-fg;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+}

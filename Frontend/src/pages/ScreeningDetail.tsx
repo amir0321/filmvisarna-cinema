@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import SeatMap from '../components/SeatMap'
 import type { SeatsResponse } from '../types/screeningSeat'
 import QuantityPicker from '../components/QuantityPicker'
@@ -14,11 +14,13 @@ import apiClient, { ApiError } from '../api/client'
 import { getPriceGroups } from '../api/priceGroups'
 import { getKioskItems } from '../api/kiosk'
 import type { KioskItem } from '../types/kiosk'
+import { saveConfirmation } from '../utils/confirmationStorage'
 
 export default function ScreeningDetail() {
   const { id: idParam } = useParams()
   const id = idParam ? Number(idParam) : NaN
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [data, setData] = useState<SeatsResponse | null>(null)
     const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     (searchParams.get('seats') ?? '')
@@ -133,7 +135,32 @@ export default function ScreeningDetail() {
         tickets,
         items,
       })
-      setReference(created.bookingRef)
+            if (screening) {
+        saveConfirmation({
+          bookingRef: created.bookingRef,
+          movieTitle: screening.movieTitle,
+          posterUrl: screening.posterUrl ?? null,
+          cinema: screening.cinema,
+          startsAt: screening.startsAt,
+          endsAt: screening.endsAt,
+          seats: selectedLabels.split(' · '),
+          tickets: TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => ({
+            label: t.label,
+            quantity: counts[t.type],
+            price: t.price,
+          })),
+          kiosk: kiosk
+            .filter(i => (kioskQty[i.id] ?? 0) > 0)
+            .map(i => ({ name: i.name, quantity: kioskQty[i.id], price: i.price })),
+          ticketTotal,
+          kioskTotal,
+          total: ticketTotal + kioskTotal,
+          email,
+        })
+        navigate(`/bekraftelse/${created.bookingRef}`)
+      } else {
+        setReference(created.bookingRef)
+      }
     } catch (err) {
       setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
     }
