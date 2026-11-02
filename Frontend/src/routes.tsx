@@ -19,7 +19,7 @@ import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
 import ScreeningDetail from './pages/ScreeningDetail'
 import Booking from './pages/Booking'
-import BookingConfirmation from './pages/Bookingconfirmation'
+import BookingConfirmation from './pages/BookingConfirmation'
 
 export const router = createBrowserRouter([
   // Public application layout
