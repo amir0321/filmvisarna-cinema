@@ -68,7 +68,7 @@ export async function sendBookingConfirmation(bookingData: EmailPayload) {
   const mailOptions = {
     from: `"Filmvisarna Cinema" <${senderEmail}>`,
     to: bookingData.email,
-    subject: `Booking Confirmation - ${bookingData.movieTitle} (${bookingData.bookingRef})`,
+    subject: `Bokningsbekräftelse - ${bookingData.movieTitle} (${bookingData.bookingRef})`,
     text: textContent,
     html: htmlContent,
   };

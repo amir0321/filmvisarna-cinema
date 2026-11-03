@@ -6,28 +6,28 @@ export default function AdminDashboard() {
     {
       title: 'Bokningar & Kassa',
       description: 'Hantera bokningar, checka in gäster och ta emot betalningar.',
-      path: '/admin/bookings',
+      path: '/admin/bokningar',
       icon: 'bi-ticket-perforated',
-      badge: 'Live',
+      badge: 'Aktuellt',
     },
     {
       title: 'Visningsschema',
       description: 'Schemalägg nya filmvisningar och hantera tider för salongerna.',
-      path: '/admin/screenings',
+      path: '/admin/visningar',
       icon: 'bi-calendar3',
       badge: 'Schema',
     },
     {
       title: 'Filmarkiv',
-      description: 'Lägg till och uppdatera filmer, genres och information.',
-      path: '/admin/movies',
+      description: 'Lägg till och uppdatera filmer, genrer och information.',
+      path: '/admin/filmer',
       icon: 'bi-film',
       badge: 'Arkiv',
     },
     {
       title: 'Salonger',
       description: 'Se salongskartor, stolsindelning och rullstolsplatser.',
-      path: '/admin/cinemas',
+      path: '/admin/salonger',
       icon: 'bi-display',
       badge: 'Salonger',
     },
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Backoffice Översikt</h2>
+          <h2 className="fw-bold mb-1">Administrationsöversikt</h2>
           <p className="text-secondary mb-0">Välkommen till Filmvisarnas administrationspanel.</p>
         </div>
       </div>

@@ -1,9 +1,7 @@
-// ============================================================================
-// Filmvisarna – Reusable Component Styles Index (_components.scss)
+// =====================================================================// Filmvisarna – Reusable Component Styles Index (_components.scss)
 // Follows design/tokens.md and design/components.md
 // Modular structure separating each component domain into its own stylesheet
-// ============================================================================
-
+// =====================================================================
 @import './components/badges';
 @import './components/pills';
 @import './components/tabs';
@@ -12,10 +10,12 @@
 @import './components/skeleton';
 @import './components/empty-state';
 @import './components/poster';
+@import './components/booking';
 @import './components/date-picker-popover';
 @import './components/trailer-modal';
 @import './components/full-bleed';
 @import './components/cancel-booking';
+@import './components/my-bookings';
 
 // Movies page
 @import './components/movies/movies-page';
@@ -30,3 +30,5 @@
 @import './components/home/repertoire-section';
 
 @import './components/auth';
+//About page
+@import './components/about';

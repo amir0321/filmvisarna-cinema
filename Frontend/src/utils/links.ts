@@ -1,10 +1,9 @@
 export function getMovieUrl(movieId: number): string {
-  return `/movies/${movieId}`
+  return `/filmer/${movieId}`
 }
 
-// Update when the booking flow is merged
 export function getBookingUrl(screeningId: number): string {
-  return `/booking/${screeningId}`
+  return `/boka/${screeningId}`
 }
 
 // Validate decoded paths too: routers and servers may normalize encoded separators.
