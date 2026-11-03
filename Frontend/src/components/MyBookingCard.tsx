@@ -1,14 +1,20 @@
 import type { Booking } from "../types/booking";
 import { Poster } from "./Poster";
-import { getBookingState } from "../utils/bookings";
+import { canCancelBooking, getBookingState } from "../utils/bookings";
 
 export interface MyBookingCardProps {
   booking: Booking;
+  onViewTicket?: (booking: Booking) => void;
+  onCancel?: (booking: Booking) => void;
+  currentTime: number;
   posterUrl?: string | null;
 }
 
 export default function MyBookingCard({
   booking,
+  onViewTicket,
+  onCancel,
+  currentTime,
   posterUrl,
 }: MyBookingCardProps) {
   const {
@@ -33,7 +39,7 @@ export default function MyBookingCard({
         timeZone: "Europe/Stockholm",
       }).format(startsAt)
     : "Tid ej angiven";
-  const bookingState = getBookingState(booking);
+  const bookingState = getBookingState(booking, currentTime);
   const statusLabel = {
     upcoming: "Kommande föreställning",
     past: "Tidigare föreställning",
@@ -52,6 +58,8 @@ export default function MyBookingCard({
 
     return `Plats-ID ${ticket.seatId}`;
   });
+  const canCancel = canCancelBooking(booking, currentTime);
+  const deadlineId = `booking-${booking.id}-cancel-deadline`;
   return (
     <article className={`fv-my-booking-card card mb-3 overflow-hidden fv-my-booking-card--${bookingState}`}>
       <div className="fv-my-booking-card__status d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2">
@@ -99,6 +107,35 @@ export default function MyBookingCard({
           <span className="fv-my-booking-card__kiosk badge">
             Kioskförbeställning ingår
           </span>
+        )}
+        <div className="d-flex flex-wrap gap-2 mt-3">
+          {booking.status === "confirmed" && onViewTicket && (
+            <button
+              type="button"
+              className="btn btn-outline-light"
+              onClick={() => onViewTicket?.(booking)}
+              disabled={!onViewTicket}
+            >
+              Visa biljett
+            </button>
+          )}
+
+          {bookingState === "upcoming" && onCancel && (
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              onClick={() => onCancel?.(booking)}
+              disabled={!canCancel || !onCancel}
+              aria-describedby={!canCancel ? deadlineId : undefined}
+            >
+              Avboka
+            </button>
+          )}
+        </div>
+        {bookingState === "upcoming" && onCancel && !canCancel && (
+          <p id={deadlineId} className="small text-secondary mt-2 mb-0">
+            Avbokning måste ske minst två timmar före visningen.
+          </p>
         )}
       </div>
     </article>

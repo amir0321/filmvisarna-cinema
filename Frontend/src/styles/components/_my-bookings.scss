@@ -103,3 +103,20 @@
     white-space: normal;
   }
 }
+
+.fv-booking-count {
+  margin-inline-start: 6px;
+  background-color: $color-primary;
+  color: $color-white;
+  font-size: $font-size-10;
+  vertical-align: middle;
+}
+
+.fv-my-ticket {
+  overflow-wrap: anywhere;
+
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}

@@ -73,6 +73,7 @@
 }
 
 .fv-modal-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -108,12 +109,15 @@
 }
 
 .fv-modal-body {
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1 1 auto;
 }
 
 .fv-modal-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;

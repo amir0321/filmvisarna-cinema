@@ -16,6 +16,7 @@ import { getKioskItems } from '../api/kiosk'
 import type { KioskItem } from '../types/kiosk'
 import { saveConfirmation } from '../utils/confirmationStorage'
 import { useAuth, getUserDisplayName } from '../hooks/useAuth'
+import { useBookings } from '../hooks/useBookings'
 import { EmptyState } from '../components/EmptyState'
 import { Skeleton } from '../components/Skeleton'
 
@@ -27,6 +28,7 @@ export default function ScreeningDetail() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { refresh: refreshBookings } = useBookings()
   const [data, setData] = useState<SeatsResponse | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     (searchParams.get('seats') ?? '')
@@ -207,6 +209,7 @@ export default function ScreeningDetail() {
         tickets,
         items,
       })
+      if (user) refreshBookings()
       if (screening) {
         saveConfirmation({
           bookingRef: created.bookingRef,

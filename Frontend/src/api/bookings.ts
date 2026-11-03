@@ -62,7 +62,23 @@ function mapBooking(data: BookingApiResponse): Booking {
   };
 }
 
-export async function getMyBookings(): Promise<Booking[]> {
-  const response = await apiClient.get<BookingApiResponse[]>("/bookings/me");
+export async function getMyBookings(signal?: AbortSignal): Promise<Booking[]> {
+  const response = await apiClient.get<BookingApiResponse[]>("/bookings/me", { signal });
   return response.map(mapBooking);
+}
+
+export interface CancelMyBookingResponse {
+  success: boolean;
+  message: string;
+  booking: {
+    id: number;
+    reference: string;
+    status: string;
+  };
+}
+
+export async function cancelMyBooking(
+  bookingId: number,
+): Promise<CancelMyBookingResponse> {
+  return apiClient.delete<CancelMyBookingResponse>(`/bookings/${bookingId}`);
 }
