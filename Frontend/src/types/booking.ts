@@ -23,6 +23,7 @@ export interface Booking {
   movieTitle?: string
   cinemaName?: string
   screeningStartsAt?: string
+  screeningEndsAt?: string
   email: string
   guestName?: string | null
   tickets: TicketItem[]

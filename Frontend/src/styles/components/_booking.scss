@@ -553,6 +553,11 @@
   border: 1px solid $border-subtle;
   border-radius: $fv-radius-3xl;
 
+  &--embedded {
+    margin: 0;
+    padding-top: 24px;
+  }
+
   &__top {
     padding: 40px 32px 32px;
     text-align: center;

@@ -232,6 +232,7 @@ export default function MyBookings() {
       <MyTicketModal
         isOpen={bookingToView !== null}
         booking={bookingToView}
+        posterUrl={bookingToView ? getPosterUrl(bookingToView) : null}
         onClose={handleCloseTicket}
       />
     </div>
