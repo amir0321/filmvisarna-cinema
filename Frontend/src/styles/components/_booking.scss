@@ -1,6 +1,6 @@
 // ============================================================================
-// Filmvisarna – Seat map (_booking.scss)
-// Follows design/pages/seat-selection.md
+// Filmvisarna – Seat map & Booking flow (_booking.scss)
+// Follows design/pages/seat-selection.md & design/pages/booking-confirm.md
 // ============================================================================
 
 .fv-seatmap {
@@ -9,7 +9,7 @@
   align-items: center;
   gap: 6px;
 
- &__screen {
+  &__screen {
     width: 80%;
     margin-bottom: 20px;
     padding: 10px 0;
@@ -17,10 +17,25 @@
     letter-spacing: 0.3em;
     font-size: 12px;
     color: $fv-muted-fg;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+    background: linear-gradient(180deg, $white-overlay-10, transparent);
     border-top: 3px solid $fv-muted-fg;
     border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-    box-shadow: 0 -8px 24px rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -8px 24px $white-overlay-08;
+  }
+
+  &__scroll {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: max-content;
+    margin: 0 auto;
   }
 
   &__row {
@@ -32,6 +47,7 @@
   &__label {
     width: 20px;
     text-align: center;
+    font-family: $fv-font-mono;
     font-size: 12px;
     color: $fv-muted-fg;
   }
@@ -43,6 +59,8 @@
 
   &__legend {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 24px;
     margin: 16px 0 0;
     padding: 0;
@@ -66,11 +84,16 @@
   color: $fv-fg;
   border: 1px solid transparent;
   border-radius: $radius-seat;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 
   &--free {
     background: $seat-available-bg;
     border-color: $seat-available-border;
     cursor: pointer;
+
+    &:hover {
+      transform: scale(1.15);
+    }
   }
 
   &--selected {
@@ -78,6 +101,10 @@
     border-color: $seat-selected-border;
     box-shadow: $seat-selected-glow;
     cursor: pointer;
+
+    &:hover {
+      transform: scale(1.15);
+    }
   }
 
   &--booked {
@@ -91,14 +118,21 @@
     );
     border-color: $seat-occupied-border;
     color: transparent;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   &--wheelchair {
-    background: $color-info;
+    background: $fv-info;
+    border-color: $fv-info-light;
     cursor: pointer;
+
+    &:hover {
+      transform: scale(1.15);
+    }
   }
 }
+
 // ----------------------------------------------------------------------------
 // Quantity picker (tickets and kiosk)
 // ----------------------------------------------------------------------------
@@ -156,6 +190,7 @@
     }
   }
 }
+
 // ----------------------------------------------------------------------------
 // Card used by the booking page sections
 // ----------------------------------------------------------------------------
@@ -168,10 +203,95 @@
   border-radius: $radius-card;
 
   h2 {
-    margin: 0 0 12px;
+    margin: 0 0 4px;
+    font-family: $fv-font-display;
     font-size: 18px;
+    font-weight: 700;
+  }
+
+  &__subtitle {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: $fv-muted-fg;
   }
 }
+
+.fv-ticket-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $fv-success;
+  background: tint($fv-success, 0.1);
+  border: 1px solid tint($fv-success, 0.2);
+  border-radius: $fv-radius-md;
+}
+
+// ----------------------------------------------------------------------------
+// Collapsible Kiosk Card
+// ----------------------------------------------------------------------------
+
+.fv-kiosk {
+  padding: 0;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 20px 24px;
+    text-align: left;
+    color: $fv-fg;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: $white-overlay-03;
+    }
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background: tint($fv-warning, 0.15);
+    border-radius: $fv-radius-md;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 2px;
+
+    strong {
+      font-size: 15px;
+      color: $fv-fg;
+    }
+
+    small {
+      font-size: 12px;
+      color: $fv-muted-fg;
+    }
+  }
+
+  &__items {
+    padding: 0 24px 20px;
+    border-top: 1px solid $border-faint;
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Email field and confirm button
 // ----------------------------------------------------------------------------
@@ -180,7 +300,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 16px;
+  margin-bottom: 16px;
 
   &__field {
     display: flex;
@@ -199,6 +320,7 @@
   }
 
   &__btn {
+    width: 100%;
     padding: 12px 16px;
     font-weight: 600;
     color: $fv-white;
@@ -206,6 +328,11 @@
     border: 0;
     border-radius: $radius-md;
     cursor: pointer;
+    transition: filter 0.15s ease;
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
 
     &:disabled {
       opacity: 0.4;
@@ -213,6 +340,11 @@
     }
   }
 }
+
+// ----------------------------------------------------------------------------
+// Step indicator
+// ----------------------------------------------------------------------------
+
 .fv-steps {
   display: flex;
   flex-wrap: wrap;
@@ -227,6 +359,14 @@
     align-items: center;
     gap: 8px;
     color: $fv-muted-fg;
+
+    &:not(:last-child)::after {
+      content: '';
+      width: 32px;
+      height: 1px;
+      margin-left: 8px;
+      background: $border-strong;
+    }
   }
 
   &__num {
@@ -236,12 +376,13 @@
     width: 24px;
     height: 24px;
     font-size: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 50%;
+    border: 1px solid $white-overlay-25;
+    border-radius: $radius-circle;
   }
 
   &__item--current {
     color: $fv-fg;
+
     .fv-steps__num {
       background: $fv-primary;
       border-color: $fv-primary;
@@ -251,6 +392,7 @@
 
   &__item--done {
     color: $fv-fg;
+
     .fv-steps__num {
       background: $seat-selected-bg;
       border-color: $seat-selected-bg;
@@ -258,15 +400,16 @@
     }
   }
 }
-.fv-card {
-  margin-bottom: 24px;
-  padding: 24px;
-}
 
-.fv-steps {
-  margin: 16px 0 24px;
-}
+// ----------------------------------------------------------------------------
+// Page layout & Movie mini summary
+// ----------------------------------------------------------------------------
+
 .fv-booking {
+  max-width: $fv-container-6xl;
+  margin: 0 auto;
+  padding: 24px 0 48px;
+
   &__top {
     display: flex;
     flex-wrap: wrap;
@@ -280,6 +423,21 @@
     font-size: 14px;
     color: $fv-muted-fg;
     text-decoration: none;
+
+    &:hover {
+      color: $fv-fg;
+    }
+  }
+
+  &__alert,
+  &__error {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: $fv-danger-light;
+    background: tint($fv-danger-weak, 0.12);
+    border: 1px solid tint($fv-danger-weak, 0.35);
+    border-radius: $fv-radius-md;
   }
 
   &__grid {
@@ -287,7 +445,7 @@
     grid-template-columns: 1fr;
     gap: 32px;
 
-    @media (min-width: 1024px) {
+    @media (min-width: $fv-bp-lg) {
       grid-template-columns: 2fr 1fr;
     }
   }
@@ -306,6 +464,7 @@
   margin-bottom: 32px;
   padding: 16px;
   background: $fv-card-bg;
+  border: 1px solid $border-subtle;
   border-radius: 12px;
 
   &__poster {
@@ -316,8 +475,10 @@
   }
 
   &__title {
-    margin: 0;
+    margin: 0 0 2px;
+    font-family: $fv-font-display;
     font-size: 16px;
+    font-weight: 700;
   }
 
   &__meta {
@@ -330,28 +491,22 @@
 .fv-notice {
   margin: 16px 0;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 13px;
   color: $fv-fg;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: tint($fv-warning, 0.1);
+  border: 1px solid tint($fv-warning, 0.35);
   border-radius: 12px;
 }
 
-.fv-steps__item:not(:last-child)::after {
-  content: '';
-  width: 48px;
-  height: 1px;
-  margin-left: 8px;
-  background: rgba(255, 255, 255, 0.18);
-}
 .fv-selected {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-top: 12px;
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: $white-overlay-04;
+  border: 1px solid $border-strong;
   border-radius: 12px;
 
   span {
@@ -365,6 +520,7 @@
     color: $fv-fg;
   }
 }
+
 .fv-summary {
   margin-bottom: 16px;
 
@@ -380,25 +536,31 @@
       padding-top: 12px;
       font-size: 16px;
       font-weight: 600;
-      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      border-top: 1px solid $border-strong;
     }
   }
 }
+
+// ----------------------------------------------------------------------------
+// Confirmation Ticket (design/pages/booking-confirm.md)
+// ----------------------------------------------------------------------------
+
 .fv-ticket {
   max-width: 512px;
   margin: 32px auto;
   overflow: hidden;
-  background: #161f30;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  background: $fv-card-bg;
+  border: 1px solid $border-subtle;
+  border-radius: $fv-radius-3xl;
 
   &__top {
     padding: 40px 32px 32px;
     text-align: center;
-    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);
+    background: linear-gradient(to bottom, tint($fv-success, 0.12), transparent);
 
     h1 {
       margin: 16px 0 8px;
+      font-family: $fv-font-display;
       font-size: 30px;
       font-weight: 700;
     }
@@ -411,7 +573,7 @@
 
     strong {
       font-weight: 500;
-      color: #f8fafc;
+      color: $fv-fg;
     }
   }
 
@@ -423,10 +585,10 @@
     height: 64px;
     margin: 0 auto;
     font-size: 36px;
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.15);
-    border: 2px solid rgba(16, 185, 129, 0.4);
-    border-radius: 50%;
+    color: $fv-success;
+    background: tint($fv-success, 0.15);
+    border: 2px solid tint($fv-success, 0.4);
+    border-radius: $radius-circle;
   }
 
   &__code {
@@ -448,13 +610,13 @@
     justify-content: space-between;
     gap: 12px;
     padding: 16px 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    background: $white-overlay-05;
+    border: 1px solid $white-overlay-10;
+    border-radius: $radius-card;
   }
 
   &__ref {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: $fv-font-mono;
     font-size: 30px;
     font-weight: 700;
     letter-spacing: 0.2em;
@@ -469,18 +631,25 @@
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
     color: $fv-fg;
-    background: rgba(255, 255, 255, 0.08);
+    background: $white-overlay-08;
     border: 0;
-    border-radius: 999px;
+    border-radius: $radius-full;
     cursor: pointer;
+    transition: all 0.15s ease;
+
+    &--done {
+      color: $fv-success;
+      background: tint($fv-success, 0.15);
+    }
   }
-}
-.fv-ticket {
+
   &__divider {
     position: relative;
     margin: 0 24px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    border-top: 1px dashed $white-overlay-10;
 
     &::before,
     &::after {
@@ -489,8 +658,8 @@
       top: -12px;
       width: 24px;
       height: 24px;
-      background: #0b0f19;
-      border-radius: 50%;
+      background: $fv-bg;
+      border-radius: $radius-circle;
     }
 
     &::before {
@@ -520,7 +689,9 @@
 
     h2 {
       margin: 0 0 4px;
+      font-family: $fv-font-display;
       font-size: 16px;
+      font-weight: 700;
     }
 
     p {
@@ -531,19 +702,19 @@
   }
 
   &__time {
-    color: #f8fafc !important;
+    color: $fv-fg !important;
   }
 
   &__seats p {
     margin: 0 0 4px;
     font-size: 14px;
-    color: #f8fafc;
+    color: $fv-fg;
   }
 
   &__prices {
     margin-top: 16px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.04);
+    background: $white-overlay-04;
     border-radius: 12px;
   }
 
@@ -552,13 +723,13 @@
     justify-content: space-between;
     padding: 6px 0;
     font-size: 14px;
-    color: #f8fafc;
+    color: $fv-fg;
 
     &--total {
       margin-top: 8px;
       padding-top: 12px;
       font-weight: 600;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid $white-overlay-10;
 
       span:first-child {
         font-weight: 400;
@@ -566,12 +737,11 @@
       }
 
       span:last-child {
-        color: #10b981;
+        color: $fv-success;
       }
     }
   }
-}
-.fv-ticket {
+
   &__qr {
     display: flex;
     flex-direction: column;
@@ -579,8 +749,8 @@
     gap: 10px;
     margin-top: 16px;
     padding: 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 16px;
+    background: $white-overlay-03;
+    border-radius: $radius-card;
 
     p {
       margin: 0;
@@ -589,7 +759,7 @@
     }
 
     span {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: $fv-font-mono;
       font-size: 12px;
       color: $fv-muted-fg;
     }
@@ -599,7 +769,7 @@
     width: 112px;
     height: 112px;
     padding: 8px;
-    background: #fff;
+    background: $fv-white;
     border-radius: 12px;
 
     svg {
@@ -613,20 +783,49 @@
     width: 100%;
     margin-top: 16px;
     padding: 12px;
+    font-weight: 500;
     color: $fv-fg;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: $white-overlay-08;
+    border: 1px solid $border-strong;
     border-radius: 12px;
     cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: $white-overlay-15;
+    }
   }
-}
-.fv-ticket__cancel {
-  display: block;
-  margin-top: 12px;
-  padding: 12px;
-  color: #f87171;
-  text-align: center;
-  text-decoration: none;
-  border: 1px solid #ef4444;
-  border-radius: 12px;
+
+  &__cancel {
+    display: block;
+    margin-top: 12px;
+    padding: 12px;
+    font-weight: 500;
+    color: $fv-danger-light;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid $fv-danger-weak;
+    border-radius: 12px;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      color: $fv-danger-light;
+      background: tint($fv-danger-weak, 0.1);
+    }
+  }
+
+  &__footer {
+    padding: 0 32px 28px;
+    text-align: center;
+  }
+
+  &__home {
+    font-size: 14px;
+    color: $fv-muted-fg;
+    text-decoration: none;
+
+    &:hover {
+      color: $fv-fg;
+    }
+  }
 }

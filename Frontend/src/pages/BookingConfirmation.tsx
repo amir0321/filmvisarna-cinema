@@ -62,19 +62,23 @@ export default function BookingConfirmation() {
         <p className="fv-ticket__label">Bokningskod</p>
         <div className="fv-ticket__codebox">
           <span className="fv-ticket__ref">{kod}</span>
-          <button type="button" className="fv-ticket__copy" onClick={copy}>
+          <button
+            type="button"
+            className={`fv-ticket__copy ${copied ? 'fv-ticket__copy--done' : ''}`}
+            onClick={copy}
+          >
             <i className={`bi ${copied ? 'bi-check-lg' : 'bi-copy'}`} aria-hidden="true" />
             {copied ? 'Kopierat' : 'Kopiera'}
           </button>
         </div>
       </div>
 
-            {data ? (
+      {data ? (
         <>
           <div className="fv-ticket__divider" aria-hidden="true" />
           <div className="fv-ticket__body">
             <div className="fv-ticket__movie">
-              {data.posterUrl && <img src={data.posterUrl} alt="" />}
+              {data.posterUrl && <img src={data.posterUrl} alt={data.movieTitle} />}
               <div>
                 <h2>{data.movieTitle}</h2>
                 <p>{data.cinema}</p>
@@ -112,6 +116,7 @@ export default function BookingConfirmation() {
                 <span>{formatSek(data.total)}</span>
               </div>
             </div>
+
             <div className="fv-ticket__qr">
               <p>Visa upp vid kassan</p>
               <div className="fv-ticket__qrbox">
@@ -119,7 +124,8 @@ export default function BookingConfirmation() {
               </div>
               <span>{data.bookingRef}</span>
             </div>
-              <button type="button" className="fv-ticket__btn" onClick={() => window.print()}>
+
+            <button type="button" className="fv-ticket__btn" onClick={() => window.print()}>
               Skriv ut / Spara som PDF
             </button>
 
@@ -139,8 +145,10 @@ export default function BookingConfirmation() {
         </div>
       )}
 
-      <div className="fv-ticket__body">
-        <Link to="/">Till startsidan</Link>
+      <div className="fv-ticket__footer">
+        <Link to="/" className="fv-ticket__home">
+          Tillbaka till startsidan
+        </Link>
       </div>
     </section>
   )

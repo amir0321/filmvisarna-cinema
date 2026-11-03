@@ -5,8 +5,8 @@ import type { SeatsResponse } from '../types/screeningSeat'
 import QuantityPicker from '../components/QuantityPicker'
 import { TICKET_TYPES, type TicketType } from '../constants/prices'
 import { formatSek } from '../utils/price'
-import {useScreenings} from '../hooks/useScreenings'
-import {getScreeningSeats} from '../api/screeningSeats'
+import { useScreenings } from '../hooks/useScreenings'
+import { getScreeningSeats } from '../api/screeningSeats'
 import StepIndicator from '../components/StepIndicator'
 import { getMovieUrl } from '../utils/links'
 import { pickBestSeats } from '../utils/seats'
@@ -15,14 +15,20 @@ import { getPriceGroups } from '../api/priceGroups'
 import { getKioskItems } from '../api/kiosk'
 import type { KioskItem } from '../types/kiosk'
 import { saveConfirmation } from '../utils/confirmationStorage'
+import { useAuth, getUserDisplayName } from '../hooks/useAuth'
+import { EmptyState } from '../components/EmptyState'
+import { Skeleton } from '../components/Skeleton'
+
+export const hideFromNav = true
 
 export default function ScreeningDetail() {
   const { id: idParam } = useParams()
   const id = idParam ? Number(idParam) : NaN
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [data, setData] = useState<SeatsResponse | null>(null)
-    const [selectedIds, setSelectedIds] = useState<number[]>(() =>
+  const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     (searchParams.get('seats') ?? '')
       .split(',')
       .map(Number)
@@ -30,7 +36,7 @@ export default function ScreeningDetail() {
   )
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-    const countFromUrl = (key: string) => {
+  const countFromUrl = (key: string) => {
     const n = Number(searchParams.get(key))
     return Number.isInteger(n) && n > 0 ? n : 0
   }
@@ -39,29 +45,41 @@ export default function ScreeningDetail() {
     senior: countFromUrl('senior'),
     child: countFromUrl('child'),
   })
-    const { data: screenings } = useScreenings()
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [message, setMessage] = useState<string | null>(null)
-    const [reference, setReference] = useState<string | null>(null)
-    const [groupIds, setGroupIds] = useState<Record<string, number>>({})
+  const { data: screenings } = useScreenings()
+  const [nameInput, setName] = useState<string | null>(null)
+  const [emailInput, setEmail] = useState<string | null>(null)
+  const name = nameInput ?? (user ? getUserDisplayName(user) : '')
+  const email = emailInput ?? (user?.email ?? '')
+  const [message, setMessage] = useState<string | null>(null)
+  const [reference, setReference] = useState<string | null>(null)
+  const [groupIds, setGroupIds] = useState<Record<string, number>>({})
 
   useEffect(() => {
     getPriceGroups()
       .then(groups => setGroupIds(Object.fromEntries(groups.map(g => [g.name, g.id]))))
       .catch(() => setMessage('Kunde inte hämta biljettyper.'))
   }, [])
-    const [kiosk, setKiosk] = useState<KioskItem[]>([])
-    const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
-    const [kioskError, setKioskError] = useState<string | null>(null)
-    const [kioskOpen, setKioskOpen] = useState(false)
+  const [kiosk, setKiosk] = useState<KioskItem[]>([])
+  const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
+  const [kioskError, setKioskError] = useState<string | null>(null)
+  const [kioskOpen, setKioskOpen] = useState(false)
 
   useEffect(() => {
     getKioskItems()
       .then(items => setKiosk(items.filter(i => i.is_available)))
       .catch(() => setKioskError('Kunde inte hämta kiosken.'))
   }, [])
-    // 1. Load the seats once when the page opens
+
+  const retrySeats = () => {
+    if (Number.isNaN(id)) return
+    setError(null)
+    setData(null)
+    getScreeningSeats(id)
+      .then(setData)
+      .catch(err => setError(String(err)))
+  }
+
+  // 1. Load the seats once when the page opens
   useEffect(() => {
     if (Number.isNaN(id)) return
     getScreeningSeats(id)
@@ -93,13 +111,66 @@ export default function ScreeningDetail() {
     return () => clearInterval(timer)
   }, [id])
 
-  if (Number.isNaN(id)) {
-    return <p>Ogiltig visning. <Link to="/">Till startsidan</Link></p>
+  if (Number.isNaN(id) || id <= 0) {
+    return (
+      <div className="py-5">
+        <EmptyState
+          variant="warning"
+          title="Ogiltig visning"
+          description="Visningen du söker finns inte eller har ett ogiltigt ID."
+          actionLabel="Till startsidan"
+          actionTo="/"
+        />
+      </div>
+    )
   }
+
   if (error) {
-    return <p>Kunde inte hämta stolarna. Försök igen senare. <Link to="/">Till startsidan</Link></p>
+    return (
+      <div className="py-5">
+        <EmptyState
+          variant="error"
+          title="Kunde inte hämta stolarna"
+          description="Det gick inte att ladda platskartan för den här visningen. Försök igen."
+          actionLabel="Försök igen"
+          onAction={retrySeats}
+        />
+      </div>
+    )
   }
-  if (!data) return <p>Laddar...</p>
+
+  if (!data) {
+    return (
+      <section className="fv-booking" role="status" aria-busy="true">
+        <span className="visually-hidden">Laddar bokningssida...</span>
+        <div className="fv-booking__top">
+          <Skeleton variant="text" width="140px" height="20px" />
+          <Skeleton variant="pill" width="280px" height="28px" />
+        </div>
+        <div className="fv-movie-mini">
+          <Skeleton variant="rect" width="48px" height="72px" />
+          <div className="flex-grow-1">
+            <Skeleton variant="text" width="220px" height="20px" className="mb-2" />
+            <Skeleton variant="text" width="180px" height="16px" />
+          </div>
+        </div>
+        <div className="fv-booking__grid">
+          <div>
+            <div className="fv-card">
+              <Skeleton variant="text" width="180px" height="24px" className="mb-3" />
+              <Skeleton variant="rect" width="100%" height="140px" />
+            </div>
+          </div>
+          <aside className="fv-booking__aside">
+            <div className="fv-card">
+              <Skeleton variant="text" width="140px" height="22px" className="mb-3" />
+              <Skeleton variant="rect" width="100%" height="160px" />
+            </div>
+          </aside>
+        </div>
+      </section>
+    )
+  }
 
   const toggle = (seatId: number) => {
     setNotice(null)
@@ -116,7 +187,8 @@ export default function ScreeningDetail() {
     setCounts(next)
     setSelectedIds(pickBestSeats(data.seats, next.adult + next.senior + next.child))
   }
-    async function handleConfirm() {
+
+  async function handleConfirm() {
     setMessage(null)
 
     const dbName = { adult: 'adult', senior: 'elder', child: 'child' } as const
@@ -124,18 +196,18 @@ export default function ScreeningDetail() {
       Array<number>(counts[t.type]).fill(groupIds[dbName[t.type]]),
     )
     const tickets = selectedIds.map((seatId, i) => ({ seatId, priceGroupId: perSeat[i] }))
-     const items = kiosk
+    const items = kiosk
       .filter(i => (kioskQty[i.id] ?? 0) > 0)
       .map(i => ({ itemId: i.id, quantity: kioskQty[i.id] }))
     try {
       const created = await apiClient.post<{ bookingRef: string; cancelToken?: string }>('/bookings', {
         screeningId: id,
         guestName: name.trim(),
-        email,
+        email: email.trim(),
         tickets,
         items,
       })
-            if (screening) {
+      if (screening) {
         saveConfirmation({
           bookingRef: created.bookingRef,
           movieTitle: screening.movieTitle,
@@ -155,7 +227,7 @@ export default function ScreeningDetail() {
           ticketTotal,
           kioskTotal,
           total: ticketTotal + kioskTotal,
-          email,
+          email: email.trim(),
           cancelToken: created.cancelToken,
         })
         navigate(`/bekraftelse/${created.bookingRef}`)
@@ -166,17 +238,18 @@ export default function ScreeningDetail() {
       setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
     }
   }
-    const ticketCount = counts.adult + counts.senior + counts.child
-    const ticketTotal = TICKET_TYPES.reduce((sum, t) => sum + counts[t.type] * t.price, 0)
-    const kioskCount = Object.values(kioskQty).reduce((sum, n) => sum + n, 0)
-    const kioskTotal = kiosk.reduce((sum, i) => sum + i.price * (kioskQty[i.id] ?? 0), 0)
-    const selectedLabels = data.seats
+
+  const ticketCount = counts.adult + counts.senior + counts.child
+  const ticketTotal = TICKET_TYPES.reduce((sum, t) => sum + counts[t.type] * t.price, 0)
+  const kioskCount = Object.values(kioskQty).reduce((sum, n) => sum + n, 0)
+  const kioskTotal = kiosk.reduce((sum, i) => sum + i.price * (kioskQty[i.id] ?? 0), 0)
+  const selectedLabels = data.seats
     .filter(s => selectedIds.includes(s.id))
     .sort((a, b) => a.row_label.localeCompare(b.row_label) || a.seat_number - b.seat_number)
     .map(s => `Rad ${s.row_label}, Stol ${s.seat_number}`)
     .join(' · ')
 
-      const screening = screenings?.find(s => s.id === id)
+  const screening = screenings?.find(s => s.id === id)
   const when = screening
     ? new Date(screening.startsAt).toLocaleString('sv-SE', {
         weekday: 'long',
@@ -187,7 +260,7 @@ export default function ScreeningDetail() {
         timeZone: 'Europe/Stockholm',
       })
     : ''
-      const endTime = screening
+  const endTime = screening
     ? new Date(screening.endsAt).toLocaleTimeString('sv-SE', {
         hour: '2-digit',
         minute: '2-digit',
@@ -204,8 +277,8 @@ export default function ScreeningDetail() {
           ? 'Fler platser än biljetter'
           : 'Slutför bokning'
 
-         return (
-    <section>
+  return (
+    <section className="fv-booking">
       <div className="fv-booking__top">
         <Link
           to={screening ? getMovieUrl(screening.movieId) : '/'}
@@ -219,7 +292,11 @@ export default function ScreeningDetail() {
       {screening && (
         <div className="fv-movie-mini">
           {screening.posterUrl && (
-            <img className="fv-movie-mini__poster" src={screening.posterUrl} alt="" />
+            <img
+              className="fv-movie-mini__poster"
+              src={screening.posterUrl}
+              alt={screening.movieTitle}
+            />
           )}
           <div>
             <h1 className="fv-movie-mini__title">{screening.movieTitle}</h1>
@@ -230,13 +307,17 @@ export default function ScreeningDetail() {
         </div>
       )}
 
-      {notice && <p role="alert">{notice}</p>}
+      {notice && (
+        <p className="fv-booking__alert" role="alert">
+          {notice}
+        </p>
+      )}
 
       <div className="fv-booking__grid">
         <div>
           <div className="fv-card">
             <h2>1. Välj biljetter</h2>
-            <p>Välj antal biljetter per kategori</p>
+            <p className="fv-card__subtitle">Välj antal biljetter per kategori</p>
             {TICKET_TYPES.map(t => (
               <QuantityPicker
                 key={t.type}
@@ -247,21 +328,27 @@ export default function ScreeningDetail() {
               />
             ))}
             {ticketCount > 0 && (
-              <p>
-                Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
-                {ticketCount === 1 ? 'biljett' : 'biljetter'}
-              </p>
+              <div className="fv-ticket-summary">
+                <span>
+                  Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
+                  {ticketCount === 1 ? 'biljett' : 'biljetter'}
+                </span>
+                <i className="bi bi-check-circle-fill" aria-hidden="true" />
+              </div>
             )}
           </div>
 
           {ticketCount > 0 && (
             <div className="fv-card">
               <h2>2. Välj platser</h2>
-              <p>Klicka på en stol för att välja den</p>
+              <p className="fv-card__subtitle">
+                Bästa tillgängliga platser är förvalda — klicka för att ändra
+              </p>
               <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
             </div>
           )}
-           {ticketCount > 0 && (
+
+          {ticketCount > 0 && (
             <div className="fv-card fv-kiosk">
               <button
                 type="button"
@@ -286,7 +373,7 @@ export default function ScreeningDetail() {
 
               {kioskOpen && (
                 <div className="fv-kiosk__items">
-                  {kioskError && <p>{kioskError}</p>}
+                  {kioskError && <p role="alert">{kioskError}</p>}
                   {kiosk.map(i => (
                     <QuantityPicker
                       key={i.id}
@@ -301,7 +388,8 @@ export default function ScreeningDetail() {
             </div>
           )}
         </div>
-          <aside className="fv-booking__aside">
+
+        <aside className="fv-booking__aside">
           <div className="fv-card">
             <h2>Din bokning</h2>
 
@@ -312,7 +400,7 @@ export default function ScreeningDetail() {
               </div>
             )}
 
-                       {ticketCount > 0 && (
+            {ticketCount > 0 && (
               <div className="fv-summary">
                 {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
                   <div key={t.type} className="fv-summary__row">
@@ -363,7 +451,11 @@ export default function ScreeningDetail() {
               </div>
             )}
 
-            {message && <p role="alert">{message}</p>}
+            {message && (
+              <p className="fv-booking__error" role="alert">
+                {message}
+              </p>
+            )}
             {reference && (
               <p>
                 Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong>

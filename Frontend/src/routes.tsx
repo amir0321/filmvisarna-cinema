@@ -18,7 +18,6 @@ import AdminScreenings from './pages/admin/AdminScreenings'
 import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
 import ScreeningDetail from './pages/ScreeningDetail'
-import Booking from './pages/Booking'
 import BookingConfirmation from './pages/BookingConfirmation'
 
 export const router = createBrowserRouter([
@@ -36,8 +35,8 @@ export const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'profile', element: <Profile /> },
+      { path: 'booking/:id', element: <ScreeningDetail /> },
       { path: 'screeningdetail/:id', element: <ScreeningDetail /> },
-      { path: 'booking/:screeningId', element: <Booking /> },
       { path: 'cancel/:token', element: <CancelBooking /> },
       { path: 'cancel', element: <CancelBooking /> },
       { path: 'bekraftelse/:kod', element: <BookingConfirmation /> },

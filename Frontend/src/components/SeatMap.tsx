@@ -28,33 +28,37 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
     <div className="fv-seatmap">
       <div className="fv-seatmap__screen">BIODUK</div>
 
-      {rows.map(row => (
-        <div key={row} className="fv-seatmap__row">
-          <span className="fv-seatmap__label">{row}</span>
-          <div className="fv-seatmap__seats">
-            {seats
-              .filter(s => s.row_label === row)
-              .sort((a, b) => a.seat_number - b.seat_number)
-              .map(s => {
-                const state = seatState(s, selectedIds.includes(s.id))
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={`fv-seat fv-seat--${state}`}
-                    disabled={state === 'booked'}
-                    aria-pressed={state === 'selected'}
-                    aria-label={`Rad ${row}, stol ${s.seat_number}, ${LABELS[state]}`}
-                    onClick={() => onToggle(s.id)}
-                  >
-                    {s.is_wheelchair ? '♿' : s.seat_number}
-                  </button>
-                )
-              })}
-          </div>
-          <span className="fv-seatmap__label">{row}</span>
+      <div className="fv-seatmap__scroll">
+        <div className="fv-seatmap__rows">
+          {rows.map(row => (
+            <div key={row} className="fv-seatmap__row">
+              <span className="fv-seatmap__label">{row}</span>
+              <div className="fv-seatmap__seats">
+                {seats
+                  .filter(s => s.row_label === row)
+                  .sort((a, b) => a.seat_number - b.seat_number)
+                  .map(s => {
+                    const state = seatState(s, selectedIds.includes(s.id))
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`fv-seat fv-seat--${state}`}
+                        disabled={state === 'booked'}
+                        aria-pressed={state === 'selected'}
+                        aria-label={`Rad ${row}, stol ${s.seat_number}, ${LABELS[state]}`}
+                        onClick={() => onToggle(s.id)}
+                      >
+                        {s.is_wheelchair ? '♿' : s.seat_number}
+                      </button>
+                    )
+                  })}
+              </div>
+              <span className="fv-seatmap__label">{row}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       <ul className="fv-seatmap__legend">
         {(Object.keys(LABELS) as SeatState[]).map(state => (
