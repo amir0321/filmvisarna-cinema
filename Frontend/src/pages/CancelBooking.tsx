@@ -333,7 +333,7 @@ export default function CancelBooking() {
           title="Visningen har redan varit"
           description="Det går inte längre att avboka denna visning eftersom föreställningens datum och starttid redan har passerats."
           actionLabel="Se repertoaren"
-          actionTo="/movies"
+          actionTo="/filmer"
         />
       )}
 

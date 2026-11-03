@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { Navigate, createBrowserRouter } from 'react-router'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
@@ -27,19 +27,45 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'movies', element: <Movies /> },
+
+      // Filmer (Svenska primär, engelska alias/redirect)
+      { path: 'filmer', element: <Movies /> },
+      { path: 'filmer/:id', element: <MovieDetails /> },
+      { path: 'movies', element: <Navigate to="/filmer" replace /> },
       { path: 'movies/:id', element: <MovieDetails /> },
+
+      // Salonger & Om oss
       { path: 'salonger', element: <Salonger /> },
       { path: 'om-oss', element: <About /> },
-      { path: 'my-bookings', element: <MyBookings /> },
-      { path: 'login', element: <Login /> },
-      { path: 'register', element: <Register /> },
-      { path: 'profile', element: <Profile /> },
+
+      // Mina bokningar (Svenska primär, engelska alias/redirect)
+      { path: 'mina-bokningar', element: <MyBookings /> },
+      { path: 'my-bookings', element: <Navigate to="/mina-bokningar" replace /> },
+
+      // Auth & Profil (Svenska primär, engelska alias/redirect)
+      { path: 'logga-in', element: <Login /> },
+      { path: 'login', element: <Navigate to="/logga-in" replace /> },
+      { path: 'skapa-konto', element: <Register /> },
+      { path: 'registrera', element: <Navigate to="/skapa-konto" replace /> },
+      { path: 'register', element: <Navigate to="/skapa-konto" replace /> },
+      { path: 'profil', element: <Profile /> },
+      { path: 'profile', element: <Navigate to="/profil" replace /> },
+
+      // Bokning (Svenska primär, engelska/äldre alias)
+      { path: 'boka/:id', element: <ScreeningDetail /> },
       { path: 'booking/:id', element: <ScreeningDetail /> },
       { path: 'screeningdetail/:id', element: <ScreeningDetail /> },
+
+      // Avbokning
+      { path: 'avboka/:token', element: <CancelBooking /> },
+      { path: 'avboka', element: <CancelBooking /> },
       { path: 'cancel/:token', element: <CancelBooking /> },
       { path: 'cancel', element: <CancelBooking /> },
+
+      // Bokningsbekräftelse
       { path: 'bekraftelse/:kod', element: <BookingConfirmation /> },
+      { path: 'bekraftelse', element: <BookingConfirmation /> },
+      { path: 'confirmation/:kod', element: <BookingConfirmation /> },
     ],
   },
   // Backoffice administration layout
@@ -48,9 +74,18 @@ export const router = createBrowserRouter([
     element: <AdminLayout />,
     children: [
       { index: true, element: <AdminDashboard /> },
+      // Bokningar
+      { path: 'bokningar', element: <AdminBookings /> },
       { path: 'bookings', element: <AdminBookings /> },
+      // Schema / Visningar
+      { path: 'visningar', element: <AdminScreenings /> },
+      { path: 'schema', element: <AdminScreenings /> },
       { path: 'screenings', element: <AdminScreenings /> },
+      // Filmer
+      { path: 'filmer', element: <AdminMovies /> },
       { path: 'movies', element: <AdminMovies /> },
+      // Salonger
+      { path: 'salonger', element: <AdminCinemas /> },
       { path: 'cinemas', element: <AdminCinemas /> },
     ],
   },
