@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router'
+import RouteRedirect from './components/RouteRedirect'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
@@ -9,6 +10,8 @@ import About from './pages/About'
 import MyBookings from './pages/MyBookings'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import Profile from './pages/Profile'
 import CancelBooking from './pages/CancelBooking'
 import NotFound from './pages/NotFound'
@@ -44,10 +47,12 @@ export const router = createBrowserRouter([
 
       // Auth & Profil (Svenska primär, engelska alias/redirect)
       { path: 'logga-in', element: <Login /> },
-      { path: 'login', element: <Navigate to="/logga-in" replace /> },
+      { path: 'login', element: <RouteRedirect to="/logga-in" /> },
       { path: 'skapa-konto', element: <Register /> },
-      { path: 'registrera', element: <Navigate to="/skapa-konto" replace /> },
-      { path: 'register', element: <Navigate to="/skapa-konto" replace /> },
+      { path: 'registrera', element: <RouteRedirect to="/skapa-konto" /> },
+      { path: 'register', element: <RouteRedirect to="/skapa-konto" /> },
+      { path: 'reset-password', element: <ResetPassword /> },
+      { path: 'verify-email', element: <VerifyEmail /> },
       { path: 'profil', element: <Profile /> },
       { path: 'profile', element: <Navigate to="/profil" replace /> },
 

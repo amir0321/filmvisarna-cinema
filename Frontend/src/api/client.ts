@@ -2,6 +2,7 @@ import type { ApiResponse } from '../types'
 
 const API_BASE_URL = '/api'
 const TOKEN_KEY = 'token'
+export const AUTH_UNAUTHORIZED_EVENT = 'fv:auth-unauthorized'
 
 export class ApiError extends Error {
   status: number
@@ -93,6 +94,17 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
     headers,
     body: finalBody,
   })
+
+  // Ignore late failures from requests made with an older session.
+  const requestUrl = new URL(url, window.location.origin)
+  const path = requestUrl.pathname.replace(/\/$/, '')
+  if (!restConfig.signal?.aborted && response.status === 401 && token && getAuthToken() === token &&
+      headers.get('Authorization') === `Bearer ${token}` &&
+      requestUrl.origin === window.location.origin &&
+      !['/api/auth/login', '/api/auth/change-password'].includes(path)) {
+    clearAuthToken()
+    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
+  }
 
   // Handle 204 No Content
   if (response.status === 204) {

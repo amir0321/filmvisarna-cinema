@@ -1,9 +1,11 @@
 import { createContext, use } from 'react'
-import type { User } from '../types/user'
+import type { AuthResponse, User } from '../types/user'
 
 export interface AuthContextValue {
   user: User | null
   loading: boolean
+  verificationDeliveryFailed: boolean
+  setSession: (response: AuthResponse) => void
   logout: () => void
   refreshUser: () => Promise<void>
 }

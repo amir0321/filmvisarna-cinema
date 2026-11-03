@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getMe } from '../api/auth'
-import { clearAuthToken, getAuthToken } from '../api/client'
+import { AUTH_UNAUTHORIZED_EVENT, clearAuthToken, getAuthToken, setAuthToken } from '../api/client'
 import { AuthContext } from '../hooks/useAuth'
-import type { User } from '../types/user'
+import type { AuthResponse, User } from '../types/user'
 
 interface AuthProviderProps {
   children: ReactNode
+  onUnauthorized: () => void
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children, onUnauthorized }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState<boolean>(() => Boolean(getAuthToken()))
+  const [loading, setLoading] = useState(() => Boolean(getAuthToken()))
+  const [verificationDeliveryFailed, setVerificationDeliveryFailed] = useState(false)
 
   const refreshUser = useCallback(async () => {
     const token = getAuthToken()
@@ -19,62 +21,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false)
       return
     }
-
     setLoading(true)
     try {
       const currentUser = await getMe()
-      setUser(currentUser)
-    } catch {
-      clearAuthToken()
-      setUser(null)
+      if (getAuthToken() === token) setUser(currentUser)
     } finally {
-      setLoading(false)
+      if (getAuthToken() === token) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    const controller = new AbortController()
     const token = getAuthToken()
-    if (!token) {
-      return
-    }
-
-    let isCancelled = false
-
-    getMe()
-      .then((currentUser) => {
-        if (!isCancelled) {
-          setUser(currentUser)
-          setLoading(false)
-        }
+    if (token) {
+      getMe(controller.signal).then(currentUser => {
+        if (!controller.signal.aborted && getAuthToken() === token) setUser(currentUser)
+      }).catch(() => {
+        // Authentication failures are handled by the global session event.
+      }).finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
       })
-      .catch(() => {
-        if (!isCancelled) {
-          clearAuthToken()
-          setUser(null)
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      isCancelled = true
     }
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null)
+      setVerificationDeliveryFailed(false)
+      setLoading(false)
+      onUnauthorized()
+    }
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
+  }, [onUnauthorized])
+
+  const setSession = useCallback((response: AuthResponse) => {
+    setAuthToken(response.token)
+    setUser(response.user)
+    setVerificationDeliveryFailed(response.verificationEmailSent === false)
+    setLoading(false)
   }, [])
 
   const logout = useCallback(() => {
     clearAuthToken()
     setUser(null)
+    setVerificationDeliveryFailed(false)
+    setLoading(false)
   }, [])
 
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      logout,
-      refreshUser,
-    }),
-    [user, loading, logout, refreshUser],
-  )
-
+  const value = useMemo(() => ({ user, loading, verificationDeliveryFailed, logout, refreshUser, setSession }),
+    [user, loading, verificationDeliveryFailed, logout, refreshUser, setSession])
   return <AuthContext value={value}>{children}</AuthContext>
 }
 

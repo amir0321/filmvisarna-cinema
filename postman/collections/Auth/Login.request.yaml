@@ -7,12 +7,11 @@ body:
   content: |-
     {
       "email": "admin@filmvisarna.se",
-      "password": "AdminLösen123"
+      "password": "Password123!"
     }
 order: 542768022570850
 scripts:
   - type: afterResponse
-    language: text/javascript
     code: |-
       const res = pm.response.json();
       if (res && res.token) {
@@ -24,3 +23,4 @@ scripts:
           console.log('user_token har sparats automatiskt!');
         }
       }
+    language: text/javascript
