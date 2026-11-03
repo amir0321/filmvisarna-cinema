@@ -10,8 +10,8 @@ export default function AuthCard({ registering, redirect, children }: { register
     <div className="fv-auth-card">
       <nav className="fv-tabs-segmented segmented-primary" aria-label="Inloggning och registrering">
         <div className="fv-tab-list">
-          <Link className={`fv-tab-trigger ${!registering ? 'active' : ''}`} aria-current={!registering ? 'page' : undefined} to={`/login${query}`}>Logga in</Link>
-          <Link className={`fv-tab-trigger ${registering ? 'active' : ''}`} aria-current={registering ? 'page' : undefined} to={`/register${query}`}>Bli Medlem</Link>
+          <Link className={`fv-tab-trigger ${!registering ? 'active' : ''}`} aria-current={!registering ? 'page' : undefined} to={`/logga-in${query}`}>Logga in</Link>
+          <Link className={`fv-tab-trigger ${registering ? 'active' : ''}`} aria-current={registering ? 'page' : undefined} to={`/skapa-konto${query}`}>Bli Medlem</Link>
         </div>
       </nav>
       <div className="fv-auth-icon" aria-hidden="true"><i className={`bi ${registering ? 'bi-person-plus' : 'bi-person-lock'}`} /></div>
@@ -19,7 +19,7 @@ export default function AuthCard({ registering, redirect, children }: { register
       <p className="fv-auth-intro">{registering ? 'Skapa ett konto och samla dina biobesök på ett ställe.' : 'Logga in för att se dina bokningar och uppgifter.'}</p>
       {loading ? <p role="status"><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Kontrollerar din inloggning...</p> : children}
       <p className="fv-auth-footer">{registering ? 'Har du redan ett konto? ' : 'Inte medlem ännu? '}
-        <Link to={`${registering ? '/login' : '/register'}${query}`}>{registering ? 'Logga in' : 'Bli medlem'}</Link>
+        <Link to={`${registering ? '/logga-in' : '/skapa-konto'}${query}`}>{registering ? 'Logga in' : 'Bli medlem'}</Link>
       </p>
     </div>
   </section>

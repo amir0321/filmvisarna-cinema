@@ -44,7 +44,7 @@ export default function VerifyEmail() {
               {pending ? 'Verifierar...' : 'Bekräfta e-postadress'}
             </button>
           </>}
-      <p className="fv-auth-footer"><Link to={user ? '/' : '/login'}>{user ? 'Till startsidan' : 'Till inloggningen'}</Link></p>
+      <p className="fv-auth-footer"><Link to={user ? '/' : '/logga-in'}>{user ? 'Till startsidan' : 'Till inloggningen'}</Link></p>
     </AuthActionCard>
   )
 }

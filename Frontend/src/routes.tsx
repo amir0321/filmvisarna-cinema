@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router'
+import RouteRedirect from './components/RouteRedirect'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
@@ -46,10 +47,10 @@ export const router = createBrowserRouter([
 
       // Auth & Profil (Svenska primär, engelska alias/redirect)
       { path: 'logga-in', element: <Login /> },
-      { path: 'login', element: <Navigate to="/logga-in" replace /> },
+      { path: 'login', element: <RouteRedirect to="/logga-in" /> },
       { path: 'skapa-konto', element: <Register /> },
-      { path: 'registrera', element: <Navigate to="/skapa-konto" replace /> },
-      { path: 'register', element: <Navigate to="/skapa-konto" replace /> },
+      { path: 'registrera', element: <RouteRedirect to="/skapa-konto" /> },
+      { path: 'register', element: <RouteRedirect to="/skapa-konto" /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'verify-email', element: <VerifyEmail /> },
       { path: 'profil', element: <Profile /> },

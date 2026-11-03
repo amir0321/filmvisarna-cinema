@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { ZodError } from "zod";
 import {
   createMovieBody,
   listMoviesQuerySchema,
@@ -38,7 +39,7 @@ test("createMovieBody rejects invalid imdb_rating (> 10)", () => {
         duration_minutes: 90,
         imdb_rating: 11.5,
       }),
-    /imdb_rating kan max vara 10/,
+    (error: unknown) => error instanceof ZodError && error.issues.some(issue => issue.path[0] === 'imdb_rating' && issue.code === 'too_big'),
   );
 });
 
@@ -50,7 +51,7 @@ test("createMovieBody rejects invalid trailer_url", () => {
         duration_minutes: 90,
         trailer_url: "not-a-valid-url",
       }),
-    /trailer_url måste vara en giltig URL/,
+    (error: unknown) => error instanceof ZodError && error.issues.some(issue => issue.path[0] === 'trailer_url' && issue.code === 'invalid_format'),
   );
 });
 

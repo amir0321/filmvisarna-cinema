@@ -101,6 +101,18 @@ Links contain 32 random bytes in a URL **fragment**, which the SPA removes from 
 
 The recovery controls follow the [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
 
+### Auth regression tests
+
+Use a dedicated test database, never the application's database:
+
+```bash
+AUTH_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna_auth_test npm run test:auth
+```
+
+The tests create and remove a randomly named schema in that database. They never fall back to `DATABASE_URL` or `.env` for the test connection. Without `AUTH_TEST_DATABASE_URL`, the integration suite is explicitly skipped. GitHub CI supplies a separate PostgreSQL service and runs `npm test` for the complete backend suite.
+
+Coverage includes the additive migration and existing account data, registration and login, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
+
 ## HTTP Status Codes Overview
 
 | Status Code | Meaning | Description |

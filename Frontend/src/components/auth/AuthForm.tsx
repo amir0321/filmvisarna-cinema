@@ -112,7 +112,7 @@ export default function AuthForm({ registering = false }: { registering?: boolea
     <form ref={form} className="fv-auth-form" onSubmit={submit} noValidate aria-busy={pending}>
       {serverError && <div className="fv-auth-error" role="alert" tabIndex={-1} ref={alert}>
         <p>{serverError}</p>
-        {conflictEmail && <Link to={`/login${redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`}`} state={{ email: conflictEmail }}>Logga in med denna e-post</Link>}
+        {conflictEmail && <Link to={`/logga-in${redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`}`} state={{ email: conflictEmail }}>Logga in med denna e-post</Link>}
       </div>}
       <fieldset disabled={pending}>
         {registering && <div className="fv-auth-names">{textField('firstName', 'Förnamn', 'given-name')}{textField('lastName', 'Efternamn', 'family-name')}</div>}

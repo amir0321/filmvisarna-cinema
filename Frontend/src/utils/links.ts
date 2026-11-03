@@ -6,6 +6,10 @@ export function getBookingUrl(screeningId: number): string {
   return `/boka/${screeningId}`
 }
 
+export function isAuthPath(pathname: string): boolean {
+  return /^\/(login|logga-in|register|registrera|skapa-konto|reset-password|verify-email)(?:\/|$)/i.test(pathname)
+}
+
 // Validate decoded paths too: routers and servers may normalize encoded separators.
 export function getSafeRedirectPath(target: string | null | undefined, fallback = '/'): string {
   const safeFallback = fallback === '/' ? '/' : getSafeRedirectPath(fallback)
@@ -17,7 +21,7 @@ export function getSafeRedirectPath(target: string | null | undefined, fallback 
         character === '\\' || character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
       if (!decoded.startsWith('/') || decoded.startsWith('//') || hasUnsafeCharacter) return safeFallback
       const url = new URL(decoded, 'https://filmvisarna.invalid')
-      if (url.origin !== 'https://filmvisarna.invalid' || url.pathname.startsWith('//') || /^\/(login|register|reset-password|verify-email)(?:\/|$)/i.test(url.pathname)) return safeFallback
+      if (url.origin !== 'https://filmvisarna.invalid' || url.pathname.startsWith('//') || isAuthPath(url.pathname)) return safeFallback
       const next = decodeURIComponent(decoded)
       if (next === decoded) return target
       decoded = next

@@ -1,4 +1,4 @@
-import { getSafeRedirectPath } from './utils/links';
+import { getSafeRedirectPath, isAuthPath } from './utils/links';
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
@@ -11,9 +11,9 @@ import { router } from "./routes.tsx";
 function handleUnauthorized() {
   const { pathname, search, hash } = router.state.location;
   // Keep an existing auth destination and its redirect while clearing the session.
-  if (/^\/(login|register|reset-password|verify-email)\/?$/i.test(pathname)) return;
+  if (isAuthPath(pathname)) return;
   const redirect = getSafeRedirectPath(pathname + search + hash);
-  void router.navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true });
+  void router.navigate(`/logga-in?redirect=${encodeURIComponent(redirect)}`, { replace: true });
 }
 
 createRoot(document.getElementById("root")!).render(

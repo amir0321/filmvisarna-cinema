@@ -67,7 +67,7 @@ export default function ResetPassword() {
             </fieldset>
           </form>}
       {!message && <button className="fv-auth-link mt-3" type="button" onClick={() => setForgotOpen(true)}>Begär en ny återställningslänk</button>}
-      <p className="fv-auth-footer"><Link to="/login">Till inloggningen</Link></p>
+      <p className="fv-auth-footer"><Link to="/logga-in">Till inloggningen</Link></p>
       <ForgotPasswordModal isOpen={forgotOpen} onClose={() => setForgotOpen(false)} />
     </AuthActionCard>
   )
