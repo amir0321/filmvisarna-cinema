@@ -44,23 +44,23 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
   const kioskText = bookingData.kioskItems
     .map(k => `- ${k.quantity}x ${k.name} (${k.price} SEK)`)
     .join('\n');
-  const cancelUrl =
-    bookingData.cancelUrl ||
-    `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
+  const cancelUrl = bookingData.cancelUrl;
 
   return (
-    `Thank you for your booking!\n\n` +
-    `Booking Reference: ${bookingData.bookingRef}\n` +
-    `Movie: ${bookingData.movieTitle}\n` +
-    `Date: ${bookingData.screeningDate}\n` +
-    `Time: ${bookingData.screeningTime}\n` +
-    `Cinema: ${bookingData.cinemaName}\n` +
-    `Seats: ${bookingData.seats.join(', ')}\n\n` +
-    `Tickets:\n${ticketsText}\n\n` +
-    (bookingData.kioskItems.length > 0 ? `Kiosk Items:\n${kioskText}\n\n` : '') +
-    `Total Amount: ${total} SEK\n\n` +
-    `Avboka din bokning här: ${cancelUrl}\n\n` +
-    `Please show this booking reference at the counter upon arrival!`
+    `Tack för din bokning!\n\n` +
+    `Bokningsreferens: ${bookingData.bookingRef}\n` +
+    `Film: ${bookingData.movieTitle}\n` +
+    `Datum: ${bookingData.screeningDate}\n` +
+    `Tid: ${bookingData.screeningTime}\n` +
+    `Salong: ${bookingData.cinemaName}\n` +
+    `Platser: ${bookingData.seats.join(', ')}\n\n` +
+    `Biljetter:\n${ticketsText}\n\n` +
+    (bookingData.kioskItems.length > 0 ? `Kioskvaror:\n${kioskText}\n\n` : '') +
+    `Totalt att betala: ${total} SEK\n\n` +
+    (cancelUrl
+      ? `Avboka din bokning här: ${cancelUrl}\n\n`
+      : `Kontakta biografen om du vill avboka din bokning.\n\n`) +
+    `Visa bokningsreferensen i kassan vid ankomst!`
   );
 }
 
@@ -68,9 +68,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
   const total = calculateBookingTotal(bookingData);
   const ticketsHtml = renderTicketsHtml(bookingData.tickets);
   const kioskHtml = renderKioskHtml(bookingData.kioskItems);
-  const cancelUrl =
-    bookingData.cancelUrl ||
-    `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
+  const cancelUrl = bookingData.cancelUrl;
 
   return `
     <div 
@@ -130,7 +128,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
                     <img 
                       src="${bookingData.posterUrl}" 
                       width="72" 
-                      alt="Poster" 
+                      alt="Filmaffisch"
                       style="border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" 
                     />
                   </td>
@@ -179,10 +177,10 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
 
         <!-- Avbokning & instruktion -->
         <div style="padding: 0 28px; text-align: center;">
-          <a href="${cancelUrl}"
+          ${cancelUrl ? `<a href="${cancelUrl}"
             style="display: block; padding: 12px 0; font-size: 13px; font-weight: 600; color: #EF4444; text-decoration: none; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05); margin-bottom: 12px;">
             Avboka biljett
-          </a>
+          </a>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
           <div style="font-size: 12px; color: #94A3B8;">
             Betalning sker på plats. Biljetter hämtas senast 15 min före start.
           </div>

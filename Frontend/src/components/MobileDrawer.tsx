@@ -5,22 +5,22 @@ import BrandLogo from './BrandLogo'
 
 const PUBLIC_DRAWER_LINKS = [
   { name: 'Hem', path: '/', icon: 'bi-house-door', end: true },
-  { name: 'Filmer & Repertoar', path: '/movies', icon: 'bi-film', end: false },
+  { name: 'Filmer & Repertoar', path: '/filmer', icon: 'bi-film', end: false },
   { name: 'Salonger', path: '/salonger', icon: 'bi-display', end: false },
   { name: 'Om oss', path: '/om-oss', icon: 'bi-info-circle', end: false },
 ] as const
 
 const AUTH_DRAWER_LINKS = [
-  { name: 'Mina Bokningar', path: '/my-bookings', icon: 'bi-ticket-perforated', end: false },
-  { name: 'Min Profil', path: '/profile', icon: 'bi-person', end: false },
+  { name: 'Mina Bokningar', path: '/mina-bokningar', icon: 'bi-ticket-perforated', end: false },
+  { name: 'Min Profil', path: '/profil', icon: 'bi-person', end: false },
 ] as const
 
 const ADMIN_DRAWER_LINKS = [
   { name: 'Översikt', path: '/admin', icon: 'bi-layers', end: true },
-  { name: 'Bokningar & Kassa', path: '/admin/bookings', icon: 'bi-ticket-perforated', end: false },
-  { name: 'Visningsschema', path: '/admin/screenings', icon: 'bi-calendar3', end: false },
-  { name: 'Filmarkiv', path: '/admin/movies', icon: 'bi-film', end: false },
-  { name: 'Salonger', path: '/admin/cinemas', icon: 'bi-display', end: false },
+  { name: 'Bokningar & Kassa', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
+  { name: 'Visningsschema', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
+  { name: 'Filmarkiv', path: '/admin/filmer', icon: 'bi-film', end: false },
+  { name: 'Salonger', path: '/admin/salonger', icon: 'bi-display', end: false },
 ] as const
 
 export default function MobileDrawer() {
@@ -202,7 +202,7 @@ export default function MobileDrawer() {
                   >
                     <span className="d-inline-flex align-items-center gap-3">
                       <i className="bi bi-layers drawer-nav-icon" aria-hidden="true"></i>
-                      <span>Admin Backoffice</span>
+                      <span>Administration</span>
                     </span>
                     <span className="nav-admin-badge">ADMIN</span>
                   </NavLink>
@@ -224,14 +224,14 @@ export default function MobileDrawer() {
           ) : (
             <>
               <Link
-                to="/login"
+                to="/logga-in"
                 className="drawer-login-outline-btn w-100 text-center text-decoration-none"
                 onClick={closeDrawer}
               >
                 Logga in
               </Link>
               <Link
-                to="/register"
+                to="/skapa-konto"
                 className="drawer-login-btn w-100 text-center text-decoration-none"
                 onClick={closeDrawer}
               >

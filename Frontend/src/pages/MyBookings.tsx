@@ -89,7 +89,7 @@ export default function MyBookings() {
           title="Logga in för att se dina bokningar"
           description="Som medlem samlas alla dina bokningar här automatiskt. Har du bokat som gäst hittar du din bokningsbekräftelse i ditt e-postmeddelande."
           actionLabel="Utforska filmer"
-          actionTo="/movies"
+          actionTo="/filmer"
         />
       ) : loading ? (
         <p className="text-secondary" role="status">
@@ -174,7 +174,7 @@ export default function MyBookings() {
                       title="Inga aktuella bokningar"
                       description="Dina bokningar visas här när du har bokat biljetter."
                       actionLabel="Se repertoaren"
-                      actionTo="/movies"
+                      actionTo="/filmer"
                     />
                   ) : (
                     <div>
