@@ -4,16 +4,16 @@ import BrandLogo from './BrandLogo'
 
 const BASE_NAV_LINKS = [
   { name: 'Hem', path: '/', end: true },
-  { name: 'Filmer & Repertoar', path: '/movies', end: false },
+  { name: 'Filmer & Repertoar', path: '/filmer', end: false },
   { name: 'Salonger', path: '/salonger', end: false },
   { name: 'Om oss', path: '/om-oss', end: false },
 ] as const
 
 const ADMIN_NAV_LINKS = [
-  { name: 'Bokningar', path: '/admin/bookings', icon: 'bi-ticket-perforated', end: false },
-  { name: 'Schema', path: '/admin/screenings', icon: 'bi-calendar3', end: false },
-  { name: 'Filmer', path: '/admin/movies', icon: 'bi-film', end: false },
-  { name: 'Salonger', path: '/admin/cinemas', icon: 'bi-display', end: false },
+  { name: 'Bokningar', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
+  { name: 'Schema', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
+  { name: 'Filmer', path: '/admin/filmer', icon: 'bi-film', end: false },
+  { name: 'Salonger', path: '/admin/salonger', icon: 'bi-display', end: false },
 ] as const
 
 export default function Navbar() {
@@ -95,7 +95,7 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <li>
                   <NavLink
-                    to="/my-bookings"
+                    to="/mina-bokningar"
                     className={({ isActive }) =>
                       `public-nav-link ${isActive ? 'active' : ''}`
                     }
@@ -155,13 +155,13 @@ export default function Navbar() {
                     <div className="text-secondary nav-dropdown-email text-truncate">{user.email}</div>
                   </li>
                   <li>
-                    <NavLink to="/profile" className="dropdown-item d-flex align-items-center gap-2">
+                    <NavLink to="/profil" className="dropdown-item d-flex align-items-center gap-2">
                       <i className="bi bi-person" aria-hidden="true"></i>
                       <span>Min Profil</span>
                     </NavLink>
                   </li>
                   <li>
-                    <NavLink to="/my-bookings" className="dropdown-item d-flex align-items-center gap-2">
+                    <NavLink to="/mina-bokningar" className="dropdown-item d-flex align-items-center gap-2">
                       <i className="bi bi-ticket-perforated" aria-hidden="true"></i>
                       <span>Mina Bokningar</span>
                     </NavLink>
@@ -178,7 +178,7 @@ export default function Navbar() {
                             className={`bi ${isAdminRoute ? 'bi-box-arrow-left' : 'bi-layers'}`}
                             aria-hidden="true"
                           ></i>
-                          <span>{isAdminRoute ? 'Till biografen' : 'Admin Backoffice'}</span>
+                          <span>{isAdminRoute ? 'Till biografen' : 'Administration'}</span>
                         </span>
                         {!isAdminRoute ? <span className="nav-admin-badge">ADMIN</span> : null}
                       </NavLink>
@@ -202,14 +202,14 @@ export default function Navbar() {
             ) : (
               <>
                 <NavLink
-                  to="/login"
+                  to="/logga-in"
                   className={({ isActive }) =>
                     `nav-login-btn ${isActive ? 'active' : ''}`
                   }
                 >
                   Logga in
                 </NavLink>
-                <Link to="/register" className="nav-register-btn">
+                <Link to="/skapa-konto" className="nav-register-btn">
                   Bli Medlem
                 </Link>
               </>

@@ -132,7 +132,7 @@ export default function BookingConfirmation() {
             {data.cancelToken && (
               <Link
                 className="fv-ticket__cancel"
-                to={`/cancel?token=${encodeURIComponent(data.cancelToken)}`}
+                to={`/avboka?token=${encodeURIComponent(data.cancelToken)}`}
               >
                 Avboka biljett
               </Link>
