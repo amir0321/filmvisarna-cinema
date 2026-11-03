@@ -180,7 +180,7 @@ Det finns fyra varianter av salongskarta i prototypen:
      - **Ledig (`.seat-available`):** Bakgrund `#334155`. Vid hover: `transform: scale(1.15)`.
      - **Vald (`.seat-selected`):** Bakgrund `#10B981`, skugga `0 0 10px rgba(16, 185, 129, 0.5)`. Vid hover: `transform: scale(1.15)`.
      - **Upptagen (`.seat-occupied`):** Bakgrund `#1E293B`, `opacity: 0.4`, `cursor: not-allowed`, med diagonal vit linje via `::after` (`linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.3) 40%, rgba(255,255,255,0.3) 60%, transparent 60%)`).
-   - **Legend:** Tre indikatorer (`20×16px` rundade rutor + etikett i `12px` `#94A3B8`): `Ledig` (`#334155`), `Vald` (`#10B981` med glöd), `Upptagen` (`#1E293B` med `opacity: 0.4`). Ingen rullstolsmarkering finns i den publika bokningskartan.
+   - **Legend:** Fyra indikatorer (`20×16px` rundade rutor + etikett i `12px` `#94A3B8`): `Ledig` (`#334155`), `Vald` (`#10B981` med glöd), `Upptagen` (`#1E293B` med `opacity: 0.4`), och `Rullstol` (`♿`, `#3B82F6`). Rullstolsplatser markeras tydligt i kartan och kan väljas manuellt.
 
 2. **Mini-salongskarta på Salonger-sidan (`MiniAuditoriumMap` i `SalongerScreen.tsx`)**
    - Icke-interaktiv översiktskarta med liten `BIODUK`-båge, stolrutor på `10×9px` (`border-radius: 3px 3px 2px 2px`) och legend: `Ledig` (`#334155`), `Exempelval` (`#E50914` för Salong 1, `#10B981` för Salong 2, visas på rad 4 stol 3–5), samt `Rullstol` (`#3B82F6`, visas på ytterplatserna i sista raden). Första raden har `opacity: 0.5`.

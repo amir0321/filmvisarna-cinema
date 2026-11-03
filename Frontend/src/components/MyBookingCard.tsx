@@ -1,5 +1,6 @@
 import type { Booking } from "../types/booking";
 import { Poster } from "./Poster";
+import { getBookingState } from "../utils/bookings";
 
 export interface MyBookingCardProps {
   booking: Booking;
@@ -31,9 +32,25 @@ export default function MyBookingCard({
 
   const cinemaHall = cinemaName ?? "Salong ej angiven";
 
-  const showtime = screeningStartsAt
-    ? new Date(screeningStartsAt).toLocaleString("sv-SE")
+  const startsAt = new Date(screeningStartsAt ?? '');
+  const showtime = Number.isFinite(startsAt.getTime())
+    ? new Intl.DateTimeFormat("sv-SE", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Europe/Stockholm",
+      }).format(startsAt)
     : "Tid ej angiven";
+  const bookingState = getBookingState(booking);
+  const statusLabel = {
+    upcoming: "Kommande föreställning",
+    past: "Tidigare föreställning",
+    cancelled: "Avbokad",
+    unknown: "Tid ej angiven",
+  }[bookingState];
+  const formattedPrice = new Intl.NumberFormat("sv-SE", {
+    style: "currency",
+    currency: "SEK",
+  }).format(totalPrice);
 
   const seats = tickets.map((ticket) => {
     if (ticket.row && ticket.seatNumber != null) {
@@ -44,45 +61,24 @@ export default function MyBookingCard({
   });
   const isConfirmed = status === "confirmed";
 
-  const startsAt = screeningStartsAt
-    ? new Date(screeningStartsAt).getTime()
-    : NaN;
-
   const canCancel =
     isConfirmed &&
     currentTime > 0 &&
-    Number.isFinite(startsAt) &&
-    startsAt - currentTime >= 2 * 60 * 60 * 1000;
+    Number.isFinite(startsAt.getTime()) &&
+    startsAt.getTime() - currentTime >= 2 * 60 * 60 * 1000;
   return (
-    <article
-      className="card mb-3 overflow-hidden"
-      style={{
-        backgroundColor: "#161F30",
-        borderRadius: 16,
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        color: "#F8FAFC",
-      }}
-    >
-      <div
-        className="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
-        style={{
-          backgroundColor: "rgba(16, 185, 129, 0.15)",
-          color: "#10B981",
-        }}
-      >
+    <article className={`fv-my-booking-card card mb-3 overflow-hidden fv-my-booking-card--${bookingState}`}>
+      <div className="fv-my-booking-card__status d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2">
         <span className="fw-semibold small">
-          {status === "confirmed"
-            ? "Kommande föreställning"
-            : "Tidigare bokning"}
+          {statusLabel}
         </span>
 
         <span className="small fw-semibold">{bookingRef}</span>
       </div>
-      <div className="card-body">
+      <div className="fv-my-booking-card__body">
         <div className="d-flex gap-3 align-items-start mb-3">
           <div
-            className="flex-shrink-0 overflow-hidden rounded"
-            style={{ width: 56, height: 84 }}
+            className="fv-my-booking-card__poster flex-shrink-0 overflow-hidden rounded"
           >
             <Poster
               src={posterUrl}
@@ -93,7 +89,7 @@ export default function MyBookingCard({
             />
           </div>
 
-          <div className="flex-grow-1">
+          <div className="fv-my-booking-card__details flex-grow-1">
             <h3 className="h5 fw-bold mb-1">{movieTitle ?? "Okänd film"}</h3>
             <p className="text-secondary small mb-0">
               {cinemaHall} · {showtime}
@@ -103,28 +99,18 @@ export default function MyBookingCard({
 
         <div className="row g-3 mb-3">
           <div className="col-md-6">
-            <p className="text-secondary mb-1">Salong</p>
-            <p className="fw-semibold mb-0">{cinemaHall}</p>
-          </div>
-
-          <div className="col-md-6">
-            <p className="text-secondary mb-1">Föreställning</p>
-            <p className="fw-semibold mb-0">{showtime}</p>
-          </div>
-
-          <div className="col-md-6">
             <p className="text-secondary mb-1">Platser</p>
-            <p className="fw-semibold mb-0">{seats.join(", ")}</p>
+            <p className="fw-semibold mb-0">{seats.join(", ") || "Inga platser registrerade"}</p>
           </div>
 
           <div className="col-md-6">
             <p className="text-secondary mb-1">Totalt pris</p>
-            <p className="fw-semibold mb-0">{totalPrice} kr</p>
+            <p className="fw-semibold mb-0">{formattedPrice}</p>
           </div>
         </div>
 
         {hasKioskPreorder && (
-          <span className="badge bg-info text-dark">
+          <span className="fv-my-booking-card__kiosk badge">
             Kioskförbeställning ingår
           </span>
         )}

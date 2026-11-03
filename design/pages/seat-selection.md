@@ -26,7 +26,7 @@
      - **Kort 2 – Platskarta (visas endast när `totalTickets > 0`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
        - Rubrik (`h2`): `2. Välj platser` (`18px`, `Poppins`).
        - Underrubrik: `Bästa tillgängliga platser är förvalda — klicka för att ändra` (`12px`, `#94A3B8`).
-       - Bioduk (`BIODUK`), stolsmatris (`A`–`J`, `1`–`12`) och legend (`Ledig`, `Vald`, `Upptagen`) enligt sektion 3.10.
+       - Bioduk (`BIODUK`), stolsmatris (`A`–`J`, `1`–`12`) och legend (`Ledig`, `Vald`, `Upptagen`, `Rullstol`) enligt sektion 3.10.
    - **Höger – Checkout-panel (`lg:col-span-1`, `position: sticky`, `top: 96px`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
      - Rubrik (`h2`): `Din bokning` (`16px`, `Poppins`).
      - **Valda platser-ruta (visas när `selectedSeats.length > 0`):** Visar `{screening.auditorium}` (`12px`, `#94A3B8`) och sorterad lista `Rad {rad}, Stol {stol}` separerade med ` · ` (`14px`, `#F8FAFC`).

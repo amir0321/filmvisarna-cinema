@@ -12,10 +12,12 @@
 @import './components/skeleton';
 @import './components/empty-state';
 @import './components/poster';
+@import './components/booking';
 @import './components/date-picker-popover';
 @import './components/trailer-modal';
 @import './components/full-bleed';
 @import './components/cancel-booking';
+@import './components/my-bookings';
 
 // Movies page
 @import './components/movies/movies-page';
@@ -28,3 +30,6 @@
 @import './components/home/hero-section';
 @import './components/home/movie-card';
 @import './components/home/repertoire-section';
+
+//About page
+@import './components/about';
