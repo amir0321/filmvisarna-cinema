@@ -10,6 +10,7 @@ interface BookingApiResponse {
   screening: {
     id: number;
     startsAt: string;
+    endsAt: string;
     movieTitle: string;
     cinema: string;
   };
@@ -17,6 +18,7 @@ interface BookingApiResponse {
     seatId: number;
     row: string;
     number: number;
+    priceGroup: string;
     price: number;
   }[];
   items: {
@@ -39,11 +41,13 @@ function mapBooking(data: BookingApiResponse): Booking {
     movieTitle: data.screening.movieTitle,
     cinemaName: data.screening.cinema,
     screeningStartsAt: data.screening.startsAt,
+    screeningEndsAt: data.screening.endsAt,
     email: data.email,
     guestName: data.guestName,
     tickets: data.tickets.map((ticket) => ({
       seatId: ticket.seatId,
       priceGroupId: 0,
+      type: ticket.priceGroup,
       row: ticket.row,
       seatNumber: ticket.number,
       price: Number(ticket.price),
