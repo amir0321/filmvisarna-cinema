@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getAuthToken } from "../api/client";
-import { getMyBookings, cancelMyBooking } from "../api/bookings";
 import type { Booking } from "../types/booking";
 import { Tabs } from "../components/Tabs";
 import { EmptyState } from "../components/EmptyState";
@@ -9,7 +8,8 @@ import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import MyTicketModal from "../components/MyTicketModal";
 import { useMovies } from "../hooks/useMovies";
-import { getBookingState } from "../utils/bookings";
+import { canCancelBooking, getBookingState } from "../utils/bookings";
+import { useBookings } from "../hooks/useBookings";
 
 export default function MyBookings() {
   const token = getAuthToken();
@@ -17,66 +17,17 @@ export default function MyBookings() {
   const { data: movies } = useMovies();
 
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [bookingsLoading, setBookingsLoading] = useState(true);
-  const [bookingsError, setBookingsError] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
+  const { bookings, loading: bookingsLoading, error: bookingsError, currentTime, cancelBooking } = useBookings();
+  const [feedback, setFeedback] = useState("");
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [bookingToView, setBookingToView] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const updateTime = () => {
-      setCurrentTime(Date.now());
-    };
-
-    const timeoutId = window.setTimeout(updateTime, 0);
-    const intervalId = window.setInterval(updateTime, 60_000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
-    };
-  }, []);
-  useEffect(() => {
-    if (!token || loading || !user) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadBookings() {
-      setBookingsLoading(true);
-      setBookingsError(null);
-
-      try {
-        const data = await getMyBookings();
-
-        if (!cancelled) {
-          setBookings(data);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setBookingsError(
-            error instanceof Error
-              ? error.message
-              : "Kunde inte hämta bokningarna.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setBookingsLoading(false);
-        }
-      }
-    }
-
-    void loadBookings();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, loading, user]);
+  const getPosterUrl = (booking: Booking) =>
+    movies?.find(
+      (movie) => movie.title.trim().toLowerCase() === booking.movieTitle?.trim().toLowerCase(),
+    )?.poster_url ?? null;
 
   const handleViewTicket = (booking: Booking) => {
     setBookingToView(booking);
@@ -98,19 +49,17 @@ export default function MyBookings() {
   const handleConfirmCancel = async () => {
     if (!bookingToCancel || isCancelling) return;
 
+    if (!canCancelBooking(bookingToCancel)) {
+      setCancelError("Avbokning måste ske minst två timmar före visningen.");
+      return;
+    }
+
     setIsCancelling(true);
     setCancelError(null);
 
     try {
-      await cancelMyBooking(bookingToCancel.id);
-
-      setBookings((previousBookings) =>
-        previousBookings.map((booking) =>
-          booking.id === bookingToCancel.id
-            ? { ...booking, status: "cancelled" as const }
-            : booking,
-        ),
-      );
+      await cancelBooking(bookingToCancel.id);
+      setFeedback("Bokningen har avbokats och dina platser har släppts fria.");
 
       setBookingToCancel(null);
     } catch (error) {
@@ -122,9 +71,9 @@ export default function MyBookings() {
     }
   };
 
-  const currentBookings = bookings.filter((booking) => getBookingState(booking) === "upcoming");
+  const currentBookings = bookings.filter((booking) => getBookingState(booking, currentTime) === "upcoming");
   const historyBookings = bookings.filter(
-    (booking) => getBookingState(booking) !== "upcoming",
+    (booking) => getBookingState(booking, currentTime) !== "upcoming",
   );
 
   return (
@@ -137,6 +86,8 @@ export default function MyBookings() {
           </p>
         </div>
       </div>
+
+      <p role="status" className="text-secondary">{feedback}</p>
 
       {!token ? (
         <EmptyState
@@ -219,13 +170,7 @@ export default function MyBookings() {
                           currentTime={currentTime}
                           onViewTicket={handleViewTicket}
                           onCancel={handleOpenCancel}
-                          posterUrl={
-                            movies?.find(
-                              (movie) =>
-                                movie.title.trim().toLowerCase() ===
-                                booking.movieTitle?.trim().toLowerCase(),
-                            )?.poster_url ?? null
-                          }
+                          posterUrl={getPosterUrl(booking)}
                         />
                       ))}
                     </div>
@@ -246,13 +191,8 @@ export default function MyBookings() {
                           key={booking.id}
                           booking={booking}
                           currentTime={currentTime}
-                          posterUrl={
-                            movies?.find(
-                              (movie) =>
-                                movie.title.trim().toLowerCase() ===
-                                booking.movieTitle?.trim().toLowerCase(),
-                            )?.poster_url ?? null
-                          }
+                          onViewTicket={handleViewTicket}
+                          posterUrl={getPosterUrl(booking)}
                         />
                       ))}
                     </div>
@@ -273,7 +213,7 @@ export default function MyBookings() {
                 movieTitle: bookingToCancel.movieTitle ?? "Okänd film",
                 cinemaName: bookingToCancel.cinemaName ?? "Okänd biograf",
                 screeningStartsAt: bookingToCancel.screeningStartsAt ?? "",
-                posterUrl: null,
+                posterUrl: getPosterUrl(bookingToCancel),
                 seats: bookingToCancel.tickets.map((ticket) =>
                   ticket.row && ticket.seatNumber != null
                     ? `Rad ${ticket.row}, plats ${ticket.seatNumber}`
@@ -282,6 +222,7 @@ export default function MyBookings() {
               }
             : null
         }
+        canCancel={bookingToCancel ? canCancelBooking(bookingToCancel, currentTime) : false}
         isSubmitting={isCancelling}
         error={cancelError}
         onConfirm={handleConfirmCancel}

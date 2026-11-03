@@ -8,6 +8,7 @@ export interface CancelBookingModalProps {
   isOpen: boolean
   booking: CancelBookingDetails | null
   isSubmitting?: boolean
+  canCancel?: boolean
   error?: string | null
   onConfirm: () => void | Promise<void>
   onClose: () => void
@@ -19,6 +20,7 @@ export function CancelBookingModal({
   isOpen,
   booking,
   isSubmitting = false,
+  canCancel = true,
   error = null,
   onConfirm,
   onClose,
@@ -42,7 +44,7 @@ export function CancelBookingModal({
 
   const handleConfirmClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
-    if (isSubmitting) return
+    if (isSubmitting || !canCancel) return
     await onConfirm()
   }
 
@@ -53,8 +55,9 @@ export function CancelBookingModal({
       size="md"
       className="fv-cancel-booking-modal"
       id="cancel-booking-modal"
+      labelledBy="cancel-booking-modal-title"
     >
-      <div className="p-4 p-md-4">
+      <Modal.Body className="p-4 p-md-4">
         {/* Warning Icon & Heading */}
         <div className="d-flex align-items-center gap-3 mb-3">
           <div
@@ -145,6 +148,11 @@ export function CancelBookingModal({
         ) : null}
 
         {/* Action Buttons */}
+        {!canCancel ? (
+          <p id="cancel-booking-deadline" className="small text-secondary" role="status">
+            Avbokning måste ske minst två timmar före visningen.
+          </p>
+        ) : null}
         <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 pt-2">
           <button
             type="button"
@@ -158,7 +166,8 @@ export function CancelBookingModal({
             type="button"
             className="btn btn-danger px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-semibold"
             onClick={handleConfirmClick}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !canCancel}
+            aria-describedby={!canCancel ? 'cancel-booking-deadline' : undefined}
           >
             {isSubmitting ? (
               <>
@@ -174,7 +183,7 @@ export function CancelBookingModal({
             )}
           </button>
         </div>
-      </div>
+      </Modal.Body>
     </Modal>
   )
 }

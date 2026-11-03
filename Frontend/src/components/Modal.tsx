@@ -1,4 +1,4 @@
-import React, { createContext, use, useEffect, useId } from 'react'
+import React, { createContext, use, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 export type ModalSize = 'sm' | 'md' | 'lg'
@@ -22,6 +22,7 @@ export interface ModalProps {
   isOpen: boolean
   onClose: () => void
   title?: string
+  labelledBy?: string
   size?: ModalSize
   mobileBottomSheet?: boolean
   children: React.ReactNode
@@ -33,6 +34,7 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  labelledBy,
   size = 'md',
   mobileBottomSheet = true,
   children,
@@ -41,6 +43,41 @@ export function Modal({
 }: ModalProps) {
   const generatedId = useId()
   const titleId = id ? `${id}-title` : `${generatedId}-title`
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const previousFocus = document.activeElement
+    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => element.getClientRects().length > 0)
+
+    const initialFocus = focusable()[0] ?? dialog
+    initialFocus.focus()
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const elements = focusable()
+      const first = elements[0]
+      const last = elements.at(-1)
+      if (!first) {
+        event.preventDefault()
+        dialog.focus()
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog)) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    dialog.addEventListener('keydown', trapFocus)
+    return () => {
+      dialog.removeEventListener('keydown', trapFocus)
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
+    }
+  }, [isOpen])
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -101,9 +138,11 @@ export function Modal({
         role="presentation"
       >
         <div
+          ref={dialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={title ? titleId : undefined}
+          aria-labelledby={labelledBy ?? (title ? titleId : undefined)}
           className={dialogClasses}
         >
           {mobileBottomSheet ? (

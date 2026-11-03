@@ -1,6 +1,8 @@
 import type { Booking } from "../types/booking";
 import { Modal } from "./Modal";
 import { QRCodeSVG } from "qrcode.react";
+import { CINEMA_TIME_ZONE } from "../utils/date";
+import { formatSek } from "../utils/price";
 
 interface MyTicketModalProps {
   isOpen: boolean;
@@ -17,10 +19,12 @@ export default function MyTicketModal({
     return null;
   }
 
-  const showtime = booking.screeningStartsAt
-    ? new Date(booking.screeningStartsAt).toLocaleString("sv-SE", {
+  const startsAt = new Date(booking.screeningStartsAt ?? '');
+  const showtime = Number.isFinite(startsAt.getTime())
+    ? startsAt.toLocaleString("sv-SE", {
         dateStyle: "full",
         timeStyle: "short",
+        timeZone: CINEMA_TIME_ZONE,
       })
     : "Tid ej angiven";
 
@@ -32,7 +36,7 @@ export default function MyTicketModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Din biljett" size="md">
-      <div className="p-3 p-sm-4">
+      <Modal.Body className="fv-my-ticket p-3 p-sm-4">
         <div
           className="overflow-hidden"
           style={{
@@ -88,7 +92,7 @@ export default function MyTicketModal({
                 <p className="small mb-1" style={{ color: "#94A3B8" }}>
                   TOTALPRIS
                 </p>
-                <p className="fw-semibold mb-0">{booking.totalPrice} kr</p>
+                <p className="fw-semibold mb-0">{formatSek(booking.totalPrice)}</p>
               </div>
 
               <div className="col-12">
@@ -151,7 +155,7 @@ export default function MyTicketModal({
               className="d-inline-block bg-white rounded-3 p-3"
               aria-label="QR-kod med bokningsreferens"
             >
-              <QRCodeSVG value={booking.bookingRef} size={180} level="M" />
+              <QRCodeSVG value={booking.bookingRef} size={180} level="M" title="QR-kod med bokningsreferens" />
             </div>
 
             <p className="small mt-3 mb-2" style={{ color: "#94A3B8" }}>
@@ -171,7 +175,7 @@ export default function MyTicketModal({
         >
           Stäng biljett
         </button>
-      </div>
+      </Modal.Body>
     </Modal>
   );
 }

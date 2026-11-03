@@ -39,6 +39,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Test booking rules
+        run: npm test
+
       - name: Type check and build
         run: npm run build
 
