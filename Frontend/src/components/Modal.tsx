@@ -22,6 +22,7 @@ export interface ModalProps {
   isOpen: boolean
   onClose: () => void
   title?: string
+  labelledBy?: string
   size?: ModalSize
   mobileBottomSheet?: boolean
   children: React.ReactNode
@@ -33,6 +34,7 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  labelledBy,
   size = 'md',
   mobileBottomSheet = true,
   children,
@@ -49,14 +51,15 @@ export function Modal({
     if (!dialog) return
     const selector = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
     const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(selector)).filter(element => element.getClientRects().length > 0)
-    ;(focusable()[0] ?? dialog).focus()
+    const initialFocus = focusable()[0] ?? dialog
+    initialFocus.focus()
     const trapFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
       const elements = focusable()
       const first = elements[0]
       const last = elements[elements.length - 1]
       if (!first) { event.preventDefault(); dialog.focus(); return }
-      if (!dialog.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+      if (!dialog.contains(document.activeElement) || document.activeElement === dialog || (event.shiftKey && document.activeElement === first)) {
         event.preventDefault()
         ;(event.shiftKey ? last : first).focus()
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -71,7 +74,6 @@ export function Modal({
     }
   }, [isOpen])
   const titleId = id ? `${id}-title` : `${generatedId}-title`
-
   // Lock body scroll when modal is open
   useEffect(() => {
     if (!isOpen) return
@@ -135,7 +137,7 @@ export function Modal({
           tabIndex={-1}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={title ? titleId : undefined}
+          aria-labelledby={labelledBy ?? (title ? titleId : undefined)}
           className={dialogClasses}
         >
           {mobileBottomSheet ? (

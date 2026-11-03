@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
 import BrandLogo from './BrandLogo'
+import { BookingCountBadge } from './BookingCountBadge'
 
 const PUBLIC_DRAWER_LINKS = [
   { name: 'Hem', path: '/', icon: 'bi-house-door', end: true },
@@ -146,6 +147,7 @@ export default function MobileDrawer() {
                         >
                           <i className={`bi ${link.icon} drawer-nav-icon`} aria-hidden="true"></i>
                           <span>{link.name}</span>
+                          {link.path === '/mina-bokningar' ? <BookingCountBadge /> : null}
                         </NavLink>
                       </li>
                     ))
@@ -184,6 +186,7 @@ export default function MobileDrawer() {
                         >
                           <i className={`bi ${link.icon} drawer-nav-icon`} aria-hidden="true"></i>
                           <span>{link.name}</span>
+                          {link.path === '/mina-bokningar' ? <BookingCountBadge /> : null}
                         </NavLink>
                       </li>
                     ))

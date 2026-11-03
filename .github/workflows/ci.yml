@@ -39,7 +39,7 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Test frontend validation and redirects
+      - name: Test frontend validation, redirects and bookings
         run: npm test
 
       - name: Type check and build
