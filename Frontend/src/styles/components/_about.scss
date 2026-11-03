@@ -31,7 +31,7 @@
 }
 
 .fv-about__accent {
-  color: #ff6b6b;
+  color: $fv-danger-light;
 }
 
 .fv-about__lead {
@@ -40,7 +40,7 @@
   color: $fv-muted-fg;
 }
 .fv-about__section {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid $border-faint;
   padding: 4rem 1rem;
 }
 
@@ -64,7 +64,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #ff6b6b;
+  color: $fv-danger-light;
 
   &::before {
     content: '';
@@ -97,7 +97,7 @@
   gap: 1rem;
   padding: 1.25rem;
   background: $fv-card-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid $border-subtle;
   border-radius: 12px;
 }
 
@@ -130,14 +130,14 @@
 }
 
 .fv-about__section--kiosk {
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), transparent);
+  background: linear-gradient(180deg, rgba($fv-warning, 0.05), transparent);
 }
 
 .fv-about__eyebrow--amber {
-  color: #f59e0b;
+  color: $fv-warning;
 
   &::before {
-    background: #f59e0b;
+    background: $fv-warning;
   }
 }
 
@@ -159,7 +159,7 @@
 .fv-about__kiosk-card {
   padding: 1.25rem;
   background: $fv-card-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid $border-subtle;
   border-radius: 12px;
 }
 
@@ -172,16 +172,16 @@
   margin-bottom: 0.75rem;
   font-size: 1.5rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: $white-overlay-06;
 }
 
 .fv-about__price {
   margin: 0.75rem 0 0;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid $border-subtle;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: $fv-warning;
 }
 .fv-about__salong-grid {
   display: grid;
@@ -197,12 +197,12 @@
 .fv-about__salong {
   --tone: #{$fv-primary};
   background: $fv-card-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid $border-subtle;
   border-radius: 16px;
   overflow: hidden;
 
   &--amber {
-    --tone: #f59e0b;
+    --tone: #{$fv-warning};
   }
 }
 
@@ -211,7 +211,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid $border-subtle;
 
   .fv-about__feature-text {
     margin: 0;
@@ -293,7 +293,7 @@
   }
 }
 .fv-about__section--find {
-  background: rgba(255, 255, 255, 0.03);
+  background: $white-overlay-03;
 }
 
 .fv-about__find {
@@ -313,12 +313,12 @@
   align-items: center;
   justify-content: center;
   min-height: 240px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid $border-subtle;
   border-radius: 16px;
-  background-color: #0f1626;
+  background-color: $fv-muted-bg;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    linear-gradient($white-overlay-05 1px, transparent 1px),
+    linear-gradient(90deg, $white-overlay-05 1px, transparent 1px);
   background-size: 24px 24px;
 }
 

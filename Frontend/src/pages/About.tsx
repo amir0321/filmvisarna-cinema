@@ -44,7 +44,7 @@ const SALONGER = [
 ]
 export default function About() {
   return (
-    <main className="fv-about">
+    <div className="fv-about">
       <section className="fv-about__hero">
         <span className="fv-about__badge">
           <i className="bi bi-film" aria-hidden="true" /> OM OSS
@@ -207,6 +207,6 @@ export default function About() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   )
 }
