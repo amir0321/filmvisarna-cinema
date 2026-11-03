@@ -1,0 +1,105 @@
+.fv-my-bookings {
+  width: 100%;
+  max-width: $container-3xl;
+  margin-inline: auto;
+
+  &__profile {
+    padding: $space-3;
+    margin-bottom: $space-4;
+    background-color: $color-surface;
+    border-radius: $radius-card;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: $radius-circle;
+    background-color: $color-primary;
+    color: $color-white;
+    font-family: $font-heading;
+    font-size: $font-size-20;
+    font-weight: 700;
+  }
+
+  &__profile-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__email {
+    color: $text-muted;
+  }
+
+  &__role {
+    padding: 6px 12px;
+    background-color: rgba($color-success, 0.15);
+    color: $color-success;
+    font-size: $font-size-12;
+  }
+
+  .fv-tabs-segmented {
+    .fv-tab-list {
+      display: flex;
+      border-radius: $radius-lg;
+    }
+
+    .fv-tab-trigger {
+      flex: 1;
+      min-width: 0;
+      padding-inline: 8px;
+      border-radius: $radius-md;
+      white-space: normal;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+  }
+}
+
+.fv-my-booking-card {
+  background-color: $color-surface;
+  border: 1px solid $border-default;
+  border-radius: $radius-card;
+  color: $text-primary;
+  overflow-wrap: anywhere;
+
+  &__status {
+    background-color: $white-overlay-04;
+    border-bottom: 1px solid $border-default;
+    color: $text-muted;
+  }
+
+  &--upcoming &__status {
+    background-color: rgba($color-success, 0.08);
+    border-bottom-color: rgba($color-success, 0.15);
+    color: $color-success;
+  }
+
+  &--cancelled &__status {
+    background-color: $cancelled-badge-bg;
+    border-bottom-color: rgba($color-danger-soft, 0.15);
+    color: $color-danger-soft;
+  }
+
+  &__body {
+    padding: 20px;
+  }
+
+  &__poster {
+    width: 56px;
+    height: 84px;
+  }
+
+  &__details {
+    min-width: 0;
+  }
+
+  &__kiosk {
+    max-width: 100%;
+    background-color: rgba($color-info, 0.15);
+    color: $color-info-light;
+    white-space: normal;
+  }
+}

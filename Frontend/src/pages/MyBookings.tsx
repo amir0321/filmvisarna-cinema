@@ -7,16 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import MyBookingCard from "../components/MyBookingCard";
 import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
 import { useMovies } from "../hooks/useMovies";
-
-function isCurrentBooking(booking: Booking): boolean {
-  if (booking.status !== "confirmed" || !booking.screeningStartsAt) {
-    return false;
-  }
-
-  const startTime = new Date(booking.screeningStartsAt).getTime();
-
-  return Number.isFinite(startTime) && startTime >= Date.now();
-}
+import { getBookingState } from "../utils/bookings";
 
 export default function MyBookings() {
   const token = getAuthToken();
@@ -25,7 +16,7 @@ export default function MyBookings() {
 
   const [activeTab, setActiveTab] = useState<string>("active");
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,13 +58,13 @@ export default function MyBookings() {
     };
   }, [token, loading, user]);
 
-  const currentBookings = bookings.filter(isCurrentBooking);
+  const currentBookings = bookings.filter((booking) => getBookingState(booking) === "upcoming");
   const historyBookings = bookings.filter(
-    (booking) => !isCurrentBooking(booking),
+    (booking) => getBookingState(booking) !== "upcoming",
   );
 
   return (
-    <div className="py-4">
+    <div className="fv-my-bookings py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h2 fw-bold mb-1">Mina bokningar</h1>
@@ -93,7 +84,7 @@ export default function MyBookings() {
         />
       ) : loading ? (
         <p className="text-secondary" role="status">
-          Laddar profil...
+          Laddar profil…
         </p>
       ) : !user ? (
         <p className="text-secondary" role="alert">
@@ -101,47 +92,26 @@ export default function MyBookings() {
         </p>
       ) : (
         <>
-          <div
-            className="mb-4"
-            style={{
-              backgroundColor: "#161F30",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 32,
-            }}
-          >
+          <div className="fv-my-bookings__profile">
             <div className="d-flex align-items-center gap-3">
               <div
-                className="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold"
-                style={{
-                  width: 64,
-                  height: 64,
-                  flexShrink: 0,
-                  backgroundColor: "#E50914",
-                  fontSize: 20,
-                }}
-                aria-label="Profilavatar"
+                className="fv-my-bookings__avatar"
+                aria-hidden="true"
               >
                 {getUserInitials(user)}
               </div>
 
-              <div>
+              <div className="fv-my-bookings__profile-text">
                 <h2 className="h5 fw-bold text-light mb-1">
                   {getUserDisplayName(user)}
                 </h2>
 
-                <p className="mb-2" style={{ color: "#94A3B8" }}>
+                <p className="fv-my-bookings__email mb-2">
                   {user.email}
                 </p>
 
                 <span
-                  className="badge rounded-pill"
-                  style={{
-                    backgroundColor: "rgba(16, 185, 129, 0.15)",
-                    color: "#10B981",
-                    padding: "6px 12px",
-                    fontSize: 12,
-                  }}
+                  className="fv-my-bookings__role badge rounded-pill"
                 >
                   {user.role === "admin" ? "Administratör" : "Gästmedlem"}
                 </span>
@@ -159,7 +129,7 @@ export default function MyBookings() {
 
             {bookingsLoading ? (
               <p className="text-secondary" role="status">
-                Laddar bokningar...
+                Laddar bokningar…
               </p>
             ) : bookingsError ? (
               <p className="text-danger" role="alert">
