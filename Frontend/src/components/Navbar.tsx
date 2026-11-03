@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
 import BrandLogo from './BrandLogo'
+import { BookingCountBadge } from './BookingCountBadge'
 
 const BASE_NAV_LINKS = [
   { name: 'Hem', path: '/', end: true },
@@ -101,6 +102,7 @@ export default function Navbar() {
                     }
                   >
                     Mina Bokningar
+                    <BookingCountBadge />
                   </NavLink>
                 </li>
               ) : null}
@@ -164,6 +166,7 @@ export default function Navbar() {
                     <NavLink to="/mina-bokningar" className="dropdown-item d-flex align-items-center gap-2">
                       <i className="bi bi-ticket-perforated" aria-hidden="true"></i>
                       <span>Mina Bokningar</span>
+                      <BookingCountBadge />
                     </NavLink>
                   </li>
                   {isAdmin ? (

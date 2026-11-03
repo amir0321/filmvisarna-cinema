@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
+import { BookingCountBadge } from './BookingCountBadge'
 
 const GUEST_TABS = [
   {
@@ -119,7 +120,10 @@ export default function BottomNav() {
                 className={`bi ${isActive ? tab.activeIcon : tab.icon} bottom-nav-icon`}
                 aria-hidden="true"
               ></i>
-              <span className="bottom-nav-label">{tab.name}</span>
+              <span className="bottom-nav-label">
+                {tab.name}
+                {tab.path === '/mina-bokningar' ? <BookingCountBadge /> : null}
+              </span>
             </>
           )}
         </NavLink>
