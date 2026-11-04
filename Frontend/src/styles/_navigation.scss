@@ -1,4 +1,4 @@
-// Navigation styles (Navbar, MobileDrawer, BottomNav — shared across Public and Admin layouts)
+// Navigation styles (Navbar, MobileDrawer, BottomNav, Footer — shared across Public and Admin layouts)
 // Uses exclusively $fv-* design tokens from _tokens.scss
 
 .brand-logo {
@@ -506,7 +506,7 @@
   line-height: 1.1;
 }
 
-// Layout main & footer spacing for bottom nav (shared across PublicLayout and AdminLayout)
+// Layout main spacing for bottom nav (shared across PublicLayout and AdminLayout)
 .public-main {
   padding-bottom: $fv-bottom-nav-height;
 
@@ -515,10 +515,118 @@
   }
 }
 
+// Global footer (§4.6)
 .public-footer {
+  margin-top: $fv-space-6;
   margin-bottom: $fv-bottom-nav-height;
+  border-top: 1px solid $fv-border;
+  background-color: $fv-card-bg;
+  font-family: $fv-font-sans;
 
   @media (min-width: $fv-bp-md) {
     margin-bottom: 0;
   }
+}
+
+.footer-container {
+  max-width: $fv-container-7xl;
+  margin: 0 auto;
+  padding: $fv-space-5 $fv-space-2;
+
+  @media (min-width: $fv-bp-lg) {
+    padding-inline: $fv-space-3;
+  }
+
+  @media (min-width: $fv-bp-xl) {
+    padding-inline: $fv-space-4;
+  }
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $fv-space-4;
+
+  @media (min-width: $fv-bp-sm) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: $fv-space-1;
+  margin-bottom: 12px;
+}
+
+.footer-brand-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $fv-radius-sm;
+  background-color: $fv-primary;
+  color: $fv-white;
+}
+
+.footer-brand-title {
+  font-family: $fv-font-display;
+  font-size: 1rem;
+  font-weight: 700;
+  color: $fv-fg;
+}
+
+.footer-heading {
+  margin: 0 0 12px;
+  font-family: $fv-font-display;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $fv-fg;
+}
+
+.footer-text,
+.footer-notice {
+  font-size: 0.875rem;
+  font-style: normal;
+  color: $fv-muted-fg;
+}
+
+.footer-notice {
+  padding: 12px;
+  border-radius: $fv-space-1;
+  background-color: rgba($fv-white, 0.04);
+  border: 1px solid $fv-border;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: $fv-space-2;
+  font-size: 0.75rem;
+}
+
+.footer-link {
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  font: inherit;
+  color: $fv-muted-fg;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: $fv-fg;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $fv-primary;
+    outline-offset: 2px;
+  }
+}
+
+.footer-link-admin {
+  color: rgba($fv-muted-fg, 0.4);
 }
