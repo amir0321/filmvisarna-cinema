@@ -19,6 +19,7 @@ import { useAuth, getUserDisplayName } from '../hooks/useAuth'
 import { useBookings } from '../hooks/useBookings'
 import { EmptyState } from '../components/EmptyState'
 import { Skeleton } from '../components/Skeleton'
+import { limitTicketCounts } from '../utils/bookingAvailability'
 
 export const hideFromNav = true
 
@@ -42,11 +43,15 @@ export default function ScreeningDetail() {
     const n = Number(searchParams.get(key))
     return Number.isInteger(n) && n > 0 ? n : 0
   }
-  const [counts, setCounts] = useState<Record<TicketType, number>>({
+  const [requestedCounts, setCounts] = useState<Record<TicketType, number>>({
     adult: countFromUrl('adult'),
     senior: countFromUrl('senior'),
     child: countFromUrl('child'),
   })
+  const availableSeats = data?.seats.filter(seat => seat.status === 'available').length ?? 0
+  const counts = limitTicketCounts(requestedCounts, availableSeats)
+  const isSoldOut = data !== null && availableSeats === 0
+  const ticketLimit = Math.min(10, availableSeats)
   const { data: screenings } = useScreenings()
   const [nameInput, setName] = useState<string | null>(null)
   const [emailInput, setEmail] = useState<string | null>(null)
@@ -84,17 +89,21 @@ export default function ScreeningDetail() {
   // 1. Load the seats once when the page opens
   useEffect(() => {
     if (Number.isNaN(id)) return
+    let active = true
     getScreeningSeats(id)
-      .then(setData)
-      .catch(err => setError(String(err)))
+      .then(body => { if (active) setData(body) })
+      .catch(err => { if (active) setError(String(err)) })
+    return () => { active = false }
   }, [id])
 
   // 2. Refresh every 5 seconds and drop seats that someone else booked
   useEffect(() => {
     if (Number.isNaN(id)) return
+    let active = true
     const timer = setInterval(() => {
       getScreeningSeats(id)
         .then(body => {
+          if (!active) return
           setData(body)
 
           const taken = new Set(
@@ -110,7 +119,10 @@ export default function ScreeningDetail() {
         })
         .catch(() => undefined)
     }, 5000)
-    return () => clearInterval(timer)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
   }, [id])
 
   if (Number.isNaN(id) || id <= 0) {
@@ -141,7 +153,7 @@ export default function ScreeningDetail() {
     )
   }
 
-  if (!data) {
+  if (!data || data.screeningId !== id) {
     return (
       <section className="fv-booking" role="status" aria-busy="true">
         <span className="visually-hidden">Laddar bokningssida...</span>
@@ -175,6 +187,7 @@ export default function ScreeningDetail() {
   }
 
   const toggle = (seatId: number) => {
+    if (isSoldOut || !data.seats.some(seat => seat.id === seatId && seat.status === 'available')) return
     setNotice(null)
     setSelectedIds(cur => {
       if (cur.includes(seatId)) return cur.filter(x => x !== seatId)
@@ -185,12 +198,14 @@ export default function ScreeningDetail() {
   }
 
   const changeCount = (type: TicketType, n: number) => {
-    const next = { ...counts, [type]: n }
+    const next = limitTicketCounts({ ...counts, [type]: n }, availableSeats)
     setCounts(next)
     setSelectedIds(pickBestSeats(data.seats, next.adult + next.senior + next.child))
   }
 
   async function handleConfirm() {
+    if (isSoldOut || ticketCount === 0 || ticketCount > ticketLimit ||
+      selectedIds.length !== ticketCount || selectedIds.some(seatId => !data?.seats.some(seat => seat.id === seatId && seat.status === 'available'))) return
     setMessage(null)
 
     const dbName = { adult: 'adult', senior: 'elder', child: 'child' } as const
@@ -316,172 +331,186 @@ export default function ScreeningDetail() {
         </p>
       )}
 
-      <div className="fv-booking__grid">
-        <div>
-          <div className="fv-card">
-            <h2>1. Välj biljetter</h2>
-            <p className="fv-card__subtitle">Välj antal biljetter per kategori</p>
-            {TICKET_TYPES.map(t => (
-              <QuantityPicker
-                key={t.type}
-                label={`${t.label} (${t.price} kr)`}
-                value={counts[t.type]}
-                max={10 - (ticketCount - counts[t.type])}
-                onChange={n => changeCount(t.type, n)}
-              />
-            ))}
-            {ticketCount > 0 && (
-              <div className="fv-ticket-summary">
-                <span>
-                  Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
-                  {ticketCount === 1 ? 'biljett' : 'biljetter'}
-                </span>
-                <i className="bi bi-check-circle-fill" aria-hidden="true" />
-              </div>
-            )}
-          </div>
-
-          {ticketCount > 0 && (
+      {isSoldOut ? (
+        <EmptyState
+          icon="bi-ticket-perforated"
+          title="Visningen är fullbokad"
+          description="Det finns inga lediga platser till den här visningen. Välj en annan visning för att boka biljetter."
+          actionLabel="Se andra visningstider"
+          actionTo={screening ? getMovieUrl(screening.movieId) : '/filmer'}
+        />
+      ) : (
+        <div className="fv-booking__grid">
+          <div>
             <div className="fv-card">
-              <h2>2. Välj platser</h2>
-              <p className="fv-card__subtitle">
-                Bästa tillgängliga platser är förvalda — klicka för att ändra
+              <h2>1. Välj biljetter</h2>
+              <p className="fv-card__subtitle" role="status">
+                {availableSeats <= 10
+                  ? `${availableSeats} ${availableSeats === 1 ? 'plats kvar' : 'platser kvar'}. Du kan välja högst ${ticketLimit} ${ticketLimit === 1 ? 'biljett' : 'biljetter'}.`
+                  : 'Välj antal biljetter per kategori'}
               </p>
-              <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
-            </div>
-          )}
-
-          {ticketCount > 0 && (
-            <div className="fv-card fv-kiosk">
-              <button
-                type="button"
-                className="fv-kiosk__header"
-                onClick={() => setKioskOpen(o => !o)}
-                aria-expanded={kioskOpen}
-              >
-                <span className="fv-kiosk__icon" aria-hidden="true">🍿</span>
-                <span className="fv-kiosk__text">
-                  <strong>Bio-Kiosken – Förbeställ snacks &amp; slipp kön!</strong>
-                  <small>
-                    {kioskCount > 0
-                      ? `${kioskCount} valda`
-                      : 'Klicka för att bläddra bland snacks & drycker'}
-                  </small>
-                </span>
-                <i
-                  className={`bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
-                  aria-hidden="true"
+              {TICKET_TYPES.map(t => (
+                <QuantityPicker
+                  key={t.type}
+                  label={`${t.label} (${t.price} kr)`}
+                  value={counts[t.type]}
+                  max={ticketLimit - (ticketCount - counts[t.type])}
+                  onChange={n => changeCount(t.type, n)}
                 />
-              </button>
-
-              {kioskOpen && (
-                <div className="fv-kiosk__items">
-                  {kioskError && <p role="alert">{kioskError}</p>}
-                  {kiosk.map(i => (
-                    <QuantityPicker
-                      key={i.id}
-                      label={`${i.name} (${formatSek(i.price)})`}
-                      value={kioskQty[i.id] ?? 0}
-                      max={20}
-                      onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
-                    />
-                  ))}
+              ))}
+              {ticketCount > 0 && (
+                <div className="fv-ticket-summary">
+                  <span>
+                    Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
+                    {ticketCount === 1 ? 'biljett' : 'biljetter'}
+                  </span>
+                  <i className="bi bi-check-circle-fill" aria-hidden="true" />
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        <aside className="fv-booking__aside">
-          <div className="fv-card">
-            <h2>Din bokning</h2>
-
-            {selectedIds.length > 0 && (
-              <div className="fv-selected">
-                <span>{screening?.cinema}</span>
-                <strong>{selectedLabels}</strong>
+            {ticketCount > 0 && (
+              <div className="fv-card">
+                <h2>2. Välj platser</h2>
+                <p className="fv-card__subtitle">
+                  Bästa tillgängliga platser är förvalda — klicka för att ändra
+                </p>
+                <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
               </div>
             )}
 
             {ticketCount > 0 && (
-              <div className="fv-summary">
-                {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
-                  <div key={t.type} className="fv-summary__row">
-                    <span>
-                      {counts[t.type]}× {t.label}
-                    </span>
-                    <span>{formatSek(counts[t.type] * t.price)}</span>
-                  </div>
-                ))}
-                {kioskCount > 0 && (
-                  <div className="fv-summary__row">
-                    <span>{kioskCount}× Bio-Kiosken</span>
-                    <span>{formatSek(kioskTotal)}</span>
+              <div className="fv-card fv-kiosk">
+                <button
+                  type="button"
+                  className="fv-kiosk__header"
+                  onClick={() => setKioskOpen(o => !o)}
+                  aria-expanded={kioskOpen}
+                >
+                  <span className="fv-kiosk__icon" aria-hidden="true">🍿</span>
+                  <span className="fv-kiosk__text">
+                    <strong>Bio-Kiosken – Förbeställ snacks &amp; slipp kön!</strong>
+                    <small>
+                      {kioskCount > 0
+                        ? `${kioskCount} valda`
+                        : 'Klicka för att bläddra bland snacks & drycker'}
+                    </small>
+                  </span>
+                  <i
+                    className={`bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {kioskOpen && (
+                  <div className="fv-kiosk__items">
+                    {kioskError && <p role="alert">{kioskError}</p>}
+                    {kiosk.map(i => (
+                      <QuantityPicker
+                        key={i.id}
+                        label={`${i.name} (${formatSek(i.price)})`}
+                        value={kioskQty[i.id] ?? 0}
+                        max={20}
+                        onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
+                      />
+                    ))}
                   </div>
                 )}
-                <div className="fv-summary__row fv-summary__row--total">
-                  <span>Totalt</span>
-                  <span>{formatSek(ticketTotal + kioskTotal)}</span>
-                </div>
               </div>
             )}
-
-            <p className="fv-notice">
-              Ingen onlinebetalning krävs. Biljetterna betalas och hämtas ut i kassan
-              senast 15 minuter innan föreställningen börjar.
-            </p>
-
-            {ticketCount > 0 && seatsLeft === 0 && (
-              <div className="fv-checkout">
-                <label className="fv-checkout__field">
-                  Namn
-                  <input
-                    type="text"
-                    placeholder="Förnamn Efternamn"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                  />
-                </label>
-                <label className="fv-checkout__field">
-                  E-post för bokningsbekräftelse
-                  <input
-                    type="email"
-                    placeholder="din@epost.se"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
-                </label>
-              </div>
-            )}
-
-            {message && (
-              <p className="fv-booking__error" role="alert">
-                {message}
-              </p>
-            )}
-            {reference && (
-              <p>
-                Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong>
-              </p>
-            )}
-
-            <button
-              className="fv-checkout__btn"
-              onClick={handleConfirm}
-              disabled={
-                ticketCount === 0 ||
-                seatsLeft !== 0 ||
-                name.trim() === '' ||
-                email.trim() === '' ||
-                Object.keys(groupIds).length === 0 ||
-                reference !== null
-              }
-            >
-              {ctaLabel}
-            </button>
           </div>
-        </aside>
-      </div>
+
+          <aside className="fv-booking__aside">
+            <div className="fv-card">
+              <h2>Din bokning</h2>
+
+              {selectedIds.length > 0 && (
+                <div className="fv-selected">
+                  <span>{screening?.cinema}</span>
+                  <strong>{selectedLabels}</strong>
+                </div>
+              )}
+
+              {ticketCount > 0 && (
+                <div className="fv-summary">
+                  {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
+                    <div key={t.type} className="fv-summary__row">
+                      <span>
+                        {counts[t.type]}× {t.label}
+                      </span>
+                      <span>{formatSek(counts[t.type] * t.price)}</span>
+                    </div>
+                  ))}
+                  {kioskCount > 0 && (
+                    <div className="fv-summary__row">
+                      <span>{kioskCount}× Bio-Kiosken</span>
+                      <span>{formatSek(kioskTotal)}</span>
+                    </div>
+                  )}
+                  <div className="fv-summary__row fv-summary__row--total">
+                    <span>Totalt</span>
+                    <span>{formatSek(ticketTotal + kioskTotal)}</span>
+                  </div>
+                </div>
+              )}
+
+              <p className="fv-notice">
+                Ingen onlinebetalning krävs. Biljetterna betalas och hämtas ut i kassan
+                senast 15 minuter innan föreställningen börjar.
+              </p>
+
+              {ticketCount > 0 && seatsLeft === 0 && (
+                <div className="fv-checkout">
+                  <label className="fv-checkout__field">
+                    Namn
+                    <input
+                      type="text"
+                      placeholder="Förnamn Efternamn"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                    />
+                  </label>
+                  <label className="fv-checkout__field">
+                    E-post för bokningsbekräftelse
+                    <input
+                      type="email"
+                      placeholder="din@epost.se"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {message && (
+                <p className="fv-booking__error" role="alert">
+                  {message}
+                </p>
+              )}
+              {reference && (
+                <p>
+                  Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong>
+                </p>
+              )}
+
+              <button
+                className="fv-checkout__btn"
+                onClick={handleConfirm}
+                disabled={
+                  ticketCount === 0 ||
+                  seatsLeft !== 0 ||
+                  name.trim() === '' ||
+                  email.trim() === '' ||
+                  Object.keys(groupIds).length === 0 ||
+                  reference !== null
+                }
+              >
+                {ctaLabel}
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
     </section>
   )
 }
