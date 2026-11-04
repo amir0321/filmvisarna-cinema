@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 
 export interface PosterProps {
   src?: string | null
+  fallbackSrc?: string | null
   alt: string
   title?: string
   aspectRatio?: '2/3' | '16/9'
@@ -16,6 +17,7 @@ export interface PosterProps {
 
 export function Poster({
   src,
+  fallbackSrc,
   alt,
   title,
   aspectRatio = '2/3',
@@ -28,15 +30,18 @@ export function Poster({
   loading = 'lazy',
 }: PosterProps) {
   const [prevSrc, setPrevSrc] = useState(src)
-  const [hasError, setHasError] = useState(false)
+  const [prevFallbackSrc, setPrevFallbackSrc] = useState(fallbackSrc)
+  const [failedSources, setFailedSources] = useState<string[]>([])
 
   // Reset error state when src changes without requiring an extra useEffect
-  if (prevSrc !== src) {
+  if (prevSrc !== src || prevFallbackSrc !== fallbackSrc) {
     setPrevSrc(src)
-    setHasError(false)
+    setPrevFallbackSrc(fallbackSrc)
+    setFailedSources([])
   }
 
-  const showFallback = !src || hasError
+  const imageSrc = [src, fallbackSrc].find((source) => source && !failedSources.includes(source))
+  const showFallback = !imageSrc
   const displayTitle = title || alt
 
   const containerClasses = [
@@ -62,11 +67,13 @@ export function Poster({
         </div>
       ) : (
         <img
-          src={src}
+          src={imageSrc}
           alt={alt}
           loading={loading}
           className="fv-poster-img"
-          onError={() => setHasError(true)}
+          onError={() => {
+            if (imageSrc) setFailedSources((sources) => [...sources, imageSrc])
+          }}
         />
       )}
     </div>

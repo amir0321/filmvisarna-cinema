@@ -4,6 +4,7 @@ import { formatShowtimeDayLabel, formatTime, toCinemaIsoDate } from '../../utils
 import { formatDuration, formatDurationLong } from '../../utils/movie'
 import { getBookingUrl, getMovieUrl } from '../../utils/links'
 import AgeBadge from './AgeBadge'
+import { Poster } from '../Poster'
 
 interface MovieCardProps {
   movie: Movie
@@ -36,13 +37,7 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
     <article className="movie-card h-100">
       {/* The title already links to the movie */}
       <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-hidden="true">
-        {image ? (
-          <img src={image} alt="" className="movie-card__image" loading="lazy" />
-        ) : (
-          <div className="movie-card__image movie-card__image--empty">
-            <i className="bi bi-film"></i>
-          </div>
-        )}
+        <Poster src={image} fallbackSrc={movie.landscape_image_url} alt="" title={movie.title} className="movie-card__poster" />
       </Link>
 
       <AgeBadge ageRating={movie.age_rating} className="movie-card__age" />

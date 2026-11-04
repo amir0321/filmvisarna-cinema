@@ -57,15 +57,23 @@
   width: max(100%, calc(max(520px, min(85vh, 720px)) * 16 / 9));
   aspect-ratio: 16 / 9;
   border: 0;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1.2);
   opacity: 0;
   pointer-events: none;
-  // Waits a moment after loading so YouTube's spinner isn't visible
-  transition: opacity 0.8s ease 0.8s;
+  // Hide immediately on buffering/pause; only animate the reveal after stable playback.
+  transition: none;
 
   &.is-loaded {
     opacity: 1;
+    transition: opacity 0.8s ease;
   }
+}
+
+.hero-section__video-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .hero-section__content {

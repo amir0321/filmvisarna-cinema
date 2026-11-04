@@ -1,11 +1,81 @@
-import { useEffect, useState, type FocusEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent } from "react";
 import { Link } from "react-router";
 import type { Movie } from "../../types";
 import { formatDuration, formatDurationLong, getYouTubeBackgroundUrl } from "../../utils/movie";
 import { getMovieTrailerUrl, getMovieUrl } from "../../utils/links";
 import AgeBadge from "./AgeBadge";
+import { loadYouTubeApi, type YouTubePlayer } from "../../utils/youtubeApi";
+import { createPlaybackVisibilityTracker } from "../../utils/playbackVisibility";
 
-const ROTATE_INTERVAL_MS = 10_000;
+const ROTATE_INTERVAL_MS = 15_000;
+
+// The player owns its iframe inside this container, including Strict Mode cleanup.
+function HeroBackgroundVideo({ src }: { src: string }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let active = true;
+    let failed = false;
+    let player: YouTubePlayer | null = null;
+    let progressTimer: number | null = null;
+    const visibility = createPlaybackVisibilityTracker();
+    const iframe = document.createElement('iframe');
+    iframe.src = src;
+    iframe.title = '';
+    iframe.tabIndex = -1;
+    iframe.allow = 'autoplay; encrypted-media';
+    iframe.className = 'hero-section__video-frame';
+    container.replaceChildren(iframe);
+
+    function syncVisibility(target: YouTubePlayer, state?: number) {
+      if (!active || failed) return;
+      setIsLoaded(visibility.update(state ?? target.getPlayerState(), target.getCurrentTime(), performance.now()));
+    }
+
+    function hideFailedPlayer() {
+      if (!active) return;
+      failed = true;
+      if (progressTimer !== null) window.clearInterval(progressTimer);
+      setIsLoaded(false);
+    }
+
+    loadYouTubeApi().then((api) => {
+      if (!active) return;
+      player = new api.Player(iframe, {
+        events: {
+          onReady: ({ target }) => {
+            if (!active || failed) return;
+            target.mute();
+            target.playVideo();
+            syncVisibility(target);
+            progressTimer = window.setInterval(() => syncVisibility(target), 200);
+          },
+          onStateChange: ({ target, data }) => syncVisibility(target, data),
+          onError: hideFailedPlayer,
+          onAutoplayBlocked: hideFailedPlayer,
+        },
+      });
+    }).catch(hideFailedPlayer);
+
+    return () => {
+      active = false;
+      if (progressTimer !== null) window.clearInterval(progressTimer);
+      player?.destroy();
+      container.replaceChildren();
+    };
+  }, [src]);
+
+  return (
+    <div
+      ref={containerRef}
+      aria-hidden="true"
+      className={`hero-section__video${isLoaded ? " is-loaded" : ""}`}
+    />
+  );
+}
 
 interface HeroSectionProps {
   movies: Movie[];
@@ -15,18 +85,32 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function HeroBackdrop({ movie, active, priority }: { movie: Movie; active: boolean; priority: boolean }) {
+  const [failedSources, setFailedSources] = useState<string[]>([]);
+  const src = [movie.landscape_image_url, movie.poster_url].find((source) => source && !failedSources.includes(source));
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`hero-section__image${active ? " is-active" : ""}`}
+      fetchPriority={priority ? "high" : "low"}
+      onError={() => setFailedSources((sources) => [...sources, src])}
+    />
+  );
+}
+
 export default function HeroSection({ movies }: HeroSectionProps) {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(prefersReducedMotion);
   const [isHovered, setIsHovered] = useState(false);
   const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
-  const [loadedVideoId, setLoadedVideoId] = useState<number | null>(null);
 
   const movie = movies[index % movies.length];
   const hasMultiple = movies.length > 1;
   const isRotating = hasMultiple && !isPaused && !isHovered && !hasKeyboardFocus;
   // The pause button stops the trailer too
-  const videoUrl = !isPaused && movie.trailer_url ? getYouTubeBackgroundUrl(movie.trailer_url) : null;
+  const videoUrl = !isPaused && movie.trailer_url ? getYouTubeBackgroundUrl(movie.trailer_url, window.location.origin) : null;
 
   // Restarts on every slide change, so manual navigation also resets the timer
   useEffect(() => {
@@ -60,29 +144,20 @@ export default function HeroSection({ movies }: HeroSectionProps) {
       onBlur={handleBlur}
     >
       {movies.map((slide, slideIndex) => {
-        const image = slide.landscape_image_url ?? slide.poster_url;
-        if (!image) return null;
         return (
-          <img
-            key={slide.id}
-            src={image}
-            alt=""
-            className={`hero-section__image${slideIndex === index ? " is-active" : ""}`}
-            fetchPriority={slideIndex === 0 ? "high" : "low"}
+          <HeroBackdrop
+            key={`${slide.id}:${slide.landscape_image_url}:${slide.poster_url}`}
+            movie={slide}
+            active={slideIndex === index}
+            priority={slideIndex === 0}
           />
         );
       })}
 
       {videoUrl && (
-        <iframe
-          key={movie.id}
+        <HeroBackgroundVideo
+          key={`${movie.id}:${videoUrl}`}
           src={videoUrl}
-          title=""
-          aria-hidden="true"
-          tabIndex={-1}
-          allow="autoplay; encrypted-media"
-          className={`hero-section__video${loadedVideoId === movie.id ? " is-loaded" : ""}`}
-          onLoad={() => setLoadedVideoId(movie.id)}
         />
       )}
 
