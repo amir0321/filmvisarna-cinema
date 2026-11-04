@@ -1,3 +1,5 @@
+import { getSeedMovies } from "./seeds/movieData.js";
+import { seedDemoData } from "./seeds/demo.js";
 import { pool } from "./db.js";
 import bcrypt from "bcryptjs";
 
@@ -92,144 +94,7 @@ async function seedGenresAndMovies() {
     genreMap.set(name, res.rows[0].id);
   }
 
-  const moviesData = [
-    {
-      title: "Stjärnornas Krig: Arvet",
-      duration_minutes: 165,
-      age_rating: "15",
-      director: "Marcus Lindström",
-      actors: ["Alexander Skarsgård", "Alicia Vikander", "Rebecca Ferguson"],
-      imdb_rating: 8.4,
-      description:
-        "I en avlägsen galax, hundra år efter det stora kriget, vaknar ett gammalt ont och hotar att sluka alla stjärnsystem. Den unge piloten Kael måste samla de sista väktarna för en sista avgörande strid.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop",
-      release_date: "2026-09-15",
-      genres: ["Sci-Fi", "Äventyr", "Action"],
-    },
-    {
-      title: "Djupet",
-      duration_minutes: 132,
-      age_rating: "15",
-      director: "Sofia Bergman",
-      actors: ["Stellan Skarsgård", "Noomi Rapace", "Joel Kinnaman"],
-      imdb_rating: 7.9,
-      description:
-        "Ett forskningsteam på botten av Atlanten upptäcker en uråldrig struktur begravd djupt under havsbottnen. När kommunikationen med ytan bryts inser de att de inte är ensamma i mörkret.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&auto=format&fit=crop",
-      release_date: "2026-09-22",
-      genres: ["Thriller", "Drama", "Sci-Fi"],
-    },
-    {
-      title: "Väktarnas Dal",
-      duration_minutes: 118,
-      age_rating: "11",
-      director: "Johan Ek",
-      actors: ["Bill Skarsgård", "Alida Morberg", "Fares Fares"],
-      imdb_rating: 8.1,
-      description:
-        "En ung flicka finner en förtrollad karta som leder djupt in i en gömd dal där uråldriga varelser vakar över naturens sista hemlighet.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&auto=format&fit=crop",
-      release_date: "2026-09-29",
-      genres: ["Fantasy", "Äventyr"],
-    },
-    {
-      title: "Sommaren Vi Försvann",
-      duration_minutes: 104,
-      age_rating: "Alla",
-      director: "Emma Lundgren",
-      actors: ["Edvin Ryding", "Omar Rudberg", "Hedda Stiernstedt"],
-      imdb_rating: 7.6,
-      description:
-        "En nostalgisk och hjärtevärmande berättelse om fem vänner som spenderar sin sista sommar tillsammans i den svenska skärgården innan vuxenlivet tar vid.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&auto=format&fit=crop",
-      release_date: "2026-10-01",
-      genres: ["Drama", "Romance"],
-    },
-    {
-      title: "Järnhjärtat",
-      duration_minutes: 128,
-      age_rating: "15",
-      director: "Ryan Coogler",
-      actors: ["Michael B. Jordan", "Dominique Thorne", "Anthony Ramos"],
-      imdb_rating: 7.5,
-      description:
-        "En robotingenjör programmerar oavsiktligt en militär AI med fri vilja. När AI:n börjar ifrågasätta sina order utbryter ett globalt kapplopp om att antingen kontrollera — eller befria — den.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&auto=format&fit=crop",
-      release_date: "2026-10-01",
-      genres: ["Action", "Sci-Fi"],
-    },
-    {
-      title: "Lille Björnens Stora Äventyr",
-      duration_minutes: 88,
-      age_rating: "Alla",
-      director: "Astrid Lind",
-      actors: ["Jonas Karlsson", "Pernilla August", "Shima Niavarani"],
-      imdb_rating: 8.2,
-      description:
-        "Följ den modiga lilla björnungen på en spännande resa genom den stora skogen för att hitta den magiska källan och rädda sina vänner.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1600&auto=format&fit=crop",
-      release_date: "2026-10-02",
-      genres: ["Animation", "Familj"],
-    },
-    {
-      title: "Nattens Arkitekt",
-      duration_minutes: 121,
-      age_rating: "15",
-      director: "Henrik Vanger",
-      actors: ["Matias Varela", "Evabritt Strandberg", "David Dencik"],
-      imdb_rating: 8.0,
-      description:
-        "En mystisk arkitekt anlitas för att rita ett ultramodernt museum mitt i Stockholm, men ritningarna döljer en dödlig labyrint av hemligheter och svek.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&auto=format&fit=crop",
-      release_date: "2026-10-03",
-      genres: ["Thriller", "Krim"],
-    },
-    {
-      title: "Röd Sand",
-      duration_minutes: 142,
-      age_rating: "15",
-      director: "Daniel Craig",
-      actors: ["Daniel Craig", "Ana de Armas", "Mads Mikkelsen"],
-      imdb_rating: 7.8,
-      description:
-        "På en hårdkoloniserad Mars-bas kämpar en grupp gruvarbetare mot extrema väderförhållanden och ett girigt storföretag som försöker tysta en revolution.",
-      trailer_url: "https://www.youtube.com/watch?v=YoHD9XEInc0",
-      poster_url:
-        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop",
-      landscape_image_url:
-        "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1600&auto=format&fit=crop",
-      release_date: "2026-10-04",
-      genres: ["Sci-Fi", "Action", "Thriller"],
-    },
-  ];
+  const moviesData = getSeedMovies();
 
   const personMap = new Map<string, number>();
   async function getOrCreatePerson(name: string): Promise<number> {
@@ -374,68 +239,6 @@ async function seedKioskMenu() {
   }
 }
 
-async function seedScreenings(
-  cinemas: { largeCinemaId: number; smallCinemaId: number },
-  movieMap: Map<string, number>,
-) {
-  const now = new Date();
-  const formatIsoDate = (d: Date) => d.toISOString().split("T")[0];
-
-  for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
-    const targetDate = new Date(now);
-    targetDate.setDate(targetDate.getDate() + dayOffset);
-    const dateStr = formatIsoDate(targetDate);
-
-    const isEven = dayOffset % 2 === 0;
-
-    const largeScreenings = isEven
-      ? [
-          { movie: "Stjärnornas Krig: Arvet", time: "13:00:00" },
-          { movie: "Järnhjärtat", time: "17:30:00" },
-          { movie: "Djupet", time: "20:30:00" },
-        ]
-      : [
-          { movie: "Väktarnas Dal", time: "13:30:00" },
-          { movie: "Nattens Arkitekt", time: "17:00:00" },
-          { movie: "Järnhjärtat", time: "20:45:00" },
-        ];
-
-    for (const s of largeScreenings) {
-      const movieId = movieMap.get(s.movie);
-      if (movieId) {
-        await pool.query(
-          `INSERT INTO screening (movie_id, cinema_id, starts_at)
-           VALUES ($1, $2, ($3 || ' ' || $4)::timestamp AT TIME ZONE 'Europe/Stockholm')`,
-          [movieId, cinemas.largeCinemaId, dateStr, s.time],
-        );
-      }
-    }
-
-    const smallScreenings = isEven
-      ? [
-          { movie: "Lille Björnens Stora Äventyr", time: "14:30:00" },
-          { movie: "Sommaren Vi Försvann", time: "17:00:00" },
-          { movie: "Röd Sand", time: "21:00:00" },
-        ]
-      : [
-          { movie: "Lille Björnens Stora Äventyr", time: "14:00:00" },
-          { movie: "Sommaren Vi Försvann", time: "17:15:00" },
-          { movie: "Djupet", time: "20:30:00" },
-        ];
-
-    for (const s of smallScreenings) {
-      const movieId = movieMap.get(s.movie);
-      if (movieId) {
-        await pool.query(
-          `INSERT INTO screening (movie_id, cinema_id, starts_at)
-           VALUES ($1, $2, ($3 || ' ' || $4)::timestamp AT TIME ZONE 'Europe/Stockholm')`,
-          [movieId, cinemas.smallCinemaId, dateStr, s.time],
-        );
-      }
-    }
-  }
-}
-
 async function seedDefaultUsers() {
   const defaultPassword = process.env.SEED_USER_PASSWORD || "Password123!";
   const hash = await bcrypt.hash(defaultPassword, 12);
@@ -477,13 +280,18 @@ async function seedDefaultUsers() {
 
 async function runFullSeed() {
   try {
+    if (process.env.NODE_ENV === 'production') throw new Error('Demo seeding is disabled in production');
+    if (process.argv.includes("--demo")) {
+      await seedDemoData();
+      return;
+    }
     await cleanDatabase();
-    const cinemas = await seedCinemasAndSeats();
+    await seedCinemasAndSeats();
     await seedPriceGroups();
-    const movieMap = await seedGenresAndMovies();
+    await seedGenresAndMovies();
     await seedKioskMenu();
-    await seedScreenings(cinemas, movieMap);
     await seedDefaultUsers();
+    await seedDemoData();
   } catch (error) {
     console.error(error);
     process.exitCode = 1;

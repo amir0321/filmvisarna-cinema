@@ -53,7 +53,15 @@ npm run build
 # Run production server from compiled dist/
 npm run start
 
-# Seed database with cinemas, seats and movies
+# Add demo movies, screenings and bookings without clearing existing bookings
+npm run seed:demo
+
+# Verify demo scenarios and public poster/backdrop URLs
+npm run seed:check
+npm run seed:check -- --api # Also verify the running local public API
+npm run seed:images
+
+# Reset cinema data and rebuild the entire seed dataset (destructive)
 npm run seed
 
 # Create or promote an admin account
@@ -62,6 +70,27 @@ npm run create-admin -- admin@example.com MyPassword123
 # Run unit tests
 node --import tsx --test src/tests/*.test.ts
 ```
+
+---
+
+## Demo data for manual testing
+
+Run `npm run seed:demo` from `Backend/` with the development database configured in `.env`. The transaction keeps existing bookings, references and passwords. Matching seed movies receive corrected metadata and images. Demo seeding is disabled in production.
+
+The cinema has exactly **two auditoriums**: **Stora Salongen** (8 rows A–H × 10 seats = 80) and **Lilla Salongen** (5 rows A–E × 8 seats = 40). Never add extra cinemas to demonstrate pagination.
+
+- **Programme:** 12 current movies and 4 upcoming retrospective premieres, with release dates relative to the seed run. Screenings are spread across 14 days, normally at 10:00, 14:00 and 18:00 in each auditorium, with at least 20 minutes for cleaning. Already booked showings are retained. The programme rotates movies across days; twelve movies do not play on the same day in just two auditoriums.
+- **Pagination:** Home uses 8 movies per page; `/filmer` uses 10. Select **I helgen** and **Alla** on home to exercise pagination when the remaining weekend programme exceeds eight movies. A single day can legitimately fit on one page, particularly late in the day or on Sunday. Page controls stay hidden for one-page results.
+- **Three seats remaining:** The next seeded **Dune: Part Two** scenario in **Stora Salongen** leaves **D4 and D5** together and **H9** farther away. The seeder prints its actual date, time and `/boka/:id` link.
+- **Sold out:** A seeded **Interstellar** screening in **Stora Salongen** has all 80 seats booked. Direct navigation to it must show a clear sold-out state and an alternative-showtimes link, without ticket, seat, kiosk or checkout controls.
+- **My bookings:** `admin@filmvisarna.se`, `medlem@filmvisarna.se` and `testuser1@example.com` have at least 6 upcoming and 6 historical bookings (including cancellations), exercising 5-card pagination in both tabs. Upcoming entries mix paid/unpaid bookings; confirmed personal bookings include popcorn. Existing passwords are retained. New accounts use `SEED_USER_PASSWORD`, defaulting to `Password123!`.
+- **Media:** Seed movies have trailers, posters and landscape images. `npm run seed:images` checks all distinct public image URLs. Film cards try the alternate artwork on loading failure, then show a title fallback.
+
+The additive seed can be repeated without duplicating movies, cinemas or matching screenings/bookings. It preserves interactions on existing bookings and sends no emails. Bookings use `FV-XXXXX` references and at most 10 tickets each. `seed:check` verifies the two cinema capacities, 12 movies across the upcoming programme, the exact three free seats, the sold-out screening, booking pagination, no overlapping screenings and correct seat-to-cinema mapping. Add `-- --api` to verify the running local API too. Booking one of the three free seats intentionally changes the exact-seat check.
+
+When upgrading the former four-test-cinema seed, booked showings are moved to non-overlapping times in Stora Salongen with their screening IDs, booking references and row/seat labels preserved. The obsolete test cinemas and unbooked seed showings are removed; the two-cinema programme is rebuilt around preserved bookings. Changed dates/times are printed by the script. The whole migration rolls back if any booking or seat cannot be preserved.
+
+`npm run seed` remains a destructive full reset and also creates these scenarios. Prefer `seed:demo` for existing development data.
 
 ---
 
