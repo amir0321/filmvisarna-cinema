@@ -1,72 +1,131 @@
-import { useState } from "react";
+import { useEffect, useState, type FocusEvent } from "react";
 import { Link } from "react-router";
 import type { Movie } from "../../types";
-import { formatDuration, formatDurationLong } from "../../utils/movie";
-import { getMovieUrl } from "../../utils/links";
+import { formatDuration, formatDurationLong, getYouTubeBackgroundUrl } from "../../utils/movie";
+import { getMovieTrailerUrl, getMovieUrl } from "../../utils/links";
 import AgeBadge from "./AgeBadge";
-import TrailerModal from "../TrailerModal";
+
+const ROTATE_INTERVAL_MS = 10_000;
 
 interface HeroSectionProps {
-  movie: Movie;
+  movies: Movie[];
 }
 
-export default function HeroSection({ movie }: HeroSectionProps) {
-  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
-  const backgroundImage = movie.landscape_image_url ?? movie.poster_url;
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export default function HeroSection({ movies }: HeroSectionProps) {
+  const [index, setIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(prefersReducedMotion);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+  const [loadedVideoId, setLoadedVideoId] = useState<number | null>(null);
+
+  const movie = movies[index % movies.length];
+  const hasMultiple = movies.length > 1;
+  const isRotating = hasMultiple && !isPaused && !isHovered && !hasKeyboardFocus;
+  // The pause button stops the trailer too
+  const videoUrl = !isPaused && movie.trailer_url ? getYouTubeBackgroundUrl(movie.trailer_url) : null;
+
+  // Restarts on every slide change, so manual navigation also resets the timer
+  useEffect(() => {
+    if (!isRotating) return;
+    const timer = window.setTimeout(() => {
+      setIndex((current) => (current + 1) % movies.length);
+    }, ROTATE_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [index, isRotating, movies.length]);
+
+  function showMovie(nextIndex: number) {
+    setIndex((nextIndex + movies.length) % movies.length);
+  }
+
+  function handleFocus(event: FocusEvent<HTMLElement>) {
+    if (event.target.matches(":focus-visible")) setHasKeyboardFocus(true);
+  }
+
+  function handleBlur(event: FocusEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget)) setHasKeyboardFocus(false);
+  }
 
   return (
-    <section className="hero-section" aria-labelledby="hero-title">
-      {backgroundImage && (
-        <img
-          src={backgroundImage}
-          alt=""
-          className="hero-section__image"
-          fetchPriority="high"
+    <section
+      className="hero-section"
+      aria-roledescription="karusell"
+      aria-label="Utvalda filmer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
+      {movies.map((slide, slideIndex) => {
+        const image = slide.landscape_image_url ?? slide.poster_url;
+        if (!image) return null;
+        return (
+          <img
+            key={slide.id}
+            src={image}
+            alt=""
+            className={`hero-section__image${slideIndex === index ? " is-active" : ""}`}
+            fetchPriority={slideIndex === 0 ? "high" : "low"}
+          />
+        );
+      })}
+
+      {videoUrl && (
+        <iframe
+          key={movie.id}
+          src={videoUrl}
+          title=""
+          aria-hidden="true"
+          tabIndex={-1}
+          allow="autoplay; encrypted-media"
+          className={`hero-section__video${loadedVideoId === movie.id ? " is-loaded" : ""}`}
+          onLoad={() => setLoadedVideoId(movie.id)}
         />
       )}
 
-      <div className="hero-section__content container-fluid px-3 px-md-5">
-        <div className="hero-section__text">
+      <div className="hero-section__content container-fluid">
+        <div
+          key={movie.id}
+          className="hero-section__text"
+          role="group"
+          aria-roledescription="bild"
+          aria-label={`${index + 1} av ${movies.length}`}
+          aria-live={isRotating ? "off" : "polite"}
+        >
           <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-3">
             {movie.genres.map((genre) => (
-              <span
-                key={genre}
-                className="badge rounded-pill hero-section__genre"
-              >
+              <span key={genre} className="badge rounded-pill hero-section__genre">
                 {genre}
               </span>
             ))}
             <AgeBadge ageRating={movie.age_rating} />
             <span className="hero-section__duration">
-              <span aria-hidden="true">
-                {formatDuration(movie.duration_minutes)}
-              </span>
+              <span aria-hidden="true">{formatDuration(movie.duration_minutes)}</span>
               <span className="visually-hidden">
                 Speltid: {formatDurationLong(movie.duration_minutes)}
               </span>
             </span>
           </div>
 
-          <h1 id="hero-title" className="hero-section__title mb-3">
-            {movie.title}
-          </h1>
+          <h1 className="hero-section__title mb-3">{movie.title}</h1>
 
           {movie.description && (
-            <p className="hero-section__description mb-4">
-              {movie.description}
-            </p>
+            <p className="hero-section__description mb-4">{movie.description}</p>
           )}
 
           <div className="d-flex flex-wrap gap-3">
             {movie.trailer_url && (
-              <button
-                type="button"
+              <Link
+                to={getMovieTrailerUrl(movie.id)}
                 className="btn hero-section__button btn-hero-secondary"
-                onClick={() => setIsTrailerOpen(true)}
+                aria-label={`Se trailer för ${movie.title}`}
               >
                 <i className="bi bi-play-fill me-2" aria-hidden="true"></i>
                 Se Trailer
-              </button>
+              </Link>
             )}
             <Link
               to={getMovieUrl(movie.id)}
@@ -78,28 +137,58 @@ export default function HeroSection({ movie }: HeroSectionProps) {
             </Link>
           </div>
         </div>
-      </div>
 
-      {movie.trailer_url && (
-        <TrailerModal
-          isOpen={isTrailerOpen}
-          onClose={() => setIsTrailerOpen(false)}
-          trailerUrl={movie.trailer_url}
-          movieTitle={movie.title}
-        />
-      )}
+        {hasMultiple && (
+          <div className="hero-carousel__controls">
+            <button
+              type="button"
+              className="hero-carousel__arrow hero-carousel__arrow--prev"
+              aria-label="Föregående film"
+              onClick={() => showMovie(index - 1)}
+            >
+              <i className="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            <div className="hero-carousel__bottom">
+              <button
+                type="button"
+                className="hero-carousel__pause"
+                aria-label={isPaused ? "Starta bildspel och trailer" : "Pausa bildspel och trailer"}
+                onClick={() => setIsPaused((paused) => !paused)}
+              >
+                <i className={`bi ${isPaused ? "bi-play-fill" : "bi-pause-fill"}`} aria-hidden="true"></i>
+              </button>
+              {movies.map((slide, slideIndex) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  className={`hero-carousel__dot${slideIndex === index ? " is-active" : ""}`}
+                  aria-label={`Visa ${slide.title}`}
+                  aria-current={slideIndex === index}
+                  onClick={() => showMovie(slideIndex)}
+                ></button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="hero-carousel__arrow hero-carousel__arrow--next"
+              aria-label="Nästa film"
+              onClick={() => showMovie(index + 1)}
+            >
+              <i className="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
 export function HeroSectionSkeleton() {
   return (
-    <section
-      className="hero-section"
-      aria-busy="true"
-      aria-label="Laddar utvald film"
-    >
-      <div className="hero-section__content container-fluid px-3 px-md-5">
+    <section className="hero-section" aria-busy="true" aria-label="Laddar utvalda filmer">
+      <div className="hero-section__content container-fluid">
         <div className="hero-section__text placeholder-glow" aria-hidden="true">
           <span className="placeholder col-4 mb-3 rounded"></span>
           <span className="placeholder col-10 placeholder-lg mb-2 rounded"></span>

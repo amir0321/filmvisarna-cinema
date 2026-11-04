@@ -6,6 +6,8 @@ import { useMovies, useScreenings } from '../hooks'
 import type { ScreeningWhen } from '../types'
 import { capitalize, formatDateLong } from '../utils/date'
 
+const HERO_MOVIE_COUNT = 5
+
 const DATE_PRESET_HEADINGS: Record<ScreeningWhen, string> = {
   today: 'Idag',
   tomorrow: 'Imorgon',
@@ -33,12 +35,13 @@ export default function Home() {
     age: ageFilter ?? undefined,
   })
 
-  const featuredMovie = movies?.find((movie) => movie.landscape_image_url) ?? movies?.[0] ?? null
+  const moviesWithImage = (movies ?? []).filter((movie) => movie.landscape_image_url)
+  const heroMovies = (moviesWithImage.length > 0 ? moviesWithImage : (movies ?? [])).slice(0, HERO_MOVIE_COUNT)
 
   return (
     <div className="full-bleed">
       {moviesLoading && <HeroSectionSkeleton />}
-      {!moviesLoading && featuredMovie && <HeroSection movie={featuredMovie} />}
+      {!moviesLoading && heroMovies.length > 0 && <HeroSection movies={heroMovies} />}
 
       <FilterStrip
         dateFilter={dateFilter}

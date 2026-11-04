@@ -2,6 +2,11 @@ export function getMovieUrl(movieId: number): string {
   return `/filmer/${movieId}`
 }
 
+// Opens the details page with the trailer playing
+export function getMovieTrailerUrl(movieId: number): string {
+  return `${getMovieUrl(movieId)}?trailer=1`
+}
+
 export function getBookingUrl(screeningId: number): string {
   return `/boka/${screeningId}`
 }

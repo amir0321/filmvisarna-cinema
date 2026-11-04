@@ -1,11 +1,14 @@
 import { getBookingUrl } from '../utils/links'
 import { useMemo } from 'react'
 import { useScreenings } from '../hooks/useScreenings'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useMovie } from '../hooks/useMovies'
+import TrailerModal from '../components/TrailerModal'
 
 export default function MovieDetails() {
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const isTrailerOpen = searchParams.get('trailer') === '1'
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -101,6 +104,15 @@ export default function MovieDetails() {
           </div>
 
           <h1 className='display-5 fw-bold mb-3'>{movie.title}</h1>
+          {movie.trailer_url && (
+            <button
+              type='button'
+              className='btn btn-outline-light mb-3'
+              onClick={() => setSearchParams({ trailer: '1' }, { replace: true })}>
+              <i className='bi bi-play-fill me-2' aria-hidden='true'></i>
+              Se trailer
+            </button>
+          )}
           {movie.director && (
             <p className='text-secondary mb-3'>
               Regi: {movie.director}
@@ -194,6 +206,15 @@ export default function MovieDetails() {
           </section>
         </div>
       </div>
+
+      {movie.trailer_url && (
+        <TrailerModal
+          isOpen={isTrailerOpen}
+          onClose={() => setSearchParams({}, { replace: true })}
+          trailerUrl={movie.trailer_url}
+          movieTitle={movie.title}
+        />
+      )}
     </div>
   )
 }

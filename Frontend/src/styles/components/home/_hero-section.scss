@@ -40,18 +40,63 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+
+  &.is-active {
+    opacity: 1;
+  }
+}
+
+// Sized to cover the hero like a background image (16:9, cropped at the edges)
+.hero-section__video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -2;
+  width: max(100%, calc(max(520px, min(85vh, 720px)) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border: 0;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  // Waits a moment after loading so YouTube's spinner isn't visible
+  transition: opacity 0.8s ease 0.8s;
+
+  &.is-loaded {
+    opacity: 1;
+  }
 }
 
 .hero-section__content {
-  padding-block: 3rem;
+  padding: 3rem $space-2;
 
+  // Leaves room for the side arrows
   @media (min-width: 768px) {
-    padding-top: 8rem;
+    padding: 8rem 88px 3rem;
   }
 }
 
 .hero-section__text {
   max-width: 540px;
+  animation: hero-fade-in 0.6s ease;
+}
+
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-section__image {
+    transition: none;
+  }
+
+  .hero-section__text {
+    animation: none;
+  }
 }
 
 .hero-section__genre {
@@ -119,4 +164,93 @@
   --bs-btn-active-color: #{$text-heading};
   --bs-btn-active-bg: #30406c;
   --bs-btn-active-border-color: #{$text-heading};
+}
+
+.hero-carousel__controls {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  margin-top: $space-3;
+
+  @media (min-width: 768px) {
+    margin: 0;
+  }
+}
+
+.hero-carousel__arrow,
+.hero-carousel__pause {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid $white-overlay-25;
+  border-radius: $radius-full;
+  background-color: rgba($color-bg, 0.6);
+  color: $text-heading;
+  backdrop-filter: blur(6px);
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba($color-bg, 0.9);
+  }
+}
+
+// Desktop: arrows on the sides, dots at the bottom
+@media (min-width: 768px) {
+  .hero-carousel__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px;
+    height: 52px;
+    font-size: 1.25rem;
+  }
+
+  .hero-carousel__arrow--prev {
+    left: $space-3;
+  }
+
+  .hero-carousel__arrow--next {
+    right: $space-3;
+  }
+
+  .hero-carousel__bottom {
+    position: absolute;
+    bottom: $space-3;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.hero-carousel__bottom {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+}
+
+.hero-carousel__dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: $radius-full;
+  background-color: $white-overlay-25;
+  transition:
+    width 0.2s ease,
+    background-color 0.2s ease;
+
+  // Bigger click area than the visible dot
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -12px -4px;
+  }
+
+  &.is-active {
+    width: 28px;
+    background-color: $color-primary;
+  }
 }
