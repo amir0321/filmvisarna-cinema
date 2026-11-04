@@ -151,7 +151,7 @@ Nedan listas alla identifierade inkonsekvenser mellan kravspecifikationerna i `s
   1. `SeatSelectionScreen.tsx` (rad 13–14) och `data.ts` (`generateOccupiedSeats`, rad 301–304): Använder alltid **10 rader (`A`–`J`) × 12 stolar per rad = 120 platser**, oavsett om visningen går i Stora eller Lilla Salongen.
   2. `SalongerScreen.tsx` (rad 13, 20–21, 28, 35–36): Anger för Salong 1 **10 rader × 8 stolar = 80 platser** och för Salong 2 **5 rader × 8 stolar = 40 platser**.
   3. `adminData.ts` (`ADMIN_SALONGER`, rad 68–69): Anger för Salong 1 **8 rader × 10 stolar = 80 platser** och för Salong 2 **5 rader × 8 stolar = 40 platser**.
-- **OKLART:** Vilka exakta rad- och stolsmått som gäller för Salong 1 vid seedning (10×8, 8×10 eller 10×12). I vår app styrs detta dynamiskt av salongsdata från backend.
+- **Fastställt projektbeslut:** Endast två salonger. Stora Salongen har 8×10 platser (A–H), Lilla Salongen 5×8 (A–E). Appen renderar backendens faktiska stolar; prototypens alternativa mått gäller inte. Seed ska inte skapa extra salonger för att visa paginering.
 
 ### 10.2 Inkonsekvens i stolsnumrering och rullstolsplatser
 

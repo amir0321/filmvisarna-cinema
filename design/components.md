@@ -113,6 +113,8 @@ Här dokumenteras samtliga återanvända UI-delar i prototypen med utseende, må
    - **Indikator:** På desktop en `40×40px` rundad ruta (`border-radius: 12px`) med 12,5 % tonad bakgrund (`${color}20`); på mobil en `8×8px` färgad cirkel (`#3B82F6`, `#10B981`, `#F59E0B`).
    - **Källfil:** `src/components/admin/BokningarTab.tsx`.
 
+**Bildfel i aktuell implementation:** `Poster` accepterar `src` och `fallbackSrc`, försöker alternativet vid laddningsfel och visar därefter en reservyta med filmtiteln. `MovieCard` och `MovieListCard` återanvänder samma beteende. Hero använder först landskapsbild och därefter affisch.
+
 ### 3.5 Tabeller / Datarader (Admin Desktop)
 
 - **Utseende:** Container med bakgrund `#161F30`, kantlinje `1px solid var(--border)`, `border-radius: 16px`, `overflow: hidden`.
@@ -197,7 +199,7 @@ Det finns fyra varianter av salongskarta i prototypen:
 
 1. **Biljetträknare (`TicketCounter` i `SeatSelectionScreen.tsx`)**
    - Rad med biljettyp (`#F8FAFC`, `14px`, `font-weight: 500`) och pris (`#94A3B8`, `14px`) till vänster, samt `−`, antal och `+` till höger.
-   - Knappar (`−` och `+`): Cirkulära (`32×32px`, `border-radius: 9999px`), bakgrund `rgba(255, 255, 255, 0.08)`, teckenstorlek `18px`. Vid `count === 0` är `−` `disabled` med textfärg `#94A3B8`. Maxvärde per biljettyp är `8`.
+   - Knappar (`−` och `+`): Cirkulära (`32×32px`, `border-radius: 9999px`), bakgrund `rgba(255, 255, 255, 0.08)`, teckenstorlek `18px`. Vid `count === 0` är `−` `disabled` med textfärg `#94A3B8`. I `QuantityPicker` delar alla biljettyper en totalgräns på `min(10, faktiskt lediga platser)`. Varje rads max är totalgränsen minus övriga kategoriers antal. Vid fullbokat visas inga biljettväljare; vid minskad tillgänglighet begränsas de effektiva antalen på nytt.
 2. **Rader/Stolar-stepper (`SalongerAdminTab.tsx`)**
    - Runda/kvadratiska knappar (`28×28px`, `border-radius: 8px`, bakgrund `rgba(255, 255, 255, 0.08)`) inuti en `rgba(255, 255, 255, 0.05)`-container. Minvärde `1`, maxvärde `20`.
 3. **Stegindikator (`StepIndicator` i `SeatSelectionScreen.tsx`)**
@@ -208,19 +210,23 @@ Det finns fyra varianter av salongskarta i prototypen:
      - **Kommande steg:** Bakgrund `rgba(255, 255, 255, 0.08)`, siffra och etikett i `#94A3B8`, linje i `rgba(255, 255, 255, 0.1)`.
    - Etiketterna döljs på skärmar `< 640px` (`hidden sm:block`).
 
-### 3.12 Cookie-banner (`CookieBanner.tsx`)
+### 3.12 Integritet och lokal lagring (`Footer.tsx`)
 
-- **Placering och yta:** Fast längst ned (`position: fixed`, `bottom: 0`, `left: 0`, `right: 0`, `z-index: 50`), `padding: 16px` (`24px` på `>= 640px`), bakgrund `linear-gradient(to top, rgba(11, 15, 25, 0.98) 0%, rgba(11, 15, 25, 0.9) 100%)`, `backdrop-filter: blur(20px)`, `border-top: 1px solid rgba(255, 255, 255, 0.08)`. Visas på alla publika vyer tills användaren stänger den (`showCookie` i `App.tsx`).
-- **Innehåll (maxbredd `896px`):**
-  - **Ikon:** `40×40px` rundad ruta (`border-radius: 12px`, bakgrund `rgba(229, 9, 20, 0.15)`) med röd kak-ikon (`20×20px`, `#E50914`).
-  - **Rubrik:** `Vi använder cookies` (`14px`, `font-weight: 600`, `#F8FAFC`).
-  - **Brödtext:** `Nödvändiga cookies används för autentisering och sessionshantering. Analytiska cookies hjälper oss förbättra upplevelsen.` (`12px`, `#94A3B8`) följt av en understruken toggle-knapp i `#F8FAFC` med texten `Anpassa` (i hopfällt läge) eller `Dölj inställningar` (i utfällt läge).
-  - **Utfällt läge (`expanded === true`):** Visar två rader med toggle-switchar (`40×24px`, `border-radius: 9999px`, vit cirkel `16×16px`):
-    1. `Nödvändiga cookies` / `Alltid aktiva` — låst i aktivt läge (bakgrund `#10B981`, cirkel till höger).
-    2. `Statistik & Analys` / `Valfritt` — klickbar toggle (`analyticsEnabled`, inaktiv bakgrund `rgba(255, 255, 255, 0.12)` med cirkel till vänster; aktiv bakgrund `#10B981` med cirkel till höger).
-  - **Knappar till höger (`padding: 10px 16px`, `border-radius: 12px`, `font-size: 12px`):**
-    - `Anpassa` (visas endast när `expanded === true`, bakgrund `rgba(255, 255, 255, 0.08)`, text `#F8FAFC` — stänger bannern vid klick).
-    - `Endast nödvändiga` (bakgrund `rgba(255, 255, 255, 0.08)`, kantlinje `1px solid rgba(255, 255, 255, 0.1)`, text `#F8FAFC` — stänger bannern vid klick).
-    - `Acceptera alla` (bakgrund `#E50914`, vit text, `font-weight: 600` — stänger bannern vid klick).
-- **Källfil:** `src/components/CookieBanner.tsx`.
+- Sidfoten har knapparna `Integritetspolicy` och `Cookie-inställningar`, som öppnar projektets tillgängliga `Modal` med svensk information och fungerande stängning/fokusåterställning.
+- Inloggningens token lagras i `localStorage`; bokningsbekräftelsen lagras per flik i `sessionStorage`. Informationsdialogen hittar inte på valbara analyscookies eller en samtyckesbanner som appen saknar.
+- `Footer` kan ta emot `onOpenCookieSettings` för en framtida inställningsfunktion. Utan callback visas informationsdialogen.
+
+### 3.13 Sidnumrering (`Pagination.tsx`)
+
+- **Yta och knappar:** Minsta klickyta `40×40px`, hörnradie `10px` (`$fv-radius-md`), Inter (`$fv-font-sans`), `14px`, `font-weight: 600`.
+- **Aktiv sida:** `aria-current="page"`, bakgrund `#E50914` (`$fv-primary`), text `#FFFFFF` (`$fv-white`), `font-weight: 700`.
+- **Inaktiv sida och Föregående/Nästa:** Bakgrund `#161F30` (`$fv-card-bg`), kantlinje `1px solid rgba(148, 163, 184, 0.15)` (`$fv-border`), text `#F8FAFC` (`$fv-fg`), hover `#1E2D47` (`$fv-secondary`).
+- **Inaktiverad knapp:** Native `disabled`, `opacity: 0.4`, `cursor: not-allowed`, text `#94A3B8` (`$fv-muted-fg`). Föregående inaktiveras på första sidan, Nästa på sista sidan.
+- **Fokus och tillgänglighet:** `<nav aria-label={ariaLabel}>`, svenska knappetiketter, dolda dekorativa ikoner och ellipser. Native knappar stödjer Tab och Enter/Space. Fokusring `2px solid #E50914` (`$fv-primary`), `outline-offset: 2px`. Sidbyten annonseras med `role="status"` (`Sida {page} av {totalPages}`).
+- **Desktop (`>= 640px`):** `‹ Föregående`, sidnummer och `Nästa ›` med `bi-chevron-left`/`bi-chevron-right`. Upp till 7 sidor visas utan ellips. Vid fler än 7 sidor visas första och sista sidan samt ett fönster runt aktiv sida, med ellipser vid luckor: `1 … 4 5 6 … 12`. Nära början/slutet visas fler intilliggande sidnummer.
+- **Mobil (`< 640px`):** Kompakt rad med `‹ Föregående`, `Sida {page} av {totalPages}` i mitten och `Nästa ›`. Sidnummerknapparna döljs även från tangentbords- och skärmläsarnavigering.
+- **Automatisk döljning:** Komponenten renderar ingenting när `totalPages <= 1`, inklusive tomma listor.
+- **Gemensam hook:** `usePagination<T>(items: readonly T[], pageSize)` returnerar `page`, `totalPages`, `totalItems`, `startIndex` (inklusive), `endIndex` (exklusive), `pageItems` och `setPage`. Sidstorleken måste vara ett positivt heltal. Både visad och lagrad sida begränsas till giltigt intervall när listan krymper, så ett borttaget sidläge inte återkommer om listan sedan växer. Tom lista ger sida 1, totalt 1 sida och båda index 0. Filtrering och sortering görs före sidindelning.
+- **Sidstorlekar:** Startsidan 8 filmer (2 rader × 4 kolumner på bred desktop), `/filmer` 10 filmer (2 rader × 5 kolumner på bred desktop), `/mina-bokningar` 5 bokningskort per flik med separata sidlägen. Admin-tabeller och motsvarande mobilkort (`/admin/*`) ska återanvända samma hook och komponent med 10 poster per sida när de integreras.
+- **Stilar:** `.fv-pagination`, `.fv-pagination__btn`, `.fv-pagination__btn.is-active`, `.fv-pagination__ellipsis` och `.fv-pagination__mobile-status` i `src/styles/components/_pagination.scss`, importerad av `_components.scss`.
 

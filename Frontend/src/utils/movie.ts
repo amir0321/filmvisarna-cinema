@@ -51,11 +51,12 @@ export function getYouTubeEmbedUrl(url: string): string | null {
 }
 
 // Muted, looping and without controls, for use behind other content
-export function getYouTubeBackgroundUrl(url: string): string | null {
+export function getYouTubeBackgroundUrl(url: string, origin?: string): string | null {
   const videoId = getYouTubeVideoId(url)
   if (!videoId) return null
   const params = new URLSearchParams({
     autoplay: '1',
+    enablejsapi: '1',
     mute: '1',
     loop: '1',
     playlist: videoId,
@@ -64,6 +65,9 @@ export function getYouTubeBackgroundUrl(url: string): string | null {
     rel: '0',
     disablekb: '1',
     iv_load_policy: '3',
+    fs: '0',
+    start: '12',
   })
+  if (origin) params.set('origin', origin)
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params}`
 }

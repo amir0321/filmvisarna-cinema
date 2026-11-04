@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useMovies, useScreenings } from '../hooks'
 import type { Movie, Screening } from '../types'
 import { MovieGridSkeleton } from '../components/Skeleton'
@@ -8,6 +9,9 @@ import MovieFilters, { type MovieSort } from '../components/movies/MovieFilters'
 import MovieListCard from '../components/movies/MovieListCard'
 import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate, todayIsoDate } from '../utils/date'
 import { getAgeLimit } from '../utils/movie'
+import Pagination from '../components/Pagination'
+import { usePagination } from '../hooks/usePagination'
+import { readAgeFilter, readDate, setAgeFilter } from '../utils/movieFilters'
 
 type MoviesTab = 'now' | 'upcoming'
 
@@ -42,16 +46,46 @@ function matchesSearch(movie: Movie, search: string): boolean {
 }
 
 export default function Movies() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const today = todayIsoDate()
   const [tab, setTab] = useState<MoviesTab>('now')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<MovieSort>('popular')
   const [genre, setGenre] = useState('all')
-  const [age, setAge] = useState('all')
-  const [date, setDate] = useState(today)
+  const age = String(readAgeFilter(searchParams) ?? 'all')
+  const date = readDate(searchParams, today, DAYS_SHOWN - 1) ?? today
+
+  function setAge(value: string) {
+    setSearchParams((previous) => setAgeFilter(previous, value === 'all' ? null : Number(value)))
+  }
+
+  function setDate(value: string) {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (value === today) next.delete('date')
+      else next.set('date', value)
+      return next
+    })
+  }
 
   const { data: movies, loading, error, refetch } = useMovies()
   const { data: screenings } = useScreenings({ date })
+
+  useEffect(() => {
+    if (searchParams.get('sok') !== '1' || !searchInputRef.current) return
+
+    searchInputRef.current.focus({ preventScroll: true })
+    searchInputRef.current.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      block: 'center',
+    })
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.delete('sok')
+      return next
+    }, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const allMovies = movies ?? []
   const nowShowing = allMovies.filter((movie) => !isUpcoming(movie, today))
@@ -86,14 +120,18 @@ export default function Movies() {
     .filter((movie) => matchesSearch(movie, search))
     .sort((a, b) => compareMovies(a, b, sort, bookedSeats))
 
+  const { page, totalPages, pageItems, setPage } = usePagination(filteredMovies, 10)
+
   const hasActiveFilters = search !== '' || genre !== 'all' || age !== 'all'
 
   function changeTab(nextTab: string) {
+    setPage(1)
     setTab(nextTab as MoviesTab)
     setGenre('all')
   }
 
   function clearFilters() {
+    setPage(1)
     setSearch('')
     setGenre('all')
     setAge('all')
@@ -129,18 +167,34 @@ export default function Movies() {
 
       <TabsPanel value={tab} className="container movies-container py-4">
         <MovieFilters
+          inputRef={searchInputRef}
           search={search}
-          onSearchChange={setSearch}
+          onSearchChange={(value) => {
+            setSearch(value)
+            setPage(1)
+          }}
           sort={sort}
-          onSortChange={setSort}
+          onSortChange={(value) => {
+            setSort(value)
+            setPage(1)
+          }}
           genre={genre}
           genreOptions={genreOptions}
-          onGenreChange={setGenre}
+          onGenreChange={(value) => {
+            setGenre(value)
+            setPage(1)
+          }}
           age={age}
-          onAgeChange={setAge}
+          onAgeChange={(value) => {
+            setAge(value)
+            setPage(1)
+          }}
           date={tab === 'now' ? date : null}
           dateOptions={dateOptions}
-          onDateChange={setDate}
+          onDateChange={(value) => {
+            setDate(value)
+            setPage(1)
+          }}
         />
 
         <div className="pt-4">
@@ -179,7 +233,7 @@ export default function Movies() {
 
           {!loading && !error && filteredMovies.length > 0 && (
             <ul className="list-unstyled row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 mb-0">
-              {filteredMovies.map((movie) => (
+              {pageItems.map((movie) => (
                 <li key={movie.id} className="col">
                   <MovieListCard
                     movie={movie}
@@ -189,6 +243,14 @@ export default function Movies() {
                 </li>
               ))}
             </ul>
+          )}
+          {!loading && !error && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              ariaLabel="Sidnumrering för filmer"
+            />
           )}
         </div>
       </TabsPanel>
