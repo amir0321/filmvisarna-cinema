@@ -1,7 +1,7 @@
 const PLAYING = 1
 
 // Require real media progress as well as elapsed time; iframe load is not playback readiness.
-export function createPlaybackVisibilityTracker(requiredSeconds = 5) {
+export function createPlaybackVisibilityTracker(requiredSeconds = 4) {
   let mediaStart: number | null = null
   let clockStart = 0
   let previousTime = 0
