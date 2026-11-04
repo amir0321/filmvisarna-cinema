@@ -133,6 +133,16 @@
   padding: 0;
   flex-shrink: 0;
 
+  &:hover {
+    color: $fv-fg;
+    background-color: rgba($fv-white, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $fv-primary;
+    outline-offset: 2px;
+  }
+
   &:disabled {
     opacity: 0.65;
     cursor: not-allowed;

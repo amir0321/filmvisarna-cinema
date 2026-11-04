@@ -10,6 +10,8 @@ import MyTicketModal from "../components/MyTicketModal";
 import { useMovies } from "../hooks/useMovies";
 import { canCancelBooking, getBookingState } from "../utils/bookings";
 import { useBookings } from "../hooks/useBookings";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/Pagination";
 
 export default function MyBookings() {
   const token = getAuthToken();
@@ -75,6 +77,8 @@ export default function MyBookings() {
   const historyBookings = bookings.filter(
     (booking) => getBookingState(booking, currentTime) !== "upcoming",
   );
+  const currentPagination = usePagination(currentBookings, 5);
+  const historyPagination = usePagination(historyBookings, 5);
 
   return (
     <div className="fv-my-bookings py-4">
@@ -163,7 +167,7 @@ export default function MyBookings() {
                     />
                   ) : (
                     <div>
-                      {currentBookings.map((booking) => (
+                      {currentPagination.pageItems.map((booking) => (
                         <MyBookingCard
                           key={booking.id}
                           booking={booking}
@@ -173,6 +177,12 @@ export default function MyBookings() {
                           posterUrl={getPosterUrl(booking)}
                         />
                       ))}
+                      <Pagination
+                        page={currentPagination.page}
+                        totalPages={currentPagination.totalPages}
+                        onPageChange={currentPagination.setPage}
+                        ariaLabel="Sidnumrering för aktuella bokningar"
+                      />
                     </div>
                   )}
                 </Tabs.Panel>
@@ -186,7 +196,7 @@ export default function MyBookings() {
                     />
                   ) : (
                     <div>
-                      {historyBookings.map((booking) => (
+                      {historyPagination.pageItems.map((booking) => (
                         <MyBookingCard
                           key={booking.id}
                           booking={booking}
@@ -195,6 +205,12 @@ export default function MyBookings() {
                           posterUrl={getPosterUrl(booking)}
                         />
                       ))}
+                      <Pagination
+                        page={historyPagination.page}
+                        totalPages={historyPagination.totalPages}
+                        onPageChange={historyPagination.setPage}
+                        ariaLabel="Sidnumrering för bokningshistorik"
+                      />
                     </div>
                   )}
                 </Tabs.Panel>
