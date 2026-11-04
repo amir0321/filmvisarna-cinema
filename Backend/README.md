@@ -67,8 +67,8 @@ npm run seed
 # Create or promote an admin account
 npm run create-admin -- admin@example.com MyPassword123
 
-# Run unit tests
-node --import tsx --test src/tests/*.test.ts
+# Run the critical auth integration suite (requires AUTH_TEST_DATABASE_URL)
+npm test
 ```
 
 ---
