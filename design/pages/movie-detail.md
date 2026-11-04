@@ -9,8 +9,8 @@
 #### Struktur uppifrån och ned
 1. **Backdrop & Trailer Hero (`height: 320px` på mobil `h-80`, `384px` på `>= 640px` `sm:h-96`):**
    - Bakgrundsbild (`movie.backdrop`) med gradient `linear-gradient(to top, #0B0F19 0%, rgba(11, 15, 25, 0.5) 60%, transparent 100%)`.
-   - Centrerad rund play-knapp (`64×64px`, `.glass`, `border: 2px solid rgba(255, 255, 255, 0.4)`, skalar `1.10` vid hover; `onClick` är en tom funktion i prototypen).
-   - **Tillbaka-knapp** uppe till vänster (`top: 80px`, `left: 16px` / `sm:left-8`): `.glass`-knapp med vänsterchevron och texten `Tillbaka` (navigerar i `App.tsx` tillbaka till `'filmer'`).
+   - Centrerad rund play-knapp (`64×64px`, `.glass`, `border: 2px solid rgba(255, 255, 255, 0.4)`, skalar `1.10` vid hover; öppnar `TrailerModal` för filmen). `TrailerModal` öppnas även automatiskt om sidan besöks med query-parametern `?trailer=1` (från `"Se Trailer"` i startsidans hero).
+   - **Tillbaka-knapp** uppe till vänster (`top: 80px`, `left: 16px` / `sm:left-8`): `.glass`-knapp med vänsterchevron och texten `Tillbaka` (navigerar tillbaka till `/filmer`).
 2. **Huvudinnehåll (`max-width: 1152px`, överlappar hero med `-mt-16` / `-64px`, `z-index: 10`):**
    - **Grid:** 1 kolumn på `< 1024px`, 3 kolumner på `>= 1024px` (`lg:grid-cols-3`, `gap: 32px`).
    - **Vänster kolumn (`lg:col-span-1`):**

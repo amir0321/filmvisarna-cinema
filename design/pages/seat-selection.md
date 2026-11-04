@@ -6,6 +6,13 @@
 - **Skärm-ID:** `'seats'`
 - **Källfiler:** `src/components/SeatSelectionScreen.tsx`, `src/data.ts`, `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md`, `src/imports/pasted_text/cinema-app-screens.md`
 
+#### Fullbokning och tillgänglighet (`ScreeningDetail.tsx`)
+
+- Platskartans faktiska `status === 'available'` styr tillgängligheten. Vid noll lediga platser ersätts biljettval, platsval, kiosk och checkout med `Visningen är fullbokad`, förklaringen `Det finns inga lediga platser till den här visningen. Välj en annan visning för att boka biljetter.` och länken `Se andra visningstider` till filmens sida (eller `/filmer`). Detta gäller också direkta länkar och förvalda URL-biljetter.
+- Vid 1–10 lediga platser annonseras antalet och maxantalet biljetter med `role="status"`. Alla kategorier delar gränsen `min(10, lediga platser)`; ingen kategori kan kringgå den. `limitTicketCounts` begränsar även URL-förval och antal när tillgängligheten minskar.
+- Platskartan uppdateras var femte sekund. Om sista platsen bokas av någon annan växlar sidan till fullbokat-läget. Om platser blir lediga igen visas bokningsflödet igen. `handleConfirm` kontrollerar att samtliga valda platser fortfarande är tillgängliga; backend avgör vid samtidig bokning.
+- Seed-scenarier använder endast Stora Salongen (A–H × 1–10) och Lilla Salongen (A–E × 1–8). Platskartan renderas dynamiskt från API:t.
+
 #### Struktur uppifrån och ned (`max-width: 1152px`, `padding-top: 96px`)
 1. **Topprad:**
    - Vänster: Tillbaka-knapp med vänsterchevron och filmens titel `{movie.title}` (`14px`, `#94A3B8`, går tillbaka till `'detail'`).
@@ -26,7 +33,7 @@
      - **Kort 2 – Platskarta (visas endast när `totalTickets > 0`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
        - Rubrik (`h2`): `2. Välj platser` (`18px`, `Poppins`).
        - Underrubrik: `Bästa tillgängliga platser är förvalda — klicka för att ändra` (`12px`, `#94A3B8`).
-       - Bioduk (`BIODUK`), stolsmatris (`A`–`J`, `1`–`12`) och legend (`Ledig`, `Vald`, `Upptagen`, `Rullstol`) enligt sektion 3.10.
+       - Bioduk (`BIODUK`), salongens dynamiska stolsmatris och legend (`Ledig`, `Vald`, `Upptagen`, `Rullstol`) enligt sektion 3.10.
    - **Höger – Checkout-panel (`lg:col-span-1`, `position: sticky`, `top: 96px`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
      - Rubrik (`h2`): `Din bokning` (`16px`, `Poppins`).
      - **Valda platser-ruta (visas när `selectedSeats.length > 0`):** Visar `{screening.auditorium}` (`12px`, `#94A3B8`) och sorterad lista `Rad {rad}, Stol {stol}` separerade med ` · ` (`14px`, `#F8FAFC`).

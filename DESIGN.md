@@ -1,6 +1,18 @@
 # DESIGN.md — Filmvisarna (Figma Make-prototyp)
 
-Detta dokument är den fullständiga design- och gränssnittsspecifikationen för **Filmvisarna**, baserad uteslutande på Figma Make-prototypen i `docs/figma-make/src/`. Alla färger, mått, tillstånd, flöden och UI-texter är extraherade direkt ur prototypens källfiler och kravspecifikationer.
+Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**. Figma Make-prototypen är utgångspunkt; dokumenterade projektbeslut och den aktuella implementationen i `Frontend/` och `Backend/` har företräde framför prototypens exempeldata.
+
+---
+
+## Gällande projektbeslut
+
+- Biografen har endast **Stora Salongen**, 80 platser (A–H, 1–10), och **Lilla Salongen**, 40 platser (A–E, 1–8). Seed-data använder samma två salonger. Filmer sprids över flera dagar utan överlappning och med 20 minuters städtid.
+- Sidnumrering: 8 filmer på startsidan, 10 på `/filmer`, 5 bokningar per flik. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
+- Toppnavigeringens sökknapp öppnar `/filmer?sok=1`, fokuserar sökfältet och tar bort fokusparametern. Datum och åldersfilter sparas i URL:en och bevaras vid omladdning och bakåt/framåt.
+- Hero-trailern använder YouTubes IFrame API och visas först efter fem sekunders sammanhängande faktisk uppspelning, därefter intoning under 0,8 sekunder med `scale(1.2)`. Paus, buffring, loop/seek och uppspelningsfel döljer videon direkt; blockerad autoplay eller API-fel lämnar bakgrundsbilden kvar. Spelare och intervall städas vid filmbyte/paus/avmontering. Bildfel hanteras med alternativ bild eller reservyta.
+- Fullbokade visningar visar `Visningen är fullbokad` och `Se andra visningstider`. Biljettval och checkout visas inte. När platser finns begränsas totalantalet till `min(10, lediga platser)`.
+- Publik vy och admin delar den responsiva sidfoten med kontaktuppgifter, öppettider, kassapolicy och informationsdialoger för integritet och lokal lagring. Admin-länken visas endast för administratörer.
+- Seed-scenarier, testkonton och verifieringskommandon finns i [Backend/README.md](Backend/README.md#demo-data-for-manual-testing).
 
 ---
 
