@@ -2,9 +2,9 @@
 
 ### 5.2 Filmer & Repertoar (`FilmerScreen`)
 
-- **Föreslagen route:** `/filmer` (Föreslagen)
+- **Route:** `/filmer`
 - **Skärm-ID:** `'filmer'`
-- **Källfiler:** `src/components/FilmerScreen.tsx`, `src/data.ts`
+- **Källfiler:** `Frontend/src/pages/Movies.tsx`, `Frontend/src/components/movies/{MovieFilters,MovieListCard}.tsx`.
 
 #### Struktur uppifrån och ned
 1. **Sidhuvud / Hero-remsa (`background: linear-gradient(to bottom, rgba(22, 31, 48, 0.9), var(--background))`, `border-bottom: 1px solid var(--border)`):**
@@ -17,27 +17,24 @@
 2. **Flik 1: `På bio nu` (`activeTab === 'bio'`):**
    - **Klibbig filterpanel (`position: sticky`, `top: 64px`, `z-index: 40`, `background: rgba(11, 15, 25, 0.92)`, `backdrop-filter: blur(10px)`):**
      - **Rad 1 (Sök + Sortering):**
+       - Datum (`?date=ÅÅÅÅ-MM-DD`) och åldersgräns (`?age=0|7|11|15`) läses från URL:en och bevaras vid omladdning och bakåt/framåt. Datum begränsas till de fyra valbara dagarna; ogiltiga värden ger idag/alla.
        - Sökfält med ikon och placeholder: `Sök film eller genre...`
+       - Toppnavigeringens `Sök filmer` navigerar till `/filmer?sok=1`. När `sok=1` finns fokuseras sökfältet utan automatisk fokusskroll och skrollas sedan mjukt till mitten av vyn (direkt vid reducerad rörelse). Endast `sok` tas bort med `replace: true`; övriga parametrar bevaras. Fungerar även vid nytt klick när användaren redan är på `/filmer`.
        - Sorterings-dropdown (`<select>`) med alternativen: `Mest populär`, `Högst betyg`, `Nyast`, `A–Ö`.
      - **Rad 2 (Genre-chips, horisontellt scrollbar):** `Alla`, `Action`, `Animation`, `Drama`, `Fantasy`, `Krim`, `Romance`, `Sci-Fi`, `Thriller`, `Western`.
      - **Rad 3 (Ålders-chips, horisontellt scrollbar):** Etikett `Åldersgräns:` följt av `Alla`, `Barntillåten`, `7 år`, `11 år`, `15 år`.
    - **Resultatrad:**
      - Text till vänster: `Visar {filteredMovies.length} av {MOVIES.length} filmer` (antalet i `<strong>`).
      - Länkknapp till höger (visas endast om `activeGenre !== 'Alla' || activeAge !== 'Alla' || search`): `Rensa filter` (`#E50914`).
-   - **Filmgrid:** `grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))`, `gap: 20px`. Renderar `MovieCard` med knapp `Köp biljetter`.
+   - **Filmgrid:** 1 kolumn på mobil, därefter 2/3/4 kolumner och 5 på bred desktop. Renderar `MovieListCard`. `Poster` provar landskapsbilden om affischen saknas eller inte går att ladda, därefter en reservyta med filmtiteln.
+   - **Sidnumrering (båda flikarna):** `Movies.tsx` använder `usePagination(filteredMovies, 10)` efter filtrering och sortering: högst 10 filmer per sida (2 rader × 5 kolumner på bred desktop). `Pagination` placeras under griden och döljs när högst 10 filmer matchar. Byte av flik, sökning, genre, åldersfilter, datum, sortering eller rensning återställer sida 1. Resultatantalet avser hela den filtrerade listan. Utseende och mobilvy enligt [§3.13](../components.md#313-sidnumrering-paginationtsx).
    - **Tomt tillstånd (`filteredMovies.length === 0`):**
      - Emoji `🔍` (`40px`), text `Inga filmer matchar din sökning.` och röd länkknapp `Visa alla filmer`.
-3. **Flik 2: `Kommande premiärer` (`activeTab === 'kommande'`):**
-   - **Ingress:** `Kommande premiärer på FILMVISARNA hösten 2026. Bli påmind när biljetterna släpps.`
-   - **Kortlista (`flex-direction: column`, `gap: 16px`):** Renderar `UpcomingCard` för varje film i `UPCOMING_MOVIES` (Exempeldata: 4 kommande filmer).
-   - **Kortinnehåll (`UpcomingCard`):**
-     - Vänster: Poster med banderoll `PREMIÄR {PREMIEREDATE}` (t.ex. `PREMIÄR 24 OKTOBER 2026` — Exempeldata).
-     - Höger: IMDb-betyg (`{rating} IMDb`), titel, `{originalTitle} · {runtime} · Regi: {director}`, genre-taggar, ålders-tagg (`Alla åldrar` eller `{ageRating}+`), trunkerad synopsis (160 tecken + `…`), upp till 3 skådespelar-pills samt knapparna:
-       - `Se Trailer` (öppnar `TrailerModal`)
-       - `Bli påmind vid biljettsläpp` (växlar lokalt state `reminded` till `Påminnelse aktiv` i grönt `#10B981`).
-4. **Trailer-modal (`TrailerModal`, visas när `trailerMovie !== null`):**
-   - 16:9 videospelar-mock med mörktonad backdrop-bild, rund röd play-knapp (`72×72px`), text `Trailer — {movie.title}` och stäng-kryss uppe till höger.
-   - Nedre del (`padding: 24px`): Filmtitel, IMDb-betyg, genre-taggar, speltid, fullständig synopsis samt knapparna:
-     - `Gå till visningstider & boka` (primär röd knapp, stänger modalen och navigerar till `home`).
-     - `Stäng` (sekundär outline-knapp, stänger modalen).
-
+3. **Flik 2: `Kommande premiärer`:**
+   - Filmer med framtida `release_date` visas i samma responsiva `MovieListCard`-grid, med 10 filmer per sida. Genre-, ålders-, sök- och sorteringsfilter gäller även här; datumchips döljs.
+   - Kortet visar affisch, speltid, åldersgräns, IMDb-betyg, genre, premiärdatum och `Läs mer` till `/filmer/:id`. Ingen påminnelsefunktion visas eftersom appen saknar backend för den.
+4. **Navigering och tillgänglighet:**
+   - `På bio nu` behåller sin etikett och visar utgivna filmer med återstående visningar vald dag. Att en film saknas en viss dag betyder inte att affischen saknas.
+   - Biljettknappen går till filmens detaljsida; fullbokade visningstider har en icke-klickbar `Fullbokad`-etikett.
+   - Trailern öppnas på detaljsidan via `/filmer/:id?trailer=1`, inte i en separat trailer-modal på listvyn.
+   - Resultatantal avser hela den filtrerade listan; paginering döljs för högst tio träffar. Med bara två salonger kan ett enskilt dagsprogram korrekt rymmas på en sida.

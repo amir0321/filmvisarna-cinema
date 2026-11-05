@@ -1,13 +1,14 @@
-import TrailerModal from '../components/TrailerModal'
 import { getBookingUrl } from '../utils/links'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useScreenings } from '../hooks/useScreenings'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useMovie } from '../hooks/useMovies'
+import TrailerModal from '../components/TrailerModal'
 
 export default function MovieDetails() {
   const { id } = useParams()
-  const [isTrailerOpen, setIsTrailerOpen] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const isTrailerOpen = searchParams.get('trailer') === '1'
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -72,21 +73,13 @@ export default function MovieDetails() {
             type='button'
             className='movie-details-hero__play'
             aria-label={`Spela trailer för ${movie.title}`}
-            onClick={() => setIsTrailerOpen(true)}
+            onClick={() => setSearchParams({ trailer: '1' }, { replace: true })}
           >
             ▶
           </button>
         )}
       </section>
 
-      {movie.trailer_url && (
-        <TrailerModal
-          isOpen={isTrailerOpen}
-          onClose={() => setIsTrailerOpen(false)}
-          trailerUrl={movie.trailer_url}
-          movieTitle={movie.title}
-        />
-      )}
       <div className='movie-details-content'>
         <div className='row g-4'>
           <div className='col-12 col-md-4'>
@@ -234,6 +227,15 @@ export default function MovieDetails() {
           </div>
         </div>
       </div>
+
+      {movie.trailer_url && (
+        <TrailerModal
+          isOpen={isTrailerOpen}
+          onClose={() => setSearchParams({}, { replace: true })}
+          trailerUrl={movie.trailer_url}
+          movieTitle={movie.title}
+        />
+      )}
     </div>
   )
 }

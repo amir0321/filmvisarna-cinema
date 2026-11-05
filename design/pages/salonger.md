@@ -6,6 +6,8 @@
 - **Skärm-ID:** `'salonger'`
 - **Källfil:** `src/components/SalongerScreen.tsx`
 
+**Gällande salonger:** Endast Stora Salongen (8 rader A–H × 10 stolar = 80 platser) och Lilla Salongen (5 rader A–E × 8 stolar = 40 platser). Detta gäller även utvecklingsdata; extra testsalonger ska inte skapas. Minikarta och platskarta använder backendens faktiska rader och stolar.
+
 #### Struktur uppifrån och ned
 1. **Sidhuvud (`background: linear-gradient(135deg, #0B0F19 0%, #161F30 50%, #0B0F19 100%)`, `border-bottom: 1px solid var(--border)`):**
    - Subtilt bakgrundsrutnät (`40×40px`, `opacity: 0.05`, vita `1px`-linjer).
@@ -27,7 +29,7 @@
          - `Bred duk (18m)`
          - `Rullstolsplatser (rad A)`
          - `Barservering tillgänglig`
-       - Minikarta (`MiniAuditoriumMap`): Rubrik `Salongskarta` (`12px`, `uppercase`), `BIODUK`, 10 rader × 8 stolar, legend: `Ledig`, `Exempelval`, `Rullstol`.
+       - Minikarta (`MiniAuditoriumMap`): Rubrik `Salongskarta` (`12px`, `uppercase`), `BIODUK`, 8 rader × 10 stolar, legend: `Ledig`, `Exempelval`, `Rullstol`.
      - **Salong 2:**
        - Namn: `Salong 2`, Undertitel: `Lilla Salongen`, Färg: `#10B981`
        - Badges nere till vänster på bilden: `40 platser` (bakgrund `#10B981`), `2D` (`.glass`), `Stereo` (`.glass`).

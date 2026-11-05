@@ -7,13 +7,9 @@ import {
   todayIsoDate,
 } from "../../utils/date";
 import DatePickerPopover from "../DatePickerPopover";
+import type { AgeFilter, DateFilter } from '../../utils/movieFilters';
 
-export type DateFilter =
-  | { kind: "preset"; when: ScreeningWhen }
-  | { kind: "date"; date: string };
-
-// null = "Alla"
-export type AgeFilter = number | null;
+export type { AgeFilter, DateFilter } from '../../utils/movieFilters';
 
 interface FilterStripProps {
   dateFilter: DateFilter;

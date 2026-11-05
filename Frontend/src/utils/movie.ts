@@ -36,14 +36,38 @@ export function getAgeRatingVariant(ageRating: string | null): AgeRatingVariant 
   return 'danger'
 }
 
-export function getYouTubeEmbedUrl(url: string): string | null {
+function getYouTubeVideoId(url: string): string | null {
   try {
     const parsed = new URL(url)
-    const videoId =
-      parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.searchParams.get('v')
-
-    return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0` : null
+    return parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.searchParams.get('v')
   } catch {
     return null
   }
+}
+
+export function getYouTubeEmbedUrl(url: string): string | null {
+  const videoId = getYouTubeVideoId(url)
+  return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0` : null
+}
+
+// Muted, looping and without controls, for use behind other content
+export function getYouTubeBackgroundUrl(url: string, origin?: string): string | null {
+  const videoId = getYouTubeVideoId(url)
+  if (!videoId) return null
+  const params = new URLSearchParams({
+    autoplay: '1',
+    enablejsapi: '1',
+    mute: '1',
+    loop: '1',
+    playlist: videoId,
+    controls: '0',
+    playsinline: '1',
+    rel: '0',
+    disablekb: '1',
+    iv_load_policy: '3',
+    fs: '0',
+    start: '12',
+  })
+  if (origin) params.set('origin', origin)
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params}`
 }

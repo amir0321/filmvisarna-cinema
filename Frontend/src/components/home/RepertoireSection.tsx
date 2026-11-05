@@ -1,5 +1,7 @@
 import type { Movie, Screening } from '../../types'
 import MovieCard from './MovieCard'
+import Pagination from '../Pagination'
+import { usePagination } from '../../hooks/usePagination'
 
 interface RepertoireSectionProps {
   heading: string
@@ -44,6 +46,7 @@ export default function RepertoireSection({
   error,
 }: RepertoireSectionProps) {
   const groups = groupScreeningsByMovie(movies, screenings)
+  const { page, totalPages, pageItems, setPage } = usePagination(groups, 8)
 
   let statusMessage = ''
   if (loading) statusMessage = 'Laddar visningar…'
@@ -91,12 +94,20 @@ export default function RepertoireSection({
 
       {!error && !loading && groups.length > 0 && (
         <ul className="list-unstyled row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-0">
-          {groups.map(({ movie, screenings: movieScreenings }) => (
+          {pageItems.map(({ movie, screenings: movieScreenings }) => (
             <li key={movie.id} className="col">
               <MovieCard movie={movie} screenings={movieScreenings} />
             </li>
           ))}
         </ul>
+      )}
+      {!error && !loading && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          ariaLabel="Sidnumrering för repertoaren"
+        />
       )}
     </section>
   )

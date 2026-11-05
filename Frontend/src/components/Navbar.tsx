@@ -129,9 +129,8 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-search-btn"
-            aria-label="Sök"
-            title="Kommer snart"
-            disabled
+            aria-label="Sök filmer"
+            onClick={() => navigate('/filmer?sok=1')}
           >
             <i className="bi bi-search" aria-hidden="true"></i>
           </button>
