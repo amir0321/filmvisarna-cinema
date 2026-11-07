@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { updateProfile } from "../api/auth";
 import type { User } from "../types/user";
+import { useInlineFeedback } from '../hooks/useInlineFeedback'
 
 interface ProfileFormProps {
   user: User;
@@ -12,24 +13,24 @@ export default function ProfileForm({ user, onSaved }: ProfileFormProps) {
   const [lastName, setLastName] = useState(user.lastName ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
+  const [saved, showSaved] = useInlineFeedback(5000)
   const [error, setError] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    setSuccess("");
     setError("");
+    
 
     try {
-      const response = await updateProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phone: phone.trim() || null,
-      });
+     await updateProfile({
+  firstName: firstName.trim(),
+  lastName: lastName.trim(),
+  phone: phone.trim() || null,
+});
 
-      await onSaved();
-      setSuccess(response.message);
+await onSaved();
+showSaved();
     } catch (error) {
       setError(
         error instanceof Error
@@ -110,11 +111,11 @@ export default function ProfileForm({ user, onSaved }: ProfileFormProps) {
           {error}
         </p>
       )}
-      {success && (
-        <p role="status" className="text-success">
-          {success}
-        </p>
-      )}
+      {saved && (
+  <p role="status" className="text-success">
+    Ändringarna har sparats!
+  </p>
+)}
 
       <button type="submit" className="btn btn-danger" disabled={saving}>
         {saving ? "Sparar..." : "Spara ändringar"}

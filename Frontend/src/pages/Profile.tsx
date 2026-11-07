@@ -4,16 +4,17 @@ import { useState } from "react";
 import ChangePasswordForm from "../components/ChangePasswordForm";
 import ProfileBookingCount from "../components/ProfileBookingCount";
 import { Link } from "react-router";
+import { Tabs } from '../components/Tabs'
 
 export default function Profile() {
-  const { user, loading, refreshUser, logout } = useAuth();
+ const { user, loading, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"personal" | "security">(
     "personal",
   );
 
-  if (loading) {
-    return <p className="py-5 text-center">Laddar profil...</p>;
-  }
+ if (loading && !user) {
+  return <p className="py-5 text-center">Laddar profil...</p>;
+}
 
   if (!user) {
     return <p className="py-5 text-center">Logga in för att se din profil.</p>;
@@ -21,19 +22,19 @@ export default function Profile() {
 
   return (
     <div className="container py-5">
-      <h1 className="h2 fw-bold mb-4">Min profil</h1>
-
+      <h1 className="h2 fw-bold mb-4">Min Profil</h1>
+<Tabs
+  value={activeTab}
+  onChange={(value) => setActiveTab(value as 'personal' | 'security')}
+  variant="vertical"
+>
+      
       <div className="row g-4">
         <aside className="col-12 col-lg-4">
           <div className="card p-4 text-center h-100">
             <div
-              className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-3"
-              style={{
-                width: 88,
-                height: 88,
-                backgroundColor: "#E50914",
-                color: "#fff",
-              }}
+             className="fv-profile-avatar rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-3"
+          
             >
               {getUserInitials(user)}
             </div>
@@ -51,27 +52,19 @@ export default function Profile() {
             </div>
 
             <nav className="d-grid gap-2 mt-4" aria-label="Profilmeny">
-              <button
-                type="button"
-                className={`btn text-start ${
-                  activeTab === "personal" ? "btn-danger" : "btn-outline-light"
-                }`}
-                onClick={() => setActiveTab("personal")}
-              >
-                <i className="bi bi-person me-2" aria-hidden="true" />
-                Personuppgifter
-              </button>
+   
+<Tabs.List ariaLabel="Profilinställningar">
+  <Tabs.Trigger value="personal">
+    <i className="bi bi-person me-2" aria-hidden="true" />
+  Mina uppgifter
+  </Tabs.Trigger>
 
-              <button
-                type="button"
-                className={`btn text-start ${
-                  activeTab === "security" ? "btn-danger" : "btn-outline-light"
-                }`}
-                onClick={() => setActiveTab("security")}
-              >
-                <i className="bi bi-shield-lock me-2" aria-hidden="true" />
-                Säkerhet
-              </button>
+  <Tabs.Trigger value="security">
+    <i className="bi bi-shield-lock me-2" aria-hidden="true" />
+    Lösenord & Säkerhet
+  </Tabs.Trigger>
+</Tabs.List>
+
 
               <Link
                 className="btn btn-outline-light text-start"
@@ -89,23 +82,24 @@ export default function Profile() {
 
         <section className="col-12 col-lg-8">
           <div className="card p-4 h-100">
-            {activeTab === "personal" ? (
-              <div id="profile-personal-panel" role="tabpanel">
-                <h2 className="h5 fw-bold mb-3">Personuppgifter</h2>
-                <ProfileForm user={user} onSaved={refreshUser} />
-              </div>
-            ) : (
-              <div id="profile-security-panel" role="tabpanel">
-                <h2 className="h5 fw-bold mb-3">Ändra lösenord</h2>
-                <p className="text-secondary">
-                  Ange ditt nuvarande lösenord och välj ett nytt.
-                </p>
-                <ChangePasswordForm onPasswordChanged={logout} />
-              </div>
-            )}
+          
+<Tabs.Panel value="personal">
+  <h2 className="h5 fw-bold mb-3">Mina uppgifter</h2>
+  <ProfileForm user={user} onSaved={refreshUser} />
+</Tabs.Panel>
+
+<Tabs.Panel value="security">
+  <h2 className="h5 fw-bold mb-3">Lösenord &amp; Säkerhet</h2>
+  <p className="text-secondary">
+    Ange ditt nuvarande lösenord och välj ett nytt.
+  </p>
+  <ChangePasswordForm />
+</Tabs.Panel>
+
           </div>
         </section>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 }

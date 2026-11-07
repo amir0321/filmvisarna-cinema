@@ -1,18 +1,19 @@
-import { useState, type FormEvent } from "react";
-import { changePassword } from "../api/auth";
+import { useState, type FormEvent } from 'react'
+import { changePassword, login } from '../api/auth'
+import PasswordField from './auth/PasswordField'
+import { useAuth } from '../hooks/useAuth'
+import { useInlineFeedback } from '../hooks/useInlineFeedback'
 
-interface ChangePasswordFormProps {
-  onPasswordChanged: () => void;
-}
 
-export default function ChangePasswordForm({
-  onPasswordChanged,
-}: ChangePasswordFormProps) {
+
+export default function ChangePasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const { user, setSession } = useAuth()
+  const [saved, showSaved] = useInlineFeedback(5000)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,71 +31,64 @@ export default function ChangePasswordForm({
 
     setSaving(true);
 
-    try {
-      await changePassword({ currentPassword, newPassword });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      onPasswordChanged();
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Det gick inte att ändra lösenordet.",
-      );
-    } finally {
-      setSaving(false);
-    }
+   try {
+  if (!user) {
+    throw new Error('Du måste vara inloggad för att ändra lösenordet.')
   }
+
+  await changePassword({ currentPassword, newPassword })
+
+  const response = await login({
+    email: user.email,
+    password: newPassword,
+  })
+
+  setSession(response)
+
+  setCurrentPassword('')
+  setNewPassword('')
+  setConfirmPassword('')
+  showSaved()
+} catch (error) {
+  setError(
+    error instanceof Error
+      ? error.message
+      : 'Det gick inte att uppdatera inloggningen.',
+  )
+} finally {
+  setSaving(false)
+    }
+ }
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="current-password" className="form-label">
-          Nuvarande lösenord
-        </label>
-        <input
-          id="current-password"
-          type="password"
-          autoComplete="current-password"
-          className="form-control"
-          value={currentPassword}
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          required
-        />
-      </div>
+     
+<div className="d-grid gap-3 mb-4">
+  <PasswordField
+    id="current-password"
+    label="Nuvarande lösenord"
+    value={currentPassword}
+    onChange={setCurrentPassword}
+  />
 
-      <div className="mb-3">
-        <label htmlFor="new-password" className="form-label">
-          Nytt lösenord
-        </label>
-        <input
-          id="new-password"
-          type="password"
-          autoComplete="new-password"
-          className="form-control"
-          value={newPassword}
-          onChange={(event) => setNewPassword(event.target.value)}
-          minLength={8}
-          maxLength={72}
-          required
-        />
-      </div>
+  <PasswordField
+    id="new-password"
+    label="Nytt lösenord"
+    value={newPassword}
+    onChange={setNewPassword}
+    registering
+    showStrength
+  />
 
-      <div className="mb-4">
-        <label htmlFor="confirm-password" className="form-label">
-          Bekräfta nytt lösenord
-        </label>
-        <input
-          id="confirm-password"
-          type="password"
-          autoComplete="new-password"
-          className="form-control"
-          value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          required
-        />
-      </div>
+  <PasswordField
+    id="confirm-password"
+    label="Bekräfta nytt lösenord"
+    value={confirmPassword}
+    onChange={setConfirmPassword}
+    registering
+    showStrength={false}
+  />
+</div>
 
       {error && (
         <p role="alert" className="text-danger">
@@ -102,6 +96,11 @@ export default function ChangePasswordForm({
         </p>
       )}
 
+      {saved && (
+  <p role="status" className="text-success">
+    Lösenordet har ändrats!
+  </p>
+)}
       <button type="submit" className="btn btn-danger" disabled={saving}>
         {saving ? "Ändrar lösenord..." : "Ändra lösenord"}
       </button>
