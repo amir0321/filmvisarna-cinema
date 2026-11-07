@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import { FilterPillGroup, type FilterOption } from '../Pills'
 
 export type MovieSort = 'popular' | 'title' | 'newest' | 'rating'
@@ -18,6 +19,7 @@ const AGE_OPTIONS: FilterOption[] = [
 ]
 
 interface MovieFiltersProps {
+  inputRef?: Ref<HTMLInputElement>
   search: string
   onSearchChange: (search: string) => void
   sort: MovieSort
@@ -33,6 +35,7 @@ interface MovieFiltersProps {
 }
 
 export default function MovieFilters({
+  inputRef,
   search,
   onSearchChange,
   sort,
@@ -55,6 +58,7 @@ export default function MovieFilters({
           </label>
           <i className="bi bi-search" aria-hidden="true"></i>
           <input
+            ref={inputRef}
             id="movie-search"
             type="search"
             className="form-control"

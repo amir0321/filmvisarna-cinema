@@ -27,7 +27,8 @@
        - `Visa biljett` (sekundär knapp, anropar `onViewConfirm(booking)` och går till `'confirm'`).
        - `Avboka` (röd sekundärknapp, öppnar avbokningsmodalen).
 4. **Innehåll under `Bokningshistorik`:**
-   - Visar alltid tomt tillstånd (`padding: 80px 0`, centrerad text i `#94A3B8`): `Ingen bokningshistorik ännu.`
+   - Visar tidigare och avbokade bokningar som bokningskort. När listan är tom visas `Ingen bokningshistorik ännu.`
+   - **Sidnumrering i båda flikarna:** `MyBookings.tsx` använder `usePagination(currentBookings, 5)` och `usePagination(historyBookings, 5)`: högst 5 bokningskort per sida i respektive flik. Varje flik behåller sitt eget sidläge. `Pagination` placeras under kortlistan och döljs när fliken innehåller högst 5 bokningar. Vid exempelvis avbokning begränsas sidan till giltigt intervall så att sista sidan inte blir tom. Utseende och mobilvy enligt [§3.13](../components.md#313-sidnumrering-paginationtsx).
 5. **Avbokningsmodal (`showCancelModal && cancelTarget`):**
    - Backdrop (`rgba(0, 0, 0, 0.7)`), centrerat kort (`max-width: 384px` / `max-w-sm`, `border-radius: 16px`, `padding: 28px`, `#161F30`).
    - Röd varningstriangel-ikon (`24×24px`, `#E50914`) i en cirkel (`48×48px`, `rgba(229, 9, 20, 0.12)`).

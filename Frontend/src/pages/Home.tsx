@@ -1,10 +1,13 @@
-import { useState } from 'react'
-import FilterStrip, { type AgeFilter, type DateFilter } from '../components/home/FilterStrip'
+import { useSearchParams } from 'react-router'
+import FilterStrip from '../components/home/FilterStrip'
 import HeroSection, { HeroSectionSkeleton } from '../components/home/HeroSection'
 import RepertoireSection from '../components/home/RepertoireSection'
 import { useMovies, useScreenings } from '../hooks'
 import type { ScreeningWhen } from '../types'
-import { capitalize, formatDateLong } from '../utils/date'
+import { capitalize, formatDateLong, todayIsoDate } from '../utils/date'
+import { readAgeFilter, readHomeDateFilter, setAgeFilter, setDateFilter, type DateFilter } from '../utils/movieFilters'
+
+const HERO_MOVIE_COUNT = 5
 
 const DATE_PRESET_HEADINGS: Record<ScreeningWhen, string> = {
   today: 'Idag',
@@ -19,8 +22,9 @@ function getDateHeading(filter: DateFilter): string {
 }
 
 export default function Home() {
-  const [dateFilter, setDateFilter] = useState<DateFilter>({ kind: 'preset', when: 'today' })
-  const [ageFilter, setAgeFilter] = useState<AgeFilter>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const dateFilter = readHomeDateFilter(searchParams, todayIsoDate())
+  const ageFilter = readAgeFilter(searchParams)
 
   const { data: movies, loading: moviesLoading, error: moviesError } = useMovies()
   const {
@@ -33,21 +37,23 @@ export default function Home() {
     age: ageFilter ?? undefined,
   })
 
-  const featuredMovie = movies?.find((movie) => movie.landscape_image_url) ?? movies?.[0] ?? null
+  const moviesWithImage = (movies ?? []).filter((movie) => movie.landscape_image_url)
+  const heroMovies = (moviesWithImage.length > 0 ? moviesWithImage : (movies ?? [])).slice(0, HERO_MOVIE_COUNT)
 
   return (
     <div className="full-bleed">
       {moviesLoading && <HeroSectionSkeleton />}
-      {!moviesLoading && featuredMovie && <HeroSection movie={featuredMovie} />}
+      {!moviesLoading && heroMovies.length > 0 && <HeroSection movies={heroMovies} />}
 
       <FilterStrip
         dateFilter={dateFilter}
         ageFilter={ageFilter}
-        onDateFilterChange={setDateFilter}
-        onAgeFilterChange={setAgeFilter}
+        onDateFilterChange={(filter) => setSearchParams((previous) => setDateFilter(previous, filter))}
+        onAgeFilterChange={(age) => setSearchParams((previous) => setAgeFilter(previous, age))}
       />
 
       <RepertoireSection
+        key={`${dateFilter.kind === 'preset' ? dateFilter.when : dateFilter.date}:${ageFilter ?? 'all'}`}
         heading={`Repertoar — ${getDateHeading(dateFilter)}`}
         movies={movies ?? []}
         screenings={screenings ?? []}

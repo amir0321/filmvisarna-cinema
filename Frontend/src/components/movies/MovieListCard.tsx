@@ -21,6 +21,7 @@ export default function MovieListCard({ movie, screenings, dayLabel }: MovieList
     <article className="movie-list-card">
       <Poster
         src={movie.poster_url}
+        fallbackSrc={movie.landscape_image_url}
         alt=""
         title={movie.title}
         hoverZoom
