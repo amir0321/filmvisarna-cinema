@@ -60,6 +60,17 @@ export function toCinemaIsoDate(isoDateTime: string): string {
   return isoDateFormatter.format(new Date(isoDateTime))
 }
 
+const offsetFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: CINEMA_TIME_ZONE,
+  timeZoneName: 'longOffset',
+})
+
+export function toCinemaDateTime(isoDate: string, time: string): string {
+  const parts = offsetFormatter.formatToParts(new Date(`${isoDate}T${time}:00Z`))
+  const offset = parts.find((part) => part.type === 'timeZoneName')?.value.replace('GMT', '') || '+00:00'
+  return `${isoDate}T${time}:00${offset}`
+}
+
 export function addDaysToIsoDate(isoDate: string, days: number): string {
   const date = parseIsoDate(isoDate)
   date.setUTCDate(date.getUTCDate() + days)
