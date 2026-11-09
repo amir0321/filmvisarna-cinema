@@ -3,10 +3,22 @@ import apiClient from '../../api/client'
 import type { CinemaSummary, Movie, Screening } from '../../types'
 import { Modal } from '../Modal'
 import { InlineFeedback } from '../Toast'
-import { addDaysToIsoDate, formatTime, toCinemaDateTime, toCinemaIsoDate, todayIsoDate } from '../../utils/date'
-import { formatDuration } from '../../utils/movie'
+import {
+  addDaysToIsoDate,
+  capitalize,
+  formatShowtimeDayLabel,
+  formatTime,
+  toCinemaDateTime,
+  toCinemaIsoDate,
+  todayIsoDate,
+} from '../../utils/date'
+import { formatAgeRating, formatDuration } from '../../utils/movie'
 
-// Mount only while open, so the form starts fresh each time
+// Same as SCREENING_BUFFER_MINUTES in the backend
+const CLEANING_MINUTES = 20
+const DAYS_AHEAD = 30
+
+// Mount only while open so the form resets
 interface ScreeningFormModalProps {
   // null = create a new screening
   screening: Screening | null
@@ -17,28 +29,39 @@ interface ScreeningFormModalProps {
 }
 
 interface FormValues {
-  movieId: string
-  cinemaId: string
+  movieId: number | null
+  cinemaId: number | null
   date: string
   time: string
 }
 
 function getInitialValues(screening: Screening | null): FormValues {
   if (!screening) {
-    return { movieId: '', cinemaId: '', date: addDaysToIsoDate(todayIsoDate(), 1), time: '18:00' }
+    return { movieId: null, cinemaId: null, date: todayIsoDate(), time: '18:00' }
   }
   return {
-    movieId: String(screening.movieId),
-    cinemaId: String(screening.cinemaId),
+    movieId: screening.movieId,
+    cinemaId: screening.cinemaId,
     date: toCinemaIsoDate(screening.startsAt),
     time: formatTime(screening.startsAt),
   }
+}
+
+function getDateOptions(selectedDate: string): string[] {
+  const today = todayIsoDate()
+  const dates = Array.from({ length: DAYS_AHEAD }, (_, index) => addDaysToIsoDate(today, index))
+  return dates.includes(selectedDate) ? dates : [selectedDate, ...dates]
 }
 
 function addMinutesToTime(time: string, minutes: number): string {
   const [hours, mins] = time.split(':').map(Number)
   const total = (hours * 60 + mins + minutes) % (24 * 60)
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+// "Stora Salongen" -> "Salong 1 — Stora"
+function getCinemaTitle(cinema: CinemaSummary): string {
+  return `Salong ${cinema.id} — ${cinema.name.replace(/\s*salongen$/i, '')}`
 }
 
 export default function ScreeningFormModal({
@@ -53,22 +76,24 @@ export default function ScreeningFormModal({
   const [isSaving, setIsSaving] = useState(false)
 
   const isEditing = screening !== null
-  // The backend doesn't allow moving a screening that already has bookings
+  // Booked screenings can't be moved
   const isLocked = isEditing && (screening.bookedSeats ?? 0) > 0
-  const selectedMovie = movies.find((movie) => String(movie.id) === values.movieId)
+  const selectedMovie = movies.find((movie) => movie.id === values.movieId)
+  const isComplete = values.movieId !== null && values.cinemaId !== null && values.time !== ''
 
-  function update(field: keyof FormValues, value: string) {
+  function update<K extends keyof FormValues>(field: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!isComplete) return
     setError(null)
     setIsSaving(true)
 
     const body = {
-      movieId: Number(values.movieId),
-      cinemaId: Number(values.cinemaId),
+      movieId: values.movieId,
+      cinemaId: values.cinemaId,
       startsAt: toCinemaDateTime(values.date, values.time),
     }
 
@@ -88,12 +113,7 @@ export default function ScreeningFormModal({
   }
 
   return (
-    <Modal
-      isOpen
-      onClose={onClose}
-      title={isEditing ? 'Redigera visning' : 'Schemalägg ny visning'}
-      size="md"
-    >
+    <Modal isOpen onClose={onClose} title={isEditing ? 'Redigera visning' : 'Schemalägg ny visning'} size="md">
       <form className="screening-form" onSubmit={handleSubmit}>
         <Modal.Body>
           {error && <InlineFeedback variant="danger" message={error} className="mb-3" />}
@@ -105,75 +125,91 @@ export default function ScreeningFormModal({
             />
           )}
 
-          <div className="mb-3">
-            <label htmlFor="screening-movie" className="form-label">
-              Film
-            </label>
-            <select
-              id="screening-movie"
-              className="form-select"
-              required
-              value={values.movieId}
-              onChange={(event) => update('movieId', event.target.value)}
-            >
-              <option value="" disabled>
-                Välj film
-              </option>
-              {movies.map((movie) => (
-                <option key={movie.id} value={movie.id}>
-                  {movie.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          <fieldset className="screening-form__group">
+            <legend className="screening-form__label">Välj film</legend>
+            <div className="screening-form__movies">
+              {movies.map((movie) => {
+                const isSelected = movie.id === values.movieId
+                return (
+                  <label key={movie.id} className={`screening-option${isSelected ? ' is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="screening-movie"
+                      className="visually-hidden"
+                      checked={isSelected}
+                      onChange={() => update('movieId', movie.id)}
+                    />
+                    {movie.poster_url ? (
+                      <img src={movie.poster_url} alt="" className="screening-option__poster" loading="lazy" />
+                    ) : (
+                      <span className="screening-option__poster" aria-hidden="true"></span>
+                    )}
+                    <span className="screening-option__text">
+                      <span className="screening-option__title">{movie.title}</span>
+                      <span className="screening-option__meta">
+                        {formatDuration(movie.duration_minutes)} · {formatAgeRating(movie.age_rating)}
+                      </span>
+                    </span>
+                    {isSelected && <i className="bi bi-check-lg screening-option__check" aria-hidden="true"></i>}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
 
-          <div className="mb-3">
-            <label htmlFor="screening-cinema" className="form-label">
-              Salong
-            </label>
-            <select
-              id="screening-cinema"
-              className="form-select"
-              required
-              disabled={isLocked}
-              value={values.cinemaId}
-              onChange={(event) => update('cinemaId', event.target.value)}
-            >
-              <option value="" disabled>
-                Välj salong
-              </option>
-              {cinemas.map((cinema) => (
-                <option key={cinema.id} value={cinema.id}>
-                  {cinema.name} ({cinema.total_seats} platser)
-                </option>
-              ))}
-            </select>
-          </div>
+          <fieldset className="screening-form__group" disabled={isLocked}>
+            <legend className="screening-form__label">Välj salong</legend>
+            <div className="screening-form__cinemas">
+              {cinemas.map((cinema) => {
+                const isSelected = cinema.id === values.cinemaId
+                return (
+                  <label key={cinema.id} className={`screening-option${isSelected ? ' is-selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="screening-cinema"
+                      className="visually-hidden"
+                      checked={isSelected}
+                      onChange={() => update('cinemaId', cinema.id)}
+                    />
+                    <span className="screening-option__text">
+                      <span className="screening-option__title">{getCinemaTitle(cinema)}</span>
+                      <span className="screening-option__meta">
+                        {cinema.total_seats} platser{cinema.format ? `, ${cinema.format}` : ''}
+                      </span>
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
 
           <div className="row g-3">
-            <div className="col-sm-6">
-              <label htmlFor="screening-date" className="form-label">
+            <div className="col-6">
+              <label htmlFor="screening-date" className="screening-form__label">
                 Datum
               </label>
-              <input
+              <select
                 id="screening-date"
-                type="date"
-                className="form-control"
-                required
+                className="form-select screening-form__input"
                 disabled={isLocked}
-                min={todayIsoDate()}
                 value={values.date}
                 onChange={(event) => update('date', event.target.value)}
-              />
+              >
+                {getDateOptions(values.date).map((date) => (
+                  <option key={date} value={date}>
+                    {capitalize(formatShowtimeDayLabel(date))}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="col-sm-6">
-              <label htmlFor="screening-time" className="form-label">
+            <div className="col-6">
+              <label htmlFor="screening-time" className="screening-form__label">
                 Starttid
               </label>
               <input
                 id="screening-time"
                 type="time"
-                className="form-control"
+                className="form-control screening-form__input screening-form__time"
                 required
                 disabled={isLocked}
                 step={300}
@@ -185,20 +221,27 @@ export default function ScreeningFormModal({
 
           {selectedMovie && values.time && (
             <p className="screening-form__summary">
-              <i className="bi bi-clock me-2" aria-hidden="true"></i>
-              Slutar {addMinutesToTime(values.time, selectedMovie.duration_minutes)} · Speltid{' '}
-              {formatDuration(selectedMovie.duration_minutes)}
+              <i className="bi bi-clock" aria-hidden="true"></i>
+              Beräknad sluttid:{' '}
+              <strong>
+                {addMinutesToTime(values.time, selectedMovie.duration_minutes + CLEANING_MINUTES)}
+              </strong>
+              <small>(inkl. {CLEANING_MINUTES} min städning)</small>
             </p>
           )}
         </Modal.Body>
 
         <Modal.Footer>
-          <button type="button" className="btn btn-outline-light" onClick={onClose} disabled={isSaving}>
+          <button type="button" className="btn screening-form__cancel" onClick={onClose} disabled={isSaving}>
             Avbryt
           </button>
-          <button type="submit" className="btn btn-danger fw-semibold" disabled={isSaving}>
-            {isSaving && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>}
-            {isEditing ? 'Spara ändringar' : 'Schemalägg visning'}
+          <button type="submit" className="btn btn-danger screening-form__submit" disabled={isSaving || !isComplete}>
+            {isSaving ? (
+              <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            ) : (
+              <i className={`bi ${isEditing ? 'bi-check-lg' : 'bi-plus-lg'} me-2`} aria-hidden="true"></i>
+            )}
+            {isEditing ? 'Spara ändringar' : 'Publicera visning'}
           </button>
         </Modal.Footer>
       </form>

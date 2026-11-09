@@ -42,11 +42,12 @@ function isInPeriod(screening: Screening, period: Period, today: string): boolea
 export default function AdminScreenings() {
   const today = todayIsoDate()
   const [period, setPeriod] = useState<Period>('upcoming')
-  // A picked date replaces the period chips
+  // Overrides the period chips
   const [pickedDate, setPickedDate] = useState<string | null>(null)
   const [cinemaId, setCinemaId] = useState('all')
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const [form, setForm] = useState<{ screening: Screening | null } | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingScreening, setEditingScreening] = useState<Screening | null>(null)
   const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string } | null>(null)
   const datePickerButtonRef = useRef<HTMLButtonElement>(null)
   const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), [])
@@ -74,8 +75,13 @@ export default function AdminScreenings() {
     setPage(1)
   }
 
+  function openForm(screening: Screening | null) {
+    setEditingScreening(screening)
+    setIsFormOpen(true)
+  }
+
   async function handleSaved(message: string) {
-    setForm(null)
+    setIsFormOpen(false)
     setFeedback({ variant: 'success', message })
     await refetch()
   }
@@ -164,7 +170,7 @@ export default function AdminScreenings() {
           </select>
         </div>
 
-        <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => setForm({ screening: null })}>
+        <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => openForm(null)}>
           <i className="bi bi-plus-lg me-2" aria-hidden="true"></i>
           Schemalägg ny visning
         </button>
@@ -190,7 +196,7 @@ export default function AdminScreenings() {
           title="Inga visningar"
           description="Det finns inga visningar för vald period och salong."
           actionLabel="Schemalägg ny visning"
-          onAction={() => setForm({ screening: null })}
+          onAction={() => openForm(null)}
         />
       )}
 
@@ -202,19 +208,19 @@ export default function AdminScreenings() {
           <ScreeningsTable
             screenings={pageItems}
             cinemas={cinemas ?? []}
-            onEdit={(screening) => setForm({ screening })}
+            onEdit={openForm}
             onCancel={handleCancel}
           />
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-3" />
         </>
       )}
 
-      {form && (
+      {isFormOpen && (
         <ScreeningFormModal
-          screening={form.screening}
+          screening={editingScreening}
           movies={movies ?? []}
           cinemas={cinemas ?? []}
-          onClose={() => setForm(null)}
+          onClose={() => setIsFormOpen(false)}
           onSaved={handleSaved}
         />
       )}
