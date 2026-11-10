@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
-import { useScreenings } from '../hooks/useScreenings'
-import { getAvailableCalendarDate, getScreeningDates } from '../utils/screeningDates'
+import type { ScreeningProgramme } from '../hooks/useScreeningProgramme'
+import { getAvailableCalendarDate } from '../utils/screeningDates'
 import {
   addDaysToIsoDate,
   addMonthsToIsoDate,
@@ -9,11 +9,11 @@ import {
   formatDateLong,
   formatMonthYear,
   startOfMonthIsoDate,
-  todayIsoDate,
   weekdayIndex,
 } from '../utils/date'
 
 interface DatePickerPopoverProps {
+  programme: ScreeningProgramme
   id: string
   anchorRef: RefObject<HTMLElement | null>
   selectedDate: string | null
@@ -45,6 +45,7 @@ function getWeeks(monthStart: string): (string | null)[][] {
 }
 
 export default function DatePickerPopover({
+  programme,
   id,
   anchorRef,
   selectedDate,
@@ -55,11 +56,8 @@ export default function DatePickerPopover({
 }: DatePickerPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
   const shouldFocusDay = useRef(true)
-  const today = todayIsoDate()
+  const { today, dates: availableDates, availableDates: availableDateSet, loading, error, refetch } = programme
   const [focusedDate, setFocusedDate] = useState(() => clampDate(selectedDate ?? today, minDate, maxDate))
-  const { data: screenings, loading, error, refetch } = useScreenings()
-  const availableDates = getScreeningDates(screenings ?? [], minDate, maxDate)
-  const availableDateSet = new Set(availableDates)
   const activeDate = getAvailableCalendarDate(availableDates, focusedDate) ?? availableDates.at(-1)
 
   const monthStart = startOfMonthIsoDate(activeDate ?? focusedDate)

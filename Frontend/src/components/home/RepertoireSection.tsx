@@ -9,6 +9,7 @@ interface RepertoireSectionProps {
   screenings: Screening[]
   loading: boolean
   error: string | null
+  onRetry?: () => void
 }
 
 interface MovieWithScreenings {
@@ -44,6 +45,7 @@ export default function RepertoireSection({
   screenings,
   loading,
   error,
+  onRetry,
 }: RepertoireSectionProps) {
   const groups = groupScreeningsByMovie(movies, screenings)
   const { page, totalPages, pageItems, setPage } = usePagination(groups, 8)
@@ -65,6 +67,7 @@ export default function RepertoireSection({
       {error && (
         <div className="alert alert-danger" role="alert">
           Det gick inte att hämta repertoaren. Försök igen om en stund.
+          {onRetry && <button type="button" className="btn btn-outline-light btn-sm ms-2" onClick={onRetry}>Försök igen</button>}
         </div>
       )}
 

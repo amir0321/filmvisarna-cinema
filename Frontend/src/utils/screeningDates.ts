@@ -1,13 +1,20 @@
 import type { Screening } from '../types/screening'
 import { toCinemaIsoDate } from './date.ts'
 
+export function getRemainingScreenings(screenings: readonly Screening[], minDate: string, maxDate: string, now: number): Screening[] {
+  return screenings.filter(screening => {
+    const startsAt = Date.parse(screening.startsAt)
+    if (!Number.isFinite(startsAt) || startsAt <= now) return false
+    const date = toCinemaIsoDate(screening.startsAt)
+    return date >= minDate && date <= maxDate
+  })
+}
+
 export function getScreeningDates(screenings: readonly Screening[], minDate: string, maxDate: string, now = Date.now()): string[] {
   const dates = new Set<string>()
-  for (const screening of screenings) {
-    const startsAt = Date.parse(screening.startsAt)
-    if (!Number.isFinite(startsAt) || startsAt <= now) continue
+  for (const screening of getRemainingScreenings(screenings, minDate, maxDate, now)) {
     const date = toCinemaIsoDate(screening.startsAt)
-    if (date >= minDate && date <= maxDate) dates.add(date)
+    dates.add(date)
   }
   return [...dates].sort()
 }
