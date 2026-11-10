@@ -11,7 +11,7 @@ import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate, todayIsoDate } f
 import { getAgeLimit } from '../utils/movie'
 import Pagination from '../components/Pagination'
 import { usePagination } from '../hooks/usePagination'
-import { readAgeFilter, readDate, setAgeFilter } from '../utils/movieFilters'
+import { MAX_DATE_FILTER_DAYS_AHEAD, readAgeFilter, readDate, setAgeFilter } from '../utils/movieFilters'
 
 type MoviesTab = 'now' | 'upcoming'
 
@@ -54,7 +54,7 @@ export default function Movies() {
   const [sort, setSort] = useState<MovieSort>('popular')
   const [genre, setGenre] = useState('all')
   const age = String(readAgeFilter(searchParams) ?? 'all')
-  const date = readDate(searchParams, today, DAYS_SHOWN - 1) ?? today
+  const date = readDate(searchParams, today, MAX_DATE_FILTER_DAYS_AHEAD) ?? today
 
   function setAge(value: string) {
     setSearchParams((previous) => setAgeFilter(previous, value === 'all' ? null : Number(value)))

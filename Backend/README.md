@@ -140,7 +140,7 @@ AUTH_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna
 
 The tests create and remove a randomly named schema in that database. They never fall back to `DATABASE_URL` or `.env` for the test connection. Without `AUTH_TEST_DATABASE_URL`, the integration suite is explicitly skipped. GitHub CI supplies a separate PostgreSQL service and runs `npm test` for the complete backend suite.
 
-Coverage includes the additive migration and existing account data, registration and login, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
+Coverage includes the additive migration and existing account data, registration and login, mandatory JWT expiration, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Session JWTs without a valid future `exp` are rejected with 401; users with older tokens lacking expiration must log in again. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
 
 ## HTTP Status Codes Overview
 

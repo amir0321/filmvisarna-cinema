@@ -1,5 +1,8 @@
-import type { Ref } from 'react'
+import { useCallback, useRef, useState, type Ref } from 'react'
 import { FilterPillGroup, type FilterOption } from '../Pills'
+import DatePickerPopover from '../DatePickerPopover'
+import { addDaysToIsoDate, formatDateLong, formatDateShort, todayIsoDate } from '../../utils/date'
+import { MAX_DATE_FILTER_DAYS_AHEAD } from '../../utils/movieFilters'
 
 export type MovieSort = 'popular' | 'title' | 'newest' | 'rating'
 
@@ -49,6 +52,12 @@ export default function MovieFilters({
   dateOptions,
   onDateChange,
 }: MovieFiltersProps) {
+  const datePickerButtonRef = useRef<HTMLButtonElement>(null)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), [])
+  const today = todayIsoDate()
+  const customDate = date && !dateOptions.some(option => option.value === date) ? date : null
+
   return (
     <div className="movie-filters">
       <div className="d-flex gap-2 mb-3">
@@ -113,6 +122,31 @@ export default function MovieFilters({
             Datum:
           </span>
           <FilterPillGroup ariaLabel="Datum" options={dateOptions} value={date} onChange={onDateChange} />
+          <button
+            ref={datePickerButtonRef}
+            type="button"
+            className={`filter-pill${customDate ? ' filter-pill--active' : ''}`}
+            aria-pressed={customDate !== null}
+            aria-haspopup="dialog"
+            aria-expanded={isDatePickerOpen}
+            aria-controls={isDatePickerOpen ? 'movies-date-picker-popover' : undefined}
+            aria-label={customDate ? `Valt datum: ${formatDateLong(customDate)}. Byt datum` : 'Välj datum'}
+            onClick={() => setIsDatePickerOpen(isOpen => !isOpen)}
+          >
+            <i className="bi bi-calendar3" aria-hidden="true" />
+            {customDate && <span className="ms-2">{formatDateShort(customDate)}</span>}
+          </button>
+          {isDatePickerOpen && (
+            <DatePickerPopover
+              id="movies-date-picker-popover"
+              anchorRef={datePickerButtonRef}
+              selectedDate={date}
+              minDate={today}
+              maxDate={addDaysToIsoDate(today, MAX_DATE_FILTER_DAYS_AHEAD)}
+              onSelect={onDateChange}
+              onClose={closeDatePicker}
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { cancelMyBooking, getMyBookings } from '../api/bookings'
-import { getAuthToken } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { BookingsContext } from '../hooks/useBookings'
 import type { Booking } from '../types/booking'
@@ -13,9 +12,8 @@ interface BookingSnapshot {
 }
 
 export function BookingsProvider({ children }: { children: ReactNode }) {
-  const { user, loading: authLoading } = useAuth()
+  const { user, token, loading: authLoading } = useAuth()
   const userId = user?.id
-  const token = getAuthToken()
   const [snapshot, setSnapshot] = useState<BookingSnapshot | null>(null)
   const [revision, setRevision] = useState(0)
   const [currentTime, setCurrentTime] = useState(() => Date.now())
