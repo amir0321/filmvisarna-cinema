@@ -2,10 +2,12 @@ import { useSearchParams } from 'react-router'
 import FilterStrip from '../components/home/FilterStrip'
 import HeroSection, { HeroSectionSkeleton } from '../components/home/HeroSection'
 import RepertoireSection from '../components/home/RepertoireSection'
-import { useMovies, useScreenings } from '../hooks'
+import { useMovies } from '../hooks'
+import { useScreeningProgramme } from '../hooks/useScreeningProgramme'
 import type { ScreeningWhen } from '../types'
-import { capitalize, formatDateLong, todayIsoDate } from '../utils/date'
-import { readAgeFilter, readHomeDateFilter, setAgeFilter, setDateFilter, type DateFilter } from '../utils/movieFilters'
+import { capitalize, formatDateLong, toCinemaIsoDate } from '../utils/date'
+import { getAgeLimit } from '../utils/movie'
+import { getDateFilterRange, readAgeFilter, readHomeDateFilter, setAgeFilter, setDateFilter, type DateFilter } from '../utils/movieFilters'
 
 const HERO_MOVIE_COUNT = 5
 
@@ -23,18 +25,15 @@ function getDateHeading(filter: DateFilter): string {
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const dateFilter = readHomeDateFilter(searchParams, todayIsoDate())
+  const programme = useScreeningProgramme()
+  const dateFilter = readHomeDateFilter(searchParams, programme.today, programme.dates)
   const ageFilter = readAgeFilter(searchParams)
 
-  const { data: movies, loading: moviesLoading, error: moviesError } = useMovies()
-  const {
-    data: screenings,
-    loading: screeningsLoading,
-    error: screeningsError,
-  } = useScreenings({
-    when: dateFilter.kind === 'preset' ? dateFilter.when : undefined,
-    date: dateFilter.kind === 'date' ? dateFilter.date : undefined,
-    age: ageFilter ?? undefined,
+  const { data: movies, loading: moviesLoading, error: moviesError, refetch: refetchMovies } = useMovies()
+  const { from, to } = getDateFilterRange(dateFilter, programme.today)
+  const screenings = programme.screenings.filter(screening => {
+    const date = toCinemaIsoDate(screening.startsAt)
+    return date >= from && date <= to && (ageFilter === null || (screening.ageLimit ?? getAgeLimit(screening.ageRating ?? null)) <= ageFilter)
   })
 
   const moviesWithImage = (movies ?? []).filter((movie) => movie.landscape_image_url)
@@ -46,6 +45,7 @@ export default function Home() {
       {!moviesLoading && heroMovies.length > 0 && <HeroSection movies={heroMovies} />}
 
       <FilterStrip
+        programme={programme}
         dateFilter={dateFilter}
         ageFilter={ageFilter}
         onDateFilterChange={(filter) => setSearchParams((previous) => setDateFilter(previous, filter))}
@@ -56,9 +56,10 @@ export default function Home() {
         key={`${dateFilter.kind === 'preset' ? dateFilter.when : dateFilter.date}:${ageFilter ?? 'all'}`}
         heading={`Repertoar — ${getDateHeading(dateFilter)}`}
         movies={movies ?? []}
-        screenings={screenings ?? []}
-        loading={moviesLoading || screeningsLoading}
-        error={moviesError ?? screeningsError}
+        screenings={screenings}
+        loading={moviesLoading || programme.loading}
+        error={moviesError ?? programme.error}
+        onRetry={() => { void refetchMovies(); void programme.refetch() }}
       />
     </div>
   )

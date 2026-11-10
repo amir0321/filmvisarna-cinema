@@ -19,6 +19,9 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
+# Local agent instructions and skills
+.agents/
+
 # Logs
 *.log
 npm-debug.log*

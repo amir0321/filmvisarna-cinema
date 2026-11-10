@@ -6,13 +6,18 @@
 
 ### 6.1 Bokningsflöde (Från start till bekräftelse)
 
+**Gällande säkerhetskrav:** [booking-security.md](booking-security.md) och [bokningssidans implementation](pages/seat-selection.md#bokningsskydd-och-gästbekräftelse--gällande-implementation) har företräde framför prototypflödet nedan. En verifierad medlem kan slutföra bokningen direkt. En gäst skickar en separat förfrågan, får en kortlivad mejllänk och måste uttryckligen bekräfta. Ingen gästförfrågan tar platser före bekräftelsen. Alla bokningar omfattas av backendens gemensamma kvoter och idempotensskydd.
+
 ```mermaid
 flowchart LR
   A["Startsida ('home') / Filmer ('filmer')"] -->|"Klick på filmkort / 'Boka Biljett' / 'Köp biljetter'"| B["Filmdetaljer ('detail')"]
   A -->|"Klick direkt på visnings-pill (HomeScreen)"| C["Stolsväljaren ('seats')"]
   B -->|"Klick på 'Välj platser'"| C
   C -->|"1. Välj antal biljetter (+/-)"| D["2. Välj platser (auto-val + manuellt) + E-post"]
-  D -->|"Klick på 'Slutför bokning'"| E["Bokningsbekräftelse ('confirm')"]
+  D -->|"Verifierad medlem: Slutför bokning"| E["Bokningsbekräftelse från API"]
+  D -->|"Gäst: Skicka bekräftelsemejl"| F["Separat gästförfrågan utan reserverade platser"]
+  F -->|"Öppna kortlivad mejllänk"| G["Granska val och klicka Bekräfta bokning"]
+  G -->|"API kontrollerar ledighet och kvoter"| E
 ```
 
 1. **Ingång till bokning (`App.tsx`):**
@@ -26,9 +31,10 @@ flowchart LR
      - Platskartan (`2. Välj platser`) fälls ut och `useEffect` förväljer automatiskt sammanhängande lediga stolar (med start i mittenraderna `E`, `F`, `D` osv.).
    - Användaren kan klicka på stolar i matrisen för att avmarkera eller byta platser. Om färre platser än `totalTickets` är valda är CTA-knappen `disabled` med texten `Välj {diff} platser till` och e-postfältet döljs.
    - När `selectedSeats.length === totalTickets` visas inmatningsfältet `E-post för bokningsbekräftelse` och CTA-knappen blir aktiv med texten `Slutför bokning`.
-3. **Slutförande och bekräftelse (`App.tsx` -> `BookingConfirmScreen.tsx`):**
-   - Klick på `Slutför bokning` anropar `handleConfirmBooking()` i `App.tsx`, som genererar en unik bokningskod via `generateBookingRef()` (`FV-XXXXX`), sparar bokningen i `savedBookings` och byter skärm till `'confirm'`.
-   - På `BookingConfirmScreen` kan användaren kopiera bokningskoden (`Kopiera` -> `Kopierat`), skriva ut (`Skriv ut / Spara som PDF` -> `window.print()`), gå till avbokning (`Avboka biljett` -> `'bookings'`) eller återgå till startsidan (`Tillbaka till startsidan` -> `'home'`).
+3. **Slutförande och bekräftelse (`ScreeningDetail.tsx` / `ConfirmGuestBooking.tsx`):**
+   - Backend genererar bokningsreferensen och skapar biljetter atomärt först efter godkänd autentisering/verifiering, ledighetskontroll och kvoter. Klienten får inte generera en lyckad bokning lokalt.
+   - Gästförfrågningar är separata och obekräftade tills gästen uttryckligen godkänner bokningen via mejllänken. De ingår inte i adminbokningar eller statistik.
+   - Kvittot sparas från API-svaret och sidan navigerar till `/bekraftelse/:kod`, där kunden kan visa, kopiera och skriva ut bokningsreferensen. Avbokning följer befintligt API och dess tidsgräns.
 
 ### 6.2 Avbokningsflöde
 
@@ -41,6 +47,8 @@ flowchart LR
    - I modalen kan användaren välja `Behåll bokning` eller `Bekräfta avbokning`. *(Notera: I prototypen stänger båda knapparna endast modalen via `setShowCancelModal(false)` utan att mutera `savedBookings` — se sektion 10).*
 
 ### 6.3 Admin-flöden
+
+**Framtida missbrukshantering:** Följ [booking-security.md](booking-security.md#åtskillnad-och-framtida-adminarbete--krav-inte-implementerad-adminfunktion). Gästförfrågningar ska hållas utanför bekräftade bokningar och statistik. Framtida adminarbete ska stödja beteendebaserad flaggning, säker granskning, uttrycklig adminavbokning som frigör platser och skyddad loggning av åtgärder. Detta dokumenterar krav; ingen sådan adminfunktion byggs i den aktuella ändringen.
 
 1. **Åtkomst till Admin (`/admin`):**
    - Nåbar för inloggade administratörer (`user.role === 'admin'`) via länken `Admin` (`ADMIN`-badge) i `Navbar` eller `Admin Backoffice` i `MobileDrawer`.

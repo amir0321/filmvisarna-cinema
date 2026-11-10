@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState, type Ref } from 'react'
 import { FilterPillGroup, type FilterOption } from '../Pills'
 import DatePickerPopover from '../DatePickerPopover'
-import { addDaysToIsoDate, formatDateLong, formatDateShort, todayIsoDate } from '../../utils/date'
-import { MAX_DATE_FILTER_DAYS_AHEAD } from '../../utils/movieFilters'
+import { formatDateLong, formatDateShort } from '../../utils/date'
+import type { ScreeningProgramme } from '../../hooks/useScreeningProgramme'
 
 export type MovieSort = 'popular' | 'title' | 'newest' | 'rating'
 
@@ -22,6 +22,7 @@ const AGE_OPTIONS: FilterOption[] = [
 ]
 
 interface MovieFiltersProps {
+  programme: ScreeningProgramme
   inputRef?: Ref<HTMLInputElement>
   search: string
   onSearchChange: (search: string) => void
@@ -38,6 +39,7 @@ interface MovieFiltersProps {
 }
 
 export default function MovieFilters({
+  programme,
   inputRef,
   search,
   onSearchChange,
@@ -55,7 +57,6 @@ export default function MovieFilters({
   const datePickerButtonRef = useRef<HTMLButtonElement>(null)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), [])
-  const today = todayIsoDate()
   const customDate = date && !dateOptions.some(option => option.value === date) ? date : null
 
   return (
@@ -141,8 +142,9 @@ export default function MovieFilters({
               id="movies-date-picker-popover"
               anchorRef={datePickerButtonRef}
               selectedDate={date}
-              minDate={today}
-              maxDate={addDaysToIsoDate(today, MAX_DATE_FILTER_DAYS_AHEAD)}
+              minDate={programme.today}
+              maxDate={programme.maxDate}
+              programme={programme}
               onSelect={onDateChange}
               onClose={closeDatePicker}
             />

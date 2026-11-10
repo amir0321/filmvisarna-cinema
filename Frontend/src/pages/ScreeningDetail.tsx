@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import SeatMap from '../components/SeatMap'
 import type { SeatsResponse } from '../types/screeningSeat'
@@ -10,11 +10,13 @@ import { getScreeningSeats } from '../api/screeningSeats'
 import StepIndicator from '../components/StepIndicator'
 import { getMovieUrl } from '../utils/links'
 import { pickBestSeats } from '../utils/seats'
-import apiClient, { ApiError } from '../api/client'
+import { ApiError } from '../api/client'
+import { createBooking, requestGuestBooking } from '../api/bookings'
 import { getPriceGroups } from '../api/priceGroups'
 import { getKioskItems } from '../api/kiosk'
 import type { KioskItem } from '../types/kiosk'
-import { saveConfirmation } from '../utils/confirmationStorage'
+import { saveCreatedBooking } from '../utils/createdBooking'
+import { validateEmail } from '../utils/authValidation'
 import { useAuth, getUserDisplayName } from '../hooks/useAuth'
 import { useBookings } from '../hooks/useBookings'
 import { EmptyState } from '../components/EmptyState'
@@ -28,7 +30,12 @@ export default function ScreeningDetail() {
   const id = idParam ? Number(idParam) : NaN
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loading: authLoading, refreshUser } = useAuth()
+  const [pending, setPending] = useState(false)
+  const [guestMessage, setGuestMessage] = useState('')
+  const request = useRef<AbortController | null>(null)
+  const submission = useRef<{ payload: string; key: string } | null>(null)
+  useEffect(() => () => request.current?.abort(), [])
   const { refresh: refreshBookings } = useBookings()
   const [data, setData] = useState<SeatsResponse | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
@@ -204,9 +211,13 @@ export default function ScreeningDetail() {
   }
 
   async function handleConfirm() {
+    if (request.current || authLoading || (user && !user.isVerified)) return
     if (isSoldOut || ticketCount === 0 || ticketCount > ticketLimit ||
       selectedIds.length !== ticketCount || selectedIds.some(seatId => !data?.seats.some(seat => seat.id === seatId && seat.status === 'available'))) return
     setMessage(null)
+    setGuestMessage('')
+    const emailError = validateEmail(email)
+    if (emailError) { setMessage(emailError); return }
 
     const dbName = { adult: 'adult', senior: 'elder', child: 'child' } as const
     const perSeat = TICKET_TYPES.flatMap(t =>
@@ -216,44 +227,28 @@ export default function ScreeningDetail() {
     const items = kiosk
       .filter(i => (kioskQty[i.id] ?? 0) > 0)
       .map(i => ({ itemId: i.id, quantity: kioskQty[i.id] }))
+    const payload = { screeningId: id, guestName: name.trim(), email: email.trim(), tickets, items }
+    const fingerprint = JSON.stringify({ ...payload, userId: user?.id ?? null })
+    if (submission.current?.payload !== fingerprint) submission.current = { payload: fingerprint, key: crypto.randomUUID() }
+    const controller = new AbortController()
+    request.current = controller
+    setPending(true)
     try {
-      const created = await apiClient.post<{ bookingRef: string; cancelToken?: string }>('/bookings', {
-        screeningId: id,
-        guestName: name.trim(),
-        email: email.trim(),
-        tickets,
-        items,
-      })
-      if (user) refreshBookings()
-      if (screening) {
-        saveConfirmation({
-          bookingRef: created.bookingRef,
-          movieTitle: screening.movieTitle,
-          posterUrl: screening.posterUrl ?? null,
-          cinema: screening.cinema,
-          startsAt: screening.startsAt,
-          endsAt: screening.endsAt,
-          seats: selectedLabels.split(' · '),
-          tickets: TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => ({
-            label: t.label,
-            quantity: counts[t.type],
-            price: t.price,
-          })),
-          kiosk: kiosk
-            .filter(i => (kioskQty[i.id] ?? 0) > 0)
-            .map(i => ({ name: i.name, quantity: kioskQty[i.id], price: i.price })),
-          ticketTotal,
-          kioskTotal,
-          total: ticketTotal + kioskTotal,
-          email: email.trim(),
-          cancelToken: created.cancelToken,
-        })
-        navigate(`/bekraftelse/${created.bookingRef}`)
-      } else {
-        setReference(created.bookingRef)
+      if (!user) {
+        const response = await requestGuestBooking(payload, submission.current.key, controller.signal)
+        if (!controller.signal.aborted) setGuestMessage(response.message)
+        return
       }
+      const created = await createBooking(payload, submission.current.key, controller.signal)
+      if (controller.signal.aborted) return
+      refreshBookings()
+      saveCreatedBooking(created, screening?.posterUrl ?? null)
+      setReference(created.bookingRef)
+      navigate(`/bekraftelse/${created.bookingRef}`)
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
+      if (!controller.signal.aborted) setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
+    } finally {
+      if (!controller.signal.aborted) { request.current = null; setPending(false) }
     }
   }
 
@@ -293,7 +288,7 @@ export default function ScreeningDetail() {
         ? `Välj ${seatsLeft} ${seatsLeft === 1 ? 'plats' : 'platser'} till`
         : seatsLeft < 0
           ? 'Fler platser än biljetter'
-          : 'Slutför bokning'
+          : user ? 'Slutför bokning' : 'Skicka bekräftelsemejl'
 
   return (
     <section className="fv-booking">
@@ -476,6 +471,7 @@ export default function ScreeningDetail() {
                       type="email"
                       placeholder="din@epost.se"
                       value={email}
+                      readOnly={Boolean(user)}
                       onChange={e => setEmail(e.target.value)}
                     />
                   </label>
@@ -487,6 +483,17 @@ export default function ScreeningDetail() {
                   {message}
                 </p>
               )}
+              {!user && <p className="fv-notice">Platserna reserveras först när du har bekräftat bokningen via e-post. Länken gäller i högst 10 minuter.</p>}
+              {guestMessage && <p role="status" className="text-success">{guestMessage}</p>}
+              {user && !user.isVerified && <div role="status" className="fv-notice">
+                <p>Verifiera din e-postadress innan du bokar biljetter. Du kan skicka ett nytt verifieringsmejl via meddelandet överst på sidan.</p>
+                <button type="button" className="btn btn-outline-light btn-sm" disabled={pending}
+                  onClick={async () => {
+                    setPending(true)
+                    try { await refreshUser() } catch { setMessage('Kunde inte kontrollera verifieringen. Försök igen.') }
+                    finally { setPending(false) }
+                  }}>Jag har verifierat min e-post</button>
+              </div>}
               {reference && (
                 <p>
                   Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong>
@@ -503,9 +510,10 @@ export default function ScreeningDetail() {
                   email.trim() === '' ||
                   Object.keys(groupIds).length === 0 ||
                   reference !== null
+                  || pending || authLoading || Boolean(user && !user.isVerified)
                 }
               >
-                {ctaLabel}
+                {pending ? 'Vänta...' : ctaLabel}
               </button>
             </div>
           </aside>

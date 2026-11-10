@@ -12,7 +12,7 @@ export function getBookingUrl(screeningId: number): string {
 }
 
 export function isAuthPath(pathname: string): boolean {
-  return /^\/(login|logga-in|register|registrera|skapa-konto|reset-password|verify-email)(?:\/|$)/i.test(pathname)
+  return /^\/(login|logga-in|register|registrera|skapa-konto|reset-password|verify-email|bekrafta-gastbokning)(?:\/|$)/i.test(pathname)
 }
 
 // Validate decoded paths too: routers and servers may normalize encoded separators.

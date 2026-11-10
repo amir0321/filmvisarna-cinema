@@ -18,6 +18,7 @@ import { adminRouter } from "./routes/admin.js";
 import { contactRouter } from "./routes/contact.js";
 
 export const app = express();
+if (config.trustProxy.length) app.set('trust proxy', config.trustProxy);
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -52,6 +53,7 @@ app.use((_req, res) => {
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof HttpError) {
+    if (err.status === 429) res.setHeader('Retry-After', '900');
     res.status(err.status).json({ success: false, error: err.message });
     return;
   }

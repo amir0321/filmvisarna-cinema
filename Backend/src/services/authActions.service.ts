@@ -49,6 +49,7 @@ export function createAuthActionService(dependencies: {
   async function sendLink(email: string, purpose: AuthAction): Promise<boolean> {
     assertEmailConfigured();
     const normalizedEmail = email.trim().toLowerCase();
+    if (purpose === 'verify_email' && !await limit(`${purpose}:cooldown:${normalizedEmail}`, 1, 60)) return false;
     if (!await limit(`${purpose}:email:${normalizedEmail}`, 3)) return false;
     const token = randomBytes(32).toString('hex');
     const tokenHash = hashAuthToken(token);
