@@ -9,7 +9,6 @@ trigger: always_on
 - The backend (Express 5) lives in `Backend/`. Never edit it unless I ask.
 - UI text is Swedish. Code, comments and commit messages are English.
 - Work is tracked as board cards (FE-1 … FE-33). Implement one card at a time; scope = the card description.
-- Booking, guest and future admin work must follow `design/booking-security.md`. Guest requests and confirmed bookings are separate concepts; do not build future admin abuse-management UI unless explicitly requested.
 
 ## 2. Structure (`Frontend/src/`)
 - `api/` API client and request functions
@@ -58,7 +57,7 @@ trigger: always_on
 - **Buttons:** Primary (`#E50914` filled), Secondary (dark outline or `.glass`), Destructive (`#ff6b6b` outline; in admin tables/cards, clicking `"Ställ in"` / `"Ta bort"` swaps inline to `"Bekräfta"` + `"Avbryt"`), Green action (`"Markera betald"` -> `"✓ Betald"` badge), Tertiary (text link).
 - **Inline feedback:** Use inline button/label state feedback (`"Kopierat"`, `"Sparat!"`, `"Sparad!"`) as specified in `design/components.md` §3.9 instead of floating toast libraries.
 - **Pagination (`design/components.md` §3.13):** Reuse `usePagination` and `Pagination` after filtering/sorting. Page sizes: home repertoire 8 movies (2 × 4 on wide desktop), `/filmer` 10 movies (2 × 5), `/mina-bokningar` 5 cards per tab with independent page state, and `/admin/*` tables/mobile lists 10 rows/cards when integrated. Hide pagination for at most one page; clamp the page when lists shrink. Reset the home repertoire to page 1 on date or age filter changes; reset `/filmer` to page 1 on tab, search, filter or sort changes. Use the dark `$fv-*` tokens, 40×40px minimum buttons, native disabled states, `aria-current="page"` and a red focus ring. At `< 640px`, show previous/next with `Sida {page} av {totalPages}`; at `>= 640px`, show page buttons with ellipses above 7 pages.
-- **Persistent filters and programme availability:** Home stores explicit presets in `when=today|tomorrow|weekend`, calendar selections in `date=YYYY-MM-DD`, and age in `age=0|7|11|15`. `/filmer` stores explicit dates, including today, in `date=YYYY-MM-DD`. With no valid explicit date selection, choose the first day with remaining screenings within 60 days. Preserve valid explicit URL choices on reload/back/forward even when their programme becomes empty. Use shared `useScreeningProgramme` data for date chips, calendar and results. Disable shortcuts without remaining screenings (including today after the last start and a weekend with no remaining Saturday/Sunday screenings). Re-evaluate at screening start, focus/visibility and clock/date changes. Preserve unrelated URL parameters; do not use local storage for these filters.
+- **Persistent filters:** Home stores presets in `when=today|tomorrow|weekend` (today is omitted), calendar selections in `date=YYYY-MM-DD`, and age in `age=0|7|11|15`. `/filmer` persists its selected date and age too. Parse and validate URL values, preserve unrelated parameters, and support reload/back/forward. Do not use local storage for these filters.
 - **Movie images:** Reuse `Poster` with an optional alternate source. Try the landscape image if a poster fails, then render the existing title fallback. Hero backdrops try poster artwork if the landscape image fails.
 - **Chips & badges:** Standard filter chips (`.chip-active` `#E50914`, `.chip-inactive` `#161F30`), genre chips, age chips, and screening time pills on movie cards. Keep the low-seat warning threshold in one shared constant.
 - **Hero carousel & trailer flow (`design/pages/home.md` §5.1, `design/pages/movie-detail.md` §5.3):**
@@ -88,10 +87,7 @@ If something is missing, say so and propose a UI fallback instead of inventing i
 - Error shape: `{ success: false, error: string, details?: string[] }`. Show `error`; map `details` to form fields.
 - Statuses: 400 validation, 401 not logged in, 403 not admin, 404 not found, 409 conflict.
 - Password 8–72 characters. 409 on register means the email already exists.
-- A booking has 1–10 tickets, no duplicate seats. Members must have server-verified email. Guests use `/bookings/guest/request`, `/guest/preview` and `/guest/confirm`; direct guest `POST /bookings` is forbidden. Requests reserve no seats and must be explicitly confirmed through a short-lived email link.
-- Booking creation and guest-request submission use a stable `Idempotency-Key` UUID per unchanged payload. Disable duplicate submissions, retain the key on retries and use server-created receipt data. Handle 403 verification requirements, 409 seat/quota/idempotency conflicts, 429 rate limits and 503 mail outages without claiming success.
-- Shared guest/member quotas and independent IP/global limits are enforced in the API. Never rely on browser state, local storage, hidden controls or a client-supplied role/email to enforce them. Keep guest tokens in component memory, remove URL fragments and never log token values.
-- Future admin features must keep guest requests out of confirmed-booking lists, occupancy and revenue. Abuse flagging, staff cancellation/releasing seats and protected audit logs are required when that later admin work is authorized; they are not implemented by the current public-booking change.
+- A booking has 1–10 tickets, no duplicate seats, guests must give an email. 409 = seat already taken, 400 = sold-out kiosk item.
 - Seat map returns only `available` / `booked`. Cinema rows and seats per row come dynamically from the backend.
 - `GET /screenings`: `when` and `date` cannot be sent together. Age filter uses `age`. Genre and text search are filtered client-side.
 - Cancellation is not allowed less than 2 hours before start. The backend decides; the UI only shows a hint.
