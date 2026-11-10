@@ -1,8 +1,13 @@
 import { createContext, use } from 'react'
-import type { AuthResponse, User } from '../types/user'
+import type { AuthResponse, AuthRole, RoleLabel, User } from '../types/user'
 
 export interface AuthContextValue {
   user: User | null
+  token: string | null
+  role: AuthRole
+  roleLabel: RoleLabel
+  isAuthenticated: boolean
+  isAdmin: boolean
   loading: boolean
   verificationDeliveryFailed: boolean
   setSession: (response: AuthResponse) => void

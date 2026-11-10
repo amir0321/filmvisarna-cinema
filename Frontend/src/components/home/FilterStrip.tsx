@@ -8,6 +8,7 @@ import {
 } from "../../utils/date";
 import DatePickerPopover from "../DatePickerPopover";
 import type { AgeFilter, DateFilter } from '../../utils/movieFilters';
+import { MAX_DATE_FILTER_DAYS_AHEAD } from '../../utils/movieFilters';
 
 export type { AgeFilter, DateFilter } from '../../utils/movieFilters';
 
@@ -31,8 +32,6 @@ const AGE_OPTIONS: { value: AgeFilter; label: string }[] = [
   { value: 11, label: "11 år" },
   { value: 15, label: "15 år" },
 ];
-
-const MAX_DAYS_AHEAD = 60;
 
 function pillClassName(isActive: boolean): string {
   return `filter-pill${isActive ? " filter-pill--active" : ""}`;
@@ -108,7 +107,7 @@ export default function FilterStrip({
               anchorRef={datePickerButtonRef}
               selectedDate={customDate}
               minDate={today}
-              maxDate={addDaysToIsoDate(today, MAX_DAYS_AHEAD)}
+              maxDate={addDaysToIsoDate(today, MAX_DATE_FILTER_DAYS_AHEAD)}
               onSelect={(date) => onDateFilterChange({ kind: "date", date })}
               onClose={closeDatePicker}
             />

@@ -160,6 +160,24 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await request('/register', { email: 'other@example.test', password: 'å'.repeat(37) })).status, 400);
   });
 
+  test('sessions require a valid future JWT expiration even when the signature is correct', async () => {
+    const registered = await register();
+    const now = Math.floor(Date.now() / 1000);
+    for (const claims of [{}, { exp: now - 60 }, { exp: now }, { exp: 0 }, { exp: -1 },
+      { exp: null }, { exp: 'tomorrow' }, { exp: 1e308 }]) {
+      // Sign raw JSON so invalid claim types reach verification rather than signing validation.
+      const payload = Buffer.from(JSON.stringify({ sub: String(registered.user.id), version: 0, ...claims }));
+      const token = jwt.sign(payload, process.env.JWT_SECRET!, { algorithm: 'HS256' });
+      const result = await request('/me', undefined, token);
+      assert.equal(result.status, 401, JSON.stringify(claims));
+      assert.equal(result.body.error, 'Ogiltig eller utgången token.');
+    }
+    assert.equal((await request('/me', undefined, registered.token)).status, 200);
+    const loggedIn = await request('/login', { email: 'anna@example.test', password });
+    assert.equal(loggedIn.status, 200);
+    assert.equal((await request('/me', undefined, loggedIn.body.token)).status, 200);
+  });
+
   test('stores only token hashes and verifies an email exactly once', async () => {
     await register();
     const token = tokenFor('verify_email');
@@ -272,7 +290,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
 
   test('password change revokes the old session and outstanding reset links', async () => {
     const registered = await register();
-    const legacySession = jwt.sign({}, process.env.JWT_SECRET!, { subject: String(registered.user.id), algorithm: 'HS256' });
+    const legacySession = jwt.sign({}, process.env.JWT_SECRET!, { subject: String(registered.user.id), algorithm: 'HS256', expiresIn: '1h' });
     assert.equal((await request('/me', undefined, legacySession)).status, 200);
     await request('/forgot-password', { email: 'anna@example.test' });
     await Promise.all(deliveries);

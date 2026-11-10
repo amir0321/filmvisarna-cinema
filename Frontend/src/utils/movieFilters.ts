@@ -1,5 +1,7 @@
 import { addDaysToIsoDate } from './date.ts'
 
+export const MAX_DATE_FILTER_DAYS_AHEAD = 60
+
 export type DateFilter =
   | { kind: 'preset'; when: 'today' | 'tomorrow' | 'weekend' }
   | { kind: 'date'; date: string }
@@ -20,7 +22,7 @@ export function readDate(params: URLSearchParams, today: string, daysAhead: numb
 }
 
 export function readHomeDateFilter(params: URLSearchParams, today: string): DateFilter {
-  const date = readDate(params, today, 60)
+  const date = readDate(params, today, MAX_DATE_FILTER_DAYS_AHEAD)
   if (date) return { kind: 'date', date }
   const when = params.get('when')
   return { kind: 'preset', when: when === 'tomorrow' || when === 'weekend' ? when : 'today' }

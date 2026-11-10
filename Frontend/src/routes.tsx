@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router'
 import RouteRedirect from './components/RouteRedirect'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
@@ -42,8 +43,8 @@ export const router = createBrowserRouter([
       { path: 'om-oss', element: <About /> },
 
       // Mina bokningar (Svenska primär, engelska alias/redirect)
-      { path: 'mina-bokningar', element: <MyBookings /> },
-      { path: 'my-bookings', element: <Navigate to="/mina-bokningar" replace /> },
+      { path: 'mina-bokningar', element: <ProtectedRoute><MyBookings /></ProtectedRoute> },
+      { path: 'my-bookings', element: <RouteRedirect to="/mina-bokningar" /> },
 
       // Auth & Profil (Svenska primär, engelska alias/redirect)
       { path: 'logga-in', element: <Login /> },
@@ -53,8 +54,8 @@ export const router = createBrowserRouter([
       { path: 'register', element: <RouteRedirect to="/skapa-konto" /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'verify-email', element: <VerifyEmail /> },
-      { path: 'profil', element: <Profile /> },
-      { path: 'profile', element: <Navigate to="/profil" replace /> },
+      { path: 'profil', element: <ProtectedRoute><Profile /></ProtectedRoute> },
+      { path: 'profile', element: <RouteRedirect to="/profil" /> },
 
       // Bokning (Svenska primär, engelska/äldre alias)
       { path: 'boka/:id', element: <ScreeningDetail /> },
@@ -76,7 +77,7 @@ export const router = createBrowserRouter([
   // Backoffice administration layout
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: <ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>,
     children: [
       { index: true, element: <AdminDashboard /> },
       // Bokningar
