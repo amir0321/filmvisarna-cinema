@@ -23,7 +23,7 @@
        - Sorterings-dropdown (`<select>`) med alternativen: `Mest populär`, `Högst betyg`, `Nyast`, `A–Ö`.
      - **Rad 2 (Genre-chips, horisontellt scrollbar):** `Alla`, `Action`, `Animation`, `Drama`, `Fantasy`, `Krim`, `Romance`, `Sci-Fi`, `Thriller`, `Western`.
      - **Rad 3 (Ålders-chips, horisontellt scrollbar):** Etikett `Åldersgräns:` följt av `Alla`, `Barntillåten`, `7 år`, `11 år`, `15 år`.
-     - **Rad 4 (Datum):** Behåll de fyra närmaste dagarnas datumchips och visa samma kalenderknapp och `DatePickerPopover` som på startsidan. Kalendern tillåter idag till 60 dagar framåt. Ett valt datum utanför chipsen visas på kalenderknappen, som markeras aktiv. Datumval stänger kalendern och återför fokus till knappen; Escape och klick utanför stänger också kalendern.
+     - **Rad 4 (Datum):** Behåll de fyra närmaste dagarnas datumchips och visa samma kalenderknapp och `DatePickerPopover` som på startsidan. Kalendern tillåter idag till 60 dagar framåt och hämtar kommande visningar när den öppnas. Endast datum med visningar kan väljas; de markeras med en grön prick. Övriga datum är nedtonade och spärrade. Tangentbords- och månadsnavigering hoppar över datum respektive månader utan visningar. Kalendern visar laddningsstatus, fel med `Försök igen` och ett meddelande vid tomt program. Ett valt datum utanför chipsen visas på kalenderknappen, som markeras aktiv. Datumval stänger kalendern och återför fokus till knappen; Escape och klick utanför stänger också kalendern.
    - **Resultatrad:**
      - Text till vänster: `Visar {filteredMovies.length} av {MOVIES.length} filmer` (antalet i `<strong>`).
      - Länkknapp till höger (visas endast om `activeGenre !== 'Alla' || activeAge !== 'Alla' || search`): `Rensa filter` (`#E50914`).

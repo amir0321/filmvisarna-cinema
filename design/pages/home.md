@@ -27,7 +27,7 @@
      - Bottenrad (`.hero-carousel__bottom`): Paus/spela-knapp (`.hero-carousel__pause`, stoppar både bildspel och bakgrundstrailer) samt sidindikator-prickar (`.hero-carousel__dot`, `10×10px`, aktiv prick `28×10px` i `$color-primary` `#E50914`).
 2. **Klibbig filterrad (`position: sticky`, `top: 64px`, `z-index: 40`, klass `.glass`, `border-bottom: 1px solid rgba(255, 255, 255, 0.07)`):**
    - Container (`max-width: 1280px`, `padding: 12px 16px`), staplad på mobil (`flex-col`), rad på `>= 640px` (`sm:flex-row`).
-   - **Datumgrupp:** Etikett `Datum` (`12px`, `uppercase`, `#94A3B8`) + filterchips från `DATE_FILTERS`: `Idag`, `Imorgon`, `I helgen` *(Spec nämner även `"Helgen"`)* + en kalenderknapp som öppnar `DatePickerPopover` med val från idag till 60 dagar framåt.
+   - **Datumgrupp:** Etikett `Datum` (`12px`, `uppercase`, `#94A3B8`) + filterchips från `DATE_FILTERS`: `Idag`, `Imorgon`, `I helgen` *(Spec nämner även `"Helgen"`)* + en kalenderknapp som öppnar `DatePickerPopover` med val från idag till 60 dagar framåt. Kalendern hämtar kommande visningar från API:t när den öppnas. Datum med visningar markeras med en grön prick; datum utan visningar är nedtonade och kan inte väljas. Tangentbords- och månadsnavigering hoppar över datum respektive månader utan visningar. Vid hämtning spärras datumval; fel visas med `Försök igen`, och ett tomt program förklaras i kalendern.
    - **Vertikal avdelare (`hidden sm:block`):** `width: 1px`, `background: rgba(255, 255, 255, 0.08)`.
    - **Åldersgrupp:** Etikett `Åldersgräns` (`12px`, `uppercase`, `#94A3B8`) + filterchips från `AGE_FILTERS`: `Alla`, `Barntillåten`, `7 år`, `11 år`, `15 år`.
 3. **Repertoarsektion (`max-width: 1280px`, `padding: 40px 16px`):**

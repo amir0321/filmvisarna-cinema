@@ -2,6 +2,8 @@
   position: fixed;
   z-index: $fv-z-sticky;
   width: min(21rem, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   padding: 0.75rem;
   border: 1px solid $border-strong;
   border-radius: $radius-modal;
@@ -56,6 +58,7 @@
 }
 
 .date-picker-popover__day {
+  position: relative;
   width: 100%;
   max-width: 44px;
   aspect-ratio: 1;
@@ -71,7 +74,25 @@
 
   &:disabled {
     color: $text-muted;
+    border-color: transparent;
+    background-color: transparent;
+    cursor: not-allowed;
     opacity: 0.45;
+  }
+
+  &--available::after {
+    position: absolute;
+    bottom: 3px;
+    left: calc(50% - 2px);
+    width: 4px;
+    height: 4px;
+    border-radius: $radius-full;
+    background-color: $color-success;
+    content: '';
+  }
+
+  &--selected::after {
+    background-color: $text-heading;
   }
 
   &--today {
@@ -79,7 +100,7 @@
     font-weight: 600;
   }
 
-  &--selected,
+  &--selected:not(:disabled),
   &--selected:hover:not(:disabled) {
     border-color: $color-primary;
     background-color: $color-primary;
@@ -88,6 +109,22 @@
   }
 }
 
-.date-picker-popover__nav,
-.date-picker-popover__day {
+.date-picker-popover__availability {
+  margin-bottom: 0.75rem;
+  color: $text-muted;
+  font-size: 0.75rem;
+
+  p {
+    margin-bottom: 0;
+  }
+}
+
+.date-picker-popover__legend::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 0.35rem;
+  border-radius: $radius-full;
+  background-color: $color-success;
+  content: '';
 }
