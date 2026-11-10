@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Server } from 'node:http';
@@ -136,6 +136,11 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     return token!;
   }
 
+  async function expireVerificationCooldown() {
+    const key = createHash('sha256').update('verify_email:cooldown:anna@example.test').digest('hex');
+    await pool.query("UPDATE auth_rate_limit SET window_start = now() - interval '61 seconds' WHERE key_hash = $1", [key]);
+  }
+
   test('registers an account, hashes its password and issues an authenticated session', async () => {
     const registered = await register('Anna@Example.Test');
     assert.equal(registered.user.email, 'anna@example.test');
@@ -229,10 +234,14 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
   test('resending invalidates the old link and enforces the mail rate limit', async () => {
     const registered = await register();
     const old = tokenFor('verify_email');
+    assert.equal((await request('/resend-verification', {}, registered.token)).status, 429);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
     assert.notEqual(tokenFor('verify_email'), old);
     assert.equal((await request('/verify-email', { token: old })).status, 400);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 429);
     assert.equal((await request('/verify-email', { token: tokenFor('verify_email') })).status, 200);
   });
@@ -263,6 +272,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal(registered.verificationEmailSent, false);
     assert.equal(Number((await pool.query('SELECT count(*) FROM auth_action_token')).rows[0].count), 0);
     deliveryFails = false;
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
     assert.equal(messages.length, 1);
     smtpConfigured = false;

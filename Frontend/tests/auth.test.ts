@@ -96,7 +96,7 @@ test('redirect preserves the booking path, query and fragment', () => {
 })
 
 test('Swedish and English auth paths cannot become redirect loops', () => {
-  for (const path of ['/login', '/logga-in', '/register', '/registrera', '/skapa-konto', '/reset-password', '/verify-email']) {
+  for (const path of ['/login', '/logga-in', '/register', '/registrera', '/skapa-konto', '/reset-password', '/verify-email', '/bekrafta-gastbokning']) {
     assert.equal(isAuthPath(path), true)
     assert.equal(getSafeRedirectPath(`${path}?redirect=%2Fmina-bokningar`), '/')
     assert.equal(getSafeRedirectPath(path.replace(/i/g, '%69')), '/')

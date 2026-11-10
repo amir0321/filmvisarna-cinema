@@ -23,6 +23,7 @@ import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
 import ScreeningDetail from './pages/ScreeningDetail'
 import BookingConfirmation from './pages/BookingConfirmation'
+import ConfirmGuestBooking from './pages/ConfirmGuestBooking'
 
 export const router = createBrowserRouter([
   // Public application layout
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
       { path: 'cancel', element: <CancelBooking /> },
 
       // Bokningsbekräftelse
+      { path: 'bekrafta-gastbokning', element: <ConfirmGuestBooking /> },
       { path: 'bekraftelse/:kod', element: <BookingConfirmation /> },
       { path: 'bekraftelse', element: <BookingConfirmation /> },
       { path: 'confirmation/:kod', element: <BookingConfirmation /> },

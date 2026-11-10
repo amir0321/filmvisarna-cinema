@@ -9,6 +9,7 @@ trigger: always_on
 - The backend (Express 5) lives in `Backend/`. Never edit it unless I ask.
 - UI text is Swedish. Code, comments and commit messages are English.
 - Work is tracked as board cards (FE-1 … FE-33). Implement one card at a time; scope = the card description.
+- Booking, guest and future admin work must follow `design/booking-security.md`. Guest requests and confirmed bookings are separate concepts; do not build future admin abuse-management UI unless explicitly requested.
 
 ## 2. Structure (`Frontend/src/`)
 - `api/` API client and request functions
@@ -87,7 +88,10 @@ If something is missing, say so and propose a UI fallback instead of inventing i
 - Error shape: `{ success: false, error: string, details?: string[] }`. Show `error`; map `details` to form fields.
 - Statuses: 400 validation, 401 not logged in, 403 not admin, 404 not found, 409 conflict.
 - Password 8–72 characters. 409 on register means the email already exists.
-- A booking has 1–10 tickets, no duplicate seats, guests must give an email. 409 = seat already taken, 400 = sold-out kiosk item.
+- A booking has 1–10 tickets, no duplicate seats. Members must have server-verified email. Guests use `/bookings/guest/request`, `/guest/preview` and `/guest/confirm`; direct guest `POST /bookings` is forbidden. Requests reserve no seats and must be explicitly confirmed through a short-lived email link.
+- Booking creation and guest-request submission use a stable `Idempotency-Key` UUID per unchanged payload. Disable duplicate submissions, retain the key on retries and use server-created receipt data. Handle 403 verification requirements, 409 seat/quota/idempotency conflicts, 429 rate limits and 503 mail outages without claiming success.
+- Shared guest/member quotas and independent IP/global limits are enforced in the API. Never rely on browser state, local storage, hidden controls or a client-supplied role/email to enforce them. Keep guest tokens in component memory, remove URL fragments and never log token values.
+- Future admin features must keep guest requests out of confirmed-booking lists, occupancy and revenue. Abuse flagging, staff cancellation/releasing seats and protected audit logs are required when that later admin work is authorized; they are not implemented by the current public-booking change.
 - Seat map returns only `available` / `booked`. Cinema rows and seats per row come dynamically from the backend.
 - `GET /screenings`: `when` and `date` cannot be sent together. Age filter uses `age`. Genre and text search are filtered client-side.
 - Cancellation is not allowed less than 2 hours before start. The backend decides; the UI only shows a hint.

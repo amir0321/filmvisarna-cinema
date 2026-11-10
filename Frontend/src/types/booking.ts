@@ -1,5 +1,29 @@
 export type BookingStatus = 'confirmed' | 'cancelled'
 
+export interface BookingRequestPayload {
+  screeningId: number
+  email: string
+  guestName: string
+  tickets: { seatId: number; priceGroupId: number }[]
+  items: { itemId: number; quantity: number }[]
+}
+
+export interface BookingCreatedResult {
+  bookingRef: string
+  cancelToken?: string
+  booking: Booking
+}
+
+export interface GuestBookingPreview {
+  email: string
+  guestName: string | null
+  expiresAt: string
+  screening: { id: number; movieTitle: string; posterUrl: string | null; cinema: string; startsAt: string; endsAt: string }
+  tickets: { seatId: number; priceGroupId: number; row: string; number: number; name: string; price: number }[]
+  items: { itemId: number; name: string; quantity: number; price: number }[]
+  totalPrice: number
+}
+
 export interface TicketItem {
   seatId: number
   priceGroupId: number
