@@ -103,6 +103,8 @@
 }
 
 .movie-details-facts {
+  width: 100%;
+  max-width: 320px;
   margin-top: 1.5rem;
   padding: 1.25rem;
   background-color: #161f30;
@@ -125,60 +127,34 @@
   }
 }
 
-.movie-details-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "heading"
-    "poster"
-    "facts"
-    "main";
-  gap: 1.5rem;
-}
+.genre-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background-color: #161f30;
+  border: 1px solid $border-strong;
+  color: $text-heading;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 
-.movie-details-heading {
-  grid-area: heading;
-}
-
-.movie-details-poster-column {
-  grid-area: poster;
-}
-
-.movie-details-facts {
-  grid-area: facts;
-}
-
-.movie-details-main {
-  grid-area: main;
-}
-
-@media (min-width: 768px) {
-  .movie-details-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    grid-template-areas:
-      "poster heading"
-      "facts main";
-    column-gap: 1.5rem;
-    row-gap: 1.5rem;
-  }
-
-  .movie-details-main {
-    grid-column: 2;
-    grid-row: 2;
+  &:hover {
+    background-color: lighten(#161f30, 5%);
+    border-color: $color-primary;
   }
 }
 
 .screening-card {
   width: 420px;
   max-width: 100%;
-  background: #161f30;
+  background: #101827;
   border: 1px solid $border-strong;
   border-radius: 16px;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 
   &:hover {
     border-color: $color-primary;
-    background: lighten(#161f30, 3%);
+    background: lighten(#101827, 3%);
   }
 }
 
@@ -253,10 +229,10 @@
 
 .screening-date-heading {
   margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
   text-transform: uppercase;
-  color: $text-heading;
+  color: $text-secondary;
 }
 
 .screening-section {
@@ -264,4 +240,30 @@
   background: #161f30;
   border: 1px solid $border-strong;
   border-radius: 24px;
+}
+
+.screening-info {
+  margin: 1.25rem 0 0;
+  color: $text-secondary;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 639px) {
+  .screening-section {
+    padding: 1.25rem;
+  }
+
+  .screening-section>.d-flex {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem !important;
+  }
+
+  .screening-section>.d-flex button {
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
 }
