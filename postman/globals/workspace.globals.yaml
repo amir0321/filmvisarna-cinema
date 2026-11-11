@@ -3,9 +3,3 @@ values:
   - key: base_url
     value: http://localhost:3000
     enabled: true
-  - key: admin_token
-    value: ""
-    enabled: true
-  - key: user_token
-    value: ""
-    enabled: true

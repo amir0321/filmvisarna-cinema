@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../config";
 import { pool } from "../db";
 import { HttpError } from "../utils/httpErorr";
+import { getSessionToken, hashSessionToken } from '../services/sessions.service';
 
 import { AuthUser } from "../interfaces/types.js";
 export type { AuthUser };
@@ -11,30 +12,15 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
+      session?: { expiresAt: number };
     }
   }
 }
 
-// Sign a JWT token for a user
-// The token is signed with the user's ID as the subject and expires according to the configuration
-export function signToken(userId: number, authVersion = 0): string {
-  return jwt.sign({ version: authVersion }, config.jwtSecret, {
-    subject: String(userId),
-    expiresIn: config.jwtExpiresIn as jwt.SignOptions["expiresIn"],
-    algorithm: "HS256",
-  });
-}
-
-// Resolve the authenticated user from the request's Authorization header
-// If the header is missing or invalid, it returns undefined or throws an HttpError
+// Only accept the HttpOnly session cookie. Legacy bearer tokens cannot restore sessions.
 async function resolveUser(req: Request): Promise<AuthUser | undefined> {
-  const header = req.headers.authorization;
-  if (!header) return undefined;
-
-  const [scheme, token] = header.split(" ");
-  if (scheme?.toLowerCase() !== "bearer" || !token) {
-    throw new HttpError(401, "Auktoriseringsheadern måste ha formatet: Bearer <token>");
-  }
+  const token = getSessionToken(req);
+  if (!token) return undefined;
 
   let userId: number;
   let authVersion: number;
@@ -49,16 +35,19 @@ async function resolveUser(req: Request): Promise<AuthUser | undefined> {
     }
     userId = Number(payload.sub);
     authVersion = payload.version ?? 0;
+    req.session = { expiresAt: payload.exp * 1000 };
   } catch {
     throw new HttpError(401, "Ogiltig eller utgången token.");
   }
   if (!Number.isInteger(userId)) throw new HttpError(401, "Ogiltig token.");
 
   const { rows } = await pool.query<AuthUser & { authVersion: number }>(
-    'SELECT id, email, role, auth_version AS "authVersion" FROM app_user WHERE id = $1',
-    [userId],
+    `SELECT u.id, u.email, u.role, u.auth_version AS "authVersion"
+     FROM app_user u JOIN auth_session s ON s.user_id = u.id
+     WHERE u.id = $1 AND s.token_hash = $2 AND s.expires_at > now()`,
+    [userId, hashSessionToken(token)],
   );
-  if (!rows[0]) throw new HttpError(401, "Användaren finns inte längre.");
+  if (!rows[0]) throw new HttpError(401, "Din session har gått ut. Logga in igen.");
   if (rows[0].authVersion !== authVersion) throw new HttpError(401, 'Din session har gått ut. Logga in igen.');
   const { authVersion: _version, ...user } = rows[0];
   return user;

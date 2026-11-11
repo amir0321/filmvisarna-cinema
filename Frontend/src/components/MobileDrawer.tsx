@@ -25,7 +25,7 @@ const ADMIN_DRAWER_LINKS = [
 ] as const
 
 export default function MobileDrawer() {
-  const { user, logout } = useAuth()
+  const { user, logout, loggingOut, logoutError } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -48,10 +48,8 @@ export default function MobileDrawer() {
     }
   }, [])
 
-  const handleLogout = () => {
-    closeDrawer()
-    logout()
-    navigate('/')
+  const handleLogout = async () => {
+    try { await logout(); closeDrawer(); navigate('/') } catch { /* The drawer displays the error. */ }
   }
 
   return (
@@ -216,13 +214,15 @@ export default function MobileDrawer() {
         </nav>
 
         <div className="drawer-footer d-flex flex-column gap-2">
+          {logoutError && <p className="text-danger small" role="alert">{logoutError}</p>}
           {isLoggedIn ? (
             <button
               type="button"
               className="drawer-logout-btn w-100"
+              disabled={loggingOut}
               onClick={handleLogout}
             >
-              Logga ut
+              {loggingOut ? 'Loggar ut…' : 'Logga ut'}
             </button>
           ) : (
             <>

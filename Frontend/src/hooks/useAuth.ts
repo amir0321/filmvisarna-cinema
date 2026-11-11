@@ -3,7 +3,6 @@ import type { AuthResponse, AuthRole, RoleLabel, User } from '../types/user'
 
 export interface AuthContextValue {
   user: User | null
-  token: string | null
   role: AuthRole
   roleLabel: RoleLabel
   isAuthenticated: boolean
@@ -11,7 +10,9 @@ export interface AuthContextValue {
   loading: boolean
   verificationDeliveryFailed: boolean
   setSession: (response: AuthResponse) => void
-  logout: () => void
+  logout: () => Promise<void>
+  loggingOut: boolean
+  logoutError: string | null
   refreshUser: () => Promise<void>
 }
 

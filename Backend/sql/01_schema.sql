@@ -27,6 +27,14 @@ CREATE TABLE auth_rate_limit (
 );
 CREATE INDEX auth_rate_limit_window_idx ON auth_rate_limit(window_start);
 
+CREATE TABLE auth_session (
+  token_hash text PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX auth_session_expires_idx ON auth_session(expires_at);
+CREATE INDEX auth_session_user_idx ON auth_session(user_id);
+
 -- ---------- MOVIE, GENRE, PERSON -------------------------------------
 CREATE TABLE movie (
   id                  int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

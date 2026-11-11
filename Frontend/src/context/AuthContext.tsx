@@ -1,172 +1,140 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { getMe } from '../api/auth'
-import { AUTH_TOKEN_KEY, AUTH_UNAUTHORIZED_EVENT, clearAuthToken, getAuthToken, setAuthToken } from '../api/client'
+import { getMe, logoutSession } from '../api/auth'
+import { advanceSessionRevision, ApiError, AUTH_UNAUTHORIZED_EVENT } from '../api/client'
 import { AuthContext } from '../hooks/useAuth'
 import type { AuthResponse, User } from '../types/user'
-import { getAuthRole, getRoleLabel, getTokenExpiresAt, isTokenValid } from '../utils/authSession'
+import { getAuthRole, getRoleLabel } from '../utils/authSession'
 
 interface AuthProviderProps {
   children: ReactNode
   onUnauthorized: () => void
 }
-
 interface Session {
-  token: string | null
   user: User | null
+  expiresAt: number | null
   loading: boolean
   verificationDeliveryFailed: boolean
 }
-
-const EMPTY_SESSION: Session = { token: null, user: null, loading: false, verificationDeliveryFailed: false }
+const EMPTY_SESSION: Session = { user: null, expiresAt: null, loading: false, verificationDeliveryFailed: false }
 
 export function AuthProvider({ children, onUnauthorized }: AuthProviderProps) {
-  const [session, setSessionState] = useState<Session>(() => {
-    const token = getAuthToken()
-    return { ...EMPTY_SESSION, token, loading: Boolean(token) }
-  })
-  const activeToken = useRef<string | null>(null)
+  const [session, setSessionState] = useState<Session>({ ...EMPTY_SESSION, loading: true })
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
   const request = useRef<AbortController | null>(null)
+  const logoutRequest = useRef<Promise<void> | null>(null)
+  const authenticated = useRef(false)
+  const channel = useRef<BroadcastChannel | null>(null)
 
-  const logout = useCallback(() => {
+  const clearSession = useCallback(() => {
     request.current?.abort()
-    activeToken.current = null
-    clearAuthToken()
+    authenticated.current = false
+    advanceSessionRevision()
     setSessionState(EMPTY_SESSION)
   }, [])
 
-  const expireSession = useCallback(() => {
-    logout()
-    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
-  }, [logout])
-
-  const loadUser = useCallback(async (token: string) => {
+  const refreshUser = useCallback(async () => {
+    if (logoutRequest.current) return
     request.current?.abort()
     const controller = new AbortController()
     request.current = controller
-    activeToken.current = token
     try {
-      const user = await getMe(controller.signal)
-      if (controller.signal.aborted || getAuthToken() !== token) return
-      if (!isTokenValid(token)) {
-        expireSession()
-        return
-      }
-      setSessionState(previous => ({ ...previous, token, user }))
-    } finally {
-      if (!controller.signal.aborted && getAuthToken() === token) {
+      const response = await getMe(controller.signal)
+      if (controller.signal.aborted) return
+      authenticated.current = true
+      setSessionState(previous => ({ ...previous, ...response, loading: false }))
+    } catch (error) {
+      if (controller.signal.aborted) return
+      if (error instanceof ApiError && error.status === 401) {
+        const wasAuthenticated = authenticated.current
+        clearSession()
+        if (wasAuthenticated) onUnauthorized()
+      } else {
         setSessionState(previous => ({ ...previous, loading: false }))
+        throw error
       }
     }
-  }, [expireSession])
+  }, [clearSession, onUnauthorized])
 
-  const restoreSession = useCallback(async (token: string | null) => {
-    if (token === null) {
-      logout()
-      return
-    }
-    if (!isTokenValid(token)) {
-      expireSession()
-      return
-    }
-    setSessionState(previous => ({
-      ...EMPTY_SESSION,
-      token,
-      user: previous.token === token ? previous.user : null,
-      verificationDeliveryFailed: previous.token === token && previous.verificationDeliveryFailed,
-      loading: true,
-    }))
-    await loadUser(token)
-  }, [expireSession, loadUser, logout])
-
-  const refreshUser = useCallback(() => restoreSession(getAuthToken()), [restoreSession])
-
-  const syncSession = useCallback(() => {
-    const token = getAuthToken()
-    if (token !== null && !isTokenValid(token)) {
-      expireSession()
-    } else if (token !== activeToken.current) {
-      void restoreSession(token).catch(() => {
-        // API authentication failures dispatch the global session event.
-      })
-    }
-  }, [expireSession, restoreSession])
+  const logout = useCallback((): Promise<void> => {
+    if (logoutRequest.current) return logoutRequest.current
+    request.current?.abort()
+    setLoggingOut(true)
+    setLogoutError(null)
+    const pending = (async () => {
+      try {
+        await logoutSession()
+        clearSession()
+        channel.current?.postMessage('changed')
+      } catch (error) {
+        setLogoutError('Kunde inte logga ut. Kontrollera anslutningen och försök igen.')
+        throw error
+      } finally {
+        logoutRequest.current = null
+        setLoggingOut(false)
+      }
+    })()
+    logoutRequest.current = pending
+    return pending
+  }, [clearSession])
 
   useEffect(() => {
-    const handleUnauthorized = () => {
-      logout()
-      onUnauthorized()
+    // Remove legacy credentials once; sessions are now held only in HttpOnly cookies.
+    try { localStorage.removeItem('token') } catch { /* Storage may be disabled. */ }
+    const syncSession = () => {
+      if (document.visibilityState !== 'hidden') void refreshUser().catch(() => {})
     }
-    const handleStorage = (event: StorageEvent) => {
-      if (event.storageArea && event.storageArea !== window.localStorage) return
-      if (event.key === AUTH_TOKEN_KEY || event.key === null) syncSession()
+    const handleUnauthorized = () => { clearSession(); onUnauthorized() }
+    if (typeof BroadcastChannel !== 'undefined') {
+      const currentChannel = new BroadcastChannel('fv:session')
+      channel.current = currentChannel
+      currentChannel.onmessage = () => {
+        // Ignore late responses issued before another tab changed the shared cookie.
+        advanceSessionRevision()
+        syncSession()
+      }
     }
     window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
     window.addEventListener('focus', syncSession)
     document.addEventListener('visibilitychange', syncSession)
-    window.addEventListener('storage', handleStorage)
-    const token = getAuthToken()
-    if (token !== null && isTokenValid(token)) {
-      // Initial state already represents a pending restoration.
-      void loadUser(token).catch(() => {
-        // Leave the visitor unauthenticated if the profile cannot be restored.
-      })
-    } else if (token !== null) {
-      clearAuthToken()
-      window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
-    }
+    const initialSync = window.setTimeout(syncSession, 0)
     return () => {
+      window.clearTimeout(initialSync)
       request.current?.abort()
+      channel.current?.close()
+      channel.current = null
       window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
       window.removeEventListener('focus', syncSession)
       document.removeEventListener('visibilitychange', syncSession)
-      window.removeEventListener('storage', handleStorage)
     }
-  }, [loadUser, logout, onUnauthorized, syncSession])
+  }, [clearSession, onUnauthorized, refreshUser])
 
   useEffect(() => {
-    const token = session.token
-    if (!token) return
+    if (session.expiresAt === null) return
     let timer: number
     const checkExpiry = () => {
-      syncSession()
-      if (getAuthToken() !== token) return
-      const expiresAt = getTokenExpiresAt(token)
-      if (expiresAt === null || expiresAt <= Date.now()) return
-      // setTimeout overflows above a signed 32-bit delay. Recheck longer sessions.
-      timer = window.setTimeout(checkExpiry, Math.min(expiresAt - Date.now(), 2_147_483_647))
+      const remaining = session.expiresAt! - Date.now()
+      if (remaining <= 0) { clearSession(); onUnauthorized(); return }
+      timer = window.setTimeout(checkExpiry, Math.min(remaining, 2_147_483_647))
     }
     checkExpiry()
     return () => window.clearTimeout(timer)
-  }, [session.token, syncSession])
+  }, [session.expiresAt, clearSession, onUnauthorized])
 
   const setSession = useCallback((response: AuthResponse) => {
     request.current?.abort()
-    if (!isTokenValid(response.token)) {
-      expireSession()
-      return
-    }
-    setAuthToken(response.token)
-    activeToken.current = response.token
-    setSessionState({
-      token: response.token,
-      user: response.user,
-      verificationDeliveryFailed: response.verificationEmailSent === false,
-      loading: false,
-    })
-  }, [expireSession])
+    advanceSessionRevision()
+    authenticated.current = true
+    setLogoutError(null)
+    setSessionState({ ...response, verificationDeliveryFailed: response.verificationEmailSent === false, loading: false })
+    channel.current?.postMessage('changed')
+  }, [])
 
-  const role = getAuthRole(session.user, session.token)
+  const role = getAuthRole(session.user)
   const value = useMemo(() => ({
-    ...session,
-    role,
-    roleLabel: getRoleLabel(role),
-    isAuthenticated: role !== 'guest',
-    isAdmin: role === 'admin',
-    logout,
-    refreshUser,
-    setSession,
-  }), [session, role, logout, refreshUser, setSession])
+    ...session, role, roleLabel: getRoleLabel(role), isAuthenticated: role !== 'guest', isAdmin: role === 'admin',
+    logout, loggingOut, logoutError, refreshUser, setSession,
+  }), [session, role, logout, loggingOut, logoutError, refreshUser, setSession])
   return <AuthContext value={value}>{children}</AuthContext>
 }
-
 export default AuthProvider

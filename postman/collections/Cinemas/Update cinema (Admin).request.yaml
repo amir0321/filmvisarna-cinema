@@ -3,7 +3,7 @@ name: Update cinema (Admin)
 url: http://localhost:3000/api/cinemas/1
 method: PUT
 headers:
-  Authorization: Bearer {{admin_token}}
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |

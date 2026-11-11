@@ -14,7 +14,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string
+  expiresAt: number
   user: User
   verificationEmailSent?: boolean
 }

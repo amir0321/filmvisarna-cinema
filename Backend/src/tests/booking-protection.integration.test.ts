@@ -25,7 +25,7 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
   let server: Server;
   let app: express.Express;
   let baseUrl: string;
-  let signToken: (id: number, version?: number) => string;
+  let createSession: (id: number, version?: number) => Promise<{ token: string; expiresAt: number }>;
   let cleanup: () => Promise<void>;
   let hashValue: (value: string) => string;
   let mailConfigured = true;
@@ -48,7 +48,7 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     for (const file of ['01_schema.sql', '02_views.sql', '03_security.sql']) {
       await db.query(await readFile(resolve('sql', file), 'utf8'));
     }
-    ({ signToken } = await import('../middleware/auth.js'));
+    ({ createSession } = await import('../services/sessions.service.js'));
     const { createBookingService } = await import('../services/bookings.service.js');
     const { createGuestBookingService } = await import('../services/guestBookings.service.js');
     const { createBookingsRouter } = await import('../routes/bookings.js');
@@ -106,7 +106,7 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
   async function request(path: string, body: unknown, options: { user?: number; key?: string; ip?: string; method?: string } = {}) {
     const response = await fetch(baseUrl + path, { method: options.method ?? 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': options.key ?? randomUUID(),
-        'X-Forwarded-For': options.ip ?? '192.0.2.1', ...(options.user ? { Authorization: `Bearer ${signToken(options.user)}` } : {}) },
+        'X-Forwarded-For': options.ip ?? '192.0.2.1', ...(options.user ? { Cookie: `filmvisarna_session=${(await createSession(options.user)).token}` } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(15_000) });
     return { status: response.status, body: await response.json() as ResponseBody, headers: response.headers };
   }

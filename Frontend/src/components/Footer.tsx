@@ -93,9 +93,9 @@ export default function Footer({ onOpenCookieSettings }: FooterProps) {
           ) : (
             <>
               <p>
-                Filmvisarnas inloggning använder lokal lagring i webbläsaren (localStorage),
-                inte sessions- eller autentiseringscookies. Inloggningsuppgiften tas bort
-                när du loggar ut.
+                Filmvisarnas inloggning använder en nödvändig sessionscookie som inte kan
+                läsas av JavaScript. När du loggar ut tas cookien bort och sessionen
+                spärras på servern.
               </p>
               <p>
                 Din bokningsbekräftelse sparas tillfälligt i flikens sessionslagring
