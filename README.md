@@ -156,8 +156,9 @@ Vite automatically proxies all `/api` requests to `http://localhost:3000`.
 ### 🔐 Authentication
 | Method | Endpoint | Access | Status Codes | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public | `201`, `400`, `409`, `500` | Register user account (returns JWT token + user info) |
-| `POST` | `/api/auth/login` | Public | `200`, `400`, `401`, `500` | Login with email & password (returns JWT token) |
+| `POST` | `/api/auth/register` | Public | `201`, `400`, `409`, `500` | Register account (sets HttpOnly session cookie; returns user and expiry) |
+| `POST` | `/api/auth/login` | Public | `200`, `400`, `401`, `500` | Login (sets HttpOnly session cookie; returns user and expiry) |
+| `POST` | `/api/auth/logout` | Session cookie | `200`, `403`, `500` | Revoke current server session and clear its cookie; requires CSRF header |
 | `GET` | `/api/auth/me` | Logged In | `200`, `401`, `500` | Get profile of authenticated user (name, email, phone, points, isVerified) |
 | `PUT` | `/api/auth/me` | Logged In | `200`, `400`, `401`, `500` | Update profile (name, phone) |
 | `POST` | `/api/auth/change-password` | Logged In | `200`, `400`, `401`, `500` | Change password (`currentPassword`, `newPassword`) |
@@ -244,8 +245,9 @@ Vite automatically proxies all `/api` requests to `http://localhost:3000`.
 A complete Postman collection is included under [`postman/collections/`](./postman/collections/).
 
 It includes preconfigured requests for all endpoints with environment variable support:
-- `{{user_token}}`: User Bearer JWT token
-- `{{admin_token}}`: Administrator Bearer JWT token
+Sign in with the account needed for the requests; Postman stores the HttpOnly session cookie in its cookie jar. Protected requests use that cookie, and writes include `X-CSRF-Protection: 1`. Sign out before switching accounts. Session credentials are no longer stored in globals.
+
+Before upgrading an existing database, run `cd Backend` and `npm run migrate:auth`. Deploy frontend and backend together; existing users must sign in again. See [cookie sessions and deployment settings](Backend/README.md#cookie-sessions-and-csrf-protection).
 
 ---
 

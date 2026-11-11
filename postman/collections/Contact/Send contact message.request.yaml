@@ -2,6 +2,8 @@ $kind: http-request
 name: Send contact message
 url: http://localhost:3000/api/contact
 method: POST
+headers:
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |

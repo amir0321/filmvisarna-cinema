@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 
 export * from './movie'
 export * from './screening'
+export * from './cinema'
 export * from './seat'
 export * from './booking'
 export * from './user'

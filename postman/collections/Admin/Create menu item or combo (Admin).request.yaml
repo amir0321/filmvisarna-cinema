@@ -3,7 +3,7 @@ name: Create menu item or combo (Admin)
 url: http://localhost:3000/api/admin/menu-items
 method: POST
 headers:
-  Authorization: Bearer {{admin_token}}
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |

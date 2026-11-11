@@ -1,12 +1,12 @@
 import apiClient, { ApiError } from './client'
 import type { AuthResponse, User } from '../types/user'
 
-export async function getMe(signal?: AbortSignal): Promise<User> {
-  const response = await apiClient.get<User | { user: User }>('/auth/me', { signal })
-  if (response && typeof response === 'object' && 'user' in response) {
-    return response.user
-  }
-  return response as User
+export function getMe(signal?: AbortSignal): Promise<AuthResponse> {
+  return apiClient.get('/auth/me', { signal, ignoreUnauthorized: true })
+}
+
+export function logoutSession(): Promise<{ success: boolean }> {
+  return apiClient.post('/auth/logout', {}, { ignoreUnauthorized: true })
 }
 
 export interface LoginPayload { email: string; password: string }
