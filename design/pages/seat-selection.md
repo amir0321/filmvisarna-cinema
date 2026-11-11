@@ -13,6 +13,16 @@
 - Platskartan uppdateras var femte sekund. Om sista platsen bokas av någon annan växlar sidan till fullbokat-läget. Om platser blir lediga igen visas bokningsflödet igen. `handleConfirm` kontrollerar att samtliga valda platser fortfarande är tillgängliga; backend avgör vid samtidig bokning.
 - Seed-scenarier använder endast Stora Salongen (A–H × 1–10) och Lilla Salongen (A–E × 1–8). Platskartan renderas dynamiskt från API:t.
 
+#### Bokningsskydd och gästbekräftelse – gällande implementation
+
+- Följ [bokningssäkerhet](../booking-security.md), som har företräde framför prototypbeskrivningen nedan.
+- Medlemmar måste ha verifierad e-post. För en overifierad medlem visas förklaringen och `Jag har verifierat min e-post`, som uppdaterar profilinformationen. Utskick av nytt verifieringsmejl görs via det gemensamma verifieringsmeddelandet. Backend avgör alltid behörigheten.
+- Gästen klickar `Skicka bekräftelsemejl`. Sidan visar laddningsstatus och resultat/fel utan att påstå att bokningen är bekräftad. Platserna reserveras inte av förfrågan. Länken gäller i högst 10 minuter.
+- `/bekrafta-gastbokning#token=...` öppnar en sammanfattning från API:t med film, tid, salong, biljetter, kiosk, serverberäknat pris och e-post. Token tas bort ur URL:en. Endast ett uttryckligt klick på `Bekräfta bokning` skapar bokningen.
+- Vid platskonflikt kan gästen välja andra lediga platser till samma visning utan ny e-postverifiering, så länge länken är giltig. Backend kontrollerar prisgrupper, ledighet och kvoter på nytt.
+- Dubbelklick spärras under anrop. Samma inskick återanvänder sin idempotensnyckel. Kvotfel, utgångna länkar och SMTP-fel visas på svenska; bokningen får inte rapporteras som lyckad vid sådana fel.
+- Först efter lyckad bekräftelse sparas kvittot från API-svaret och användaren skickas till `/bekraftelse/:kod`. Priser och platser på kvittot kommer från serverns skapade bokning.
+
 #### Struktur uppifrån och ned (`max-width: 1152px`, `padding-top: 96px`)
 1. **Topprad:**
    - Vänster: Tillbaka-knapp med vänsterchevron och filmens titel `{movie.title}` (`14px`, `#94A3B8`, går tillbaka till `'detail'`).

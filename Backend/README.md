@@ -140,7 +140,7 @@ AUTH_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna
 
 The tests create and remove a randomly named schema in that database. They never fall back to `DATABASE_URL` or `.env` for the test connection. Without `AUTH_TEST_DATABASE_URL`, the integration suite is explicitly skipped. GitHub CI supplies a separate PostgreSQL service and runs `npm test` for the complete backend suite.
 
-Coverage includes the additive migration and existing account data, registration and login, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
+Coverage includes the additive migration and existing account data, registration and login, mandatory JWT expiration, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Session JWTs without a valid future `exp` are rejected with 401; users with older tokens lacking expiration must log in again. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
 
 ## HTTP Status Codes Overview
 
@@ -364,10 +364,35 @@ Standard felmeddelande i JSON:
 ### 📋 Bokningar (`/api/bookings`)
 
 #### `POST /api/bookings`
-- **Åtkomst:** Gäst eller Inloggad
+- **Åtkomst:** Inloggad användare med verifierad e-post. Gästen använder det separata förfrågningsflödet nedan.
+- **Header:** `Idempotency-Key: <UUID>`. Återanvänd samma nyckel vid återförsök av samma payload.
 - **`201 Created`**: Bokningen genomförd (`bookingRef`, `totalPrice`, bekräftelsemejl skickas).
-- **`400 Bad Request`**: Saknar e-post för gäst, färre än 1 eller fler än 10 biljetter, dubblett av stol, eller slutsåld kioskvara.
-- **`409 Conflict`**: En eller flera stolar är redan bokade av någon annan.
+- **`400 Bad Request`**: Ogiltig nyckel, färre än 1 eller fler än 10 biljetter, dubblett av stol, eller slutsåld kioskvara.
+- **`403 Forbidden`**: E-postadressen är inte verifierad eller en gäst försöker boka direkt.
+- **`409 Conflict`**: Platser upptagna, aktiv bokningskvot uppnådd eller en nyckel återanvänds med ändrat innehåll.
+- **`429 Too Many Requests`**: För många försök; svaret innehåller `Retry-After`.
+
+#### Gästförfrågan och e-postbekräftelse
+
+- `POST /api/bookings/guest/request`: samma bokningspayload, obligatorisk e-post och `Idempotency-Key` (UUID). Returnerar `202` efter lyckat mejlutskick. Skapar endast en kortlivad `guest_booking_intent`; inga bokningar eller biljetter skapas och inga platser reserveras.
+- `POST /api/bookings/guest/preview`: `{ token }`. Visar den aktuella förfrågans sammanfattning utan att konsumera länken eller skapa en bokning.
+- `POST /api/bookings/guest/confirm`: `{ token, seatIds?: number[] }`. Skapar högst en bokning efter uttrycklig bekräftelse och kontrollerar åter ledighet och kvoter. `seatIds` kan användas för andra platser till samma visning; antal och biljettkategorier är bundna till förfrågan. Identiska återförsök ger samma bokning, inte en ny.
+- Token är slumpmässiga, hashade i databasen och giltiga i högst 10 minuter. Ogiltiga/utgångna länkar ger `400`, plats-/kvotkonflikter `409`, för många försök `429` och otillgänglig e-post `503`. Inga riktiga bokningar skapas när mejlutskick misslyckas.
+- Länken ligger i ett URL-fragment och ska avlägsnas ur historiken av SPA:n. Token får inte användas som konto- eller adminautentisering. Gästförfrågningar blandas aldrig in i vanliga adminbokningar eller statistik.
+
+### Driftsättning av bokningsskydd
+
+Kör `npm run migrate:bookings` i en befintlig databas före den nya applikationsversionen. Migreringen är additiv och kan upprepas; den raderar inte bokningar, platser eller lösenord. Nya installationer har samma tabeller och index i `01_schema.sql` och RLS i `03_security.sql`.
+
+SMTP enligt avsnittet om autentiseringsmejl krävs för gästbekräftelse. Ingen Ethereal-fallback används för verifieringslänkar. Befintliga overifierade konton måste verifieras för nya medlemsbokningar; äldre bokningar behålls. Kvoter kan därför blockera nya bokningar för ett konto som redan ligger över gränsen, inklusive demokonton.
+
+Standardvärden och framtida adminkrav finns i [design/booking-security.md](../design/booking-security.md). Konfiguration: `BOOKING_ATTEMPTS_PER_15_MIN=3`, `BOOKING_IP_ATTEMPTS_PER_15_MIN=30`, `BOOKING_GLOBAL_ATTEMPTS_PER_15_MIN=300`, `BOOKING_MAX_SEATS_PER_SCREENING=10`, `BOOKING_MAX_UNPAID_BOOKINGS=3`, `BOOKING_MAX_UNPAID_SEATS=20`, `BOOKING_EMAILS_PER_15_MIN=3`, `BOOKING_EMAIL_COOLDOWN_SECONDS=60`, `BOOKING_GLOBAL_EMAILS_PER_15_MIN=60`, `BOOKING_GUEST_LINK_MINUTES=10`.
+
+`TRUST_PROXY` är tom som standard: klientens `X-Forwarded-For` används då inte. Bakom en proxy anger driften endast betrodda IP-adresser/CIDR eller explicita Express-proxyintervall, separerade med komma. Sätt inte en generell `true` eller ett obegränsat proxyintervall.
+
+Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen. Idempotensnycklar för bekräftade bokningar lagras på själva bokningen och städas inte bort av jobbet.
+
+Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_URL` och körs i ett eget slumpmässigt schema. De skickar inga riktiga mejl och använder aldrig applikationens databas som reserv. Adminfunktioner för flaggning och avbokning är enbart dokumenterade framtida krav i denna ändring.
 
 #### `GET /api/bookings/me`
 - **Åtkomst:** Inloggad användare

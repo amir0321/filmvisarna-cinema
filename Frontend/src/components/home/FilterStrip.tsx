@@ -1,17 +1,18 @@
 import { useCallback, useRef, useState } from "react";
 import type { ScreeningWhen } from "../../types";
 import {
-  addDaysToIsoDate,
   formatDateLong,
   formatDateShort,
-  todayIsoDate,
 } from "../../utils/date";
 import DatePickerPopover from "../DatePickerPopover";
 import type { AgeFilter, DateFilter } from '../../utils/movieFilters';
+import { hasDateFilterScreenings } from '../../utils/movieFilters';
+import type { ScreeningProgramme } from '../../hooks/useScreeningProgramme';
 
 export type { AgeFilter, DateFilter } from '../../utils/movieFilters';
 
 interface FilterStripProps {
+  programme: ScreeningProgramme;
   dateFilter: DateFilter;
   ageFilter: AgeFilter;
   onDateFilterChange: (filter: DateFilter) => void;
@@ -32,13 +33,12 @@ const AGE_OPTIONS: { value: AgeFilter; label: string }[] = [
   { value: 15, label: "15 år" },
 ];
 
-const MAX_DAYS_AHEAD = 60;
-
 function pillClassName(isActive: boolean): string {
   return `filter-pill${isActive ? " filter-pill--active" : ""}`;
 }
 
 export default function FilterStrip({
+  programme,
   dateFilter,
   ageFilter,
   onDateFilterChange,
@@ -47,7 +47,6 @@ export default function FilterStrip({
   const datePickerButtonRef = useRef<HTMLButtonElement>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), []);
-  const today = todayIsoDate();
   const customDate = dateFilter.kind === "date" ? dateFilter.date : null;
 
   return (
@@ -64,12 +63,14 @@ export default function FilterStrip({
           {DATE_PRESETS.map((preset) => {
             const isActive =
               dateFilter.kind === "preset" && dateFilter.when === preset.when;
+            const disabled = programme.loading || Boolean(programme.error) || !hasDateFilterScreenings({ kind: 'preset', when: preset.when }, programme.today, programme.dates);
             return (
               <button
                 key={preset.when}
                 type="button"
                 className={pillClassName(isActive)}
                 aria-pressed={isActive}
+                disabled={disabled}
                 onClick={() =>
                   onDateFilterChange({ kind: "preset", when: preset.when })
                 }
@@ -107,8 +108,9 @@ export default function FilterStrip({
               id="date-picker-popover"
               anchorRef={datePickerButtonRef}
               selectedDate={customDate}
-              minDate={today}
-              maxDate={addDaysToIsoDate(today, MAX_DAYS_AHEAD)}
+              minDate={programme.today}
+              maxDate={programme.maxDate}
+              programme={programme}
               onSelect={(date) => onDateFilterChange({ kind: "date", date })}
               onClose={closeDatePicker}
             />

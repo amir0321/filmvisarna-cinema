@@ -6,6 +6,7 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 
 ## Gällande projektbeslut
 
+- Bokningssäkerhet följer [design/booking-security.md](design/booking-security.md): verifierad e-post, gemensamma gäst-/medlemskvoter och begränsad bokningstakt. Gästförfrågningar reserverar inga platser och lagras separat från bekräftade bokningar. Dokumentet anger också kraven för framtida adminhantering av missbruk; den adminfunktionen byggs inte i denna ändring.
 - Biografen har endast **Stora Salongen**, 80 platser (A–H, 1–10), och **Lilla Salongen**, 40 platser (A–E, 1–8). Seed-data använder samma två salonger. Filmer sprids över flera dagar utan överlappning och med 20 minuters städtid.
 - Sidnumrering: 8 filmer på startsidan, 10 på `/filmer`, 5 bokningar per flik. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
 - Toppnavigeringens sökknapp öppnar `/filmer?sok=1`, fokuserar sökfältet och tar bort fokusparametern. Datum och åldersfilter sparas i URL:en och bevaras vid omladdning och bakåt/framåt.
@@ -49,6 +50,7 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 
 | Fil | Innehåll |
 | :--- | :--- |
+| [design/booking-security.md](design/booking-security.md) | Gällande bokningsskydd, gästbekräftelse, kvoter, åtskillnad mellan förfrågningar och bokningar samt säkerhetskrav för framtida adminarbete. |
 | [design/tokens.md](design/tokens.md) | Sektion 2: Alla designtokens (färger, typografi, avstånd/layoutmått, hörnradier, skuggor/oskärpa samt brytpunkter och z-index) översatta till hex/px/rem och SCSS-variabler. |
 | [design/components.md](design/components.md) | Sektion 3: Alla återanvända UI-komponenter (knappar, chips/pills, badges, kort, tabeller, formulär, modaler/BottomSheets, tabbar, inline-feedback, platskartor, steppers och cookie-banner). |
 | [design/layout.md](design/layout.md) | Sektion 4: Applikationsskal, gemensam toppnavigering (`Navbar`) för publik hemsida och admin, mobil bottennavigering (`BottomNav`), mobil sidomeny (`MobileDrawer`), sidfot samt grid och responsivt beteende. |

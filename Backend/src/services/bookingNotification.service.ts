@@ -52,9 +52,6 @@ export async function sendConfirmationForBooking(
     process.env.FRONTEND_URL || config.corsOrigin[0] || "http://localhost:5173";
   const cancelUrl = `${frontendUrl}/avboka?token=${encodeURIComponent(cancelToken)}`;
 
-  console.log(`[Booking] Cancellation token for ${bookingRef}: ${cancelToken}`);
-  console.log(`[Booking] Cancellation URL: ${cancelUrl}`);
-
   await sendBookingConfirmation({
     email,
     bookingRef,

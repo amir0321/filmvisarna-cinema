@@ -6,6 +6,14 @@
 - **Skärm-ID:** `'admin'` med `activeTab === 'bokningar'`
 - **Källfiler:** `src/components/AdminScreen.tsx`, `src/components/admin/BokningarTab.tsx`, `src/components/admin/adminData.ts`
 
+#### Bindande säkerhetskrav för framtida adminarbete
+
+- Följ [bokningssäkerhet](../booking-security.md#åtskillnad-och-framtida-adminarbete--krav-inte-implementerad-adminfunktion). Kraven dokumenteras nu; ingen ny adminfunktion byggs i den aktuella ändringen.
+- Håll väntande och utgångna gästförfrågningar separata från bekräftade bokningar, biljettantal, beläggning och kassastatistik. En framtida förfrågningsvy ska vara separat, behörighetskontrollerad och aldrig visa verifieringstoken, tokenhash eller mejllänkar.
+- Flagga ovanligt många bokningar, stora mängder obetalda platser, upprepade kvotöverträdelser och misstänkt boknings-/avbokningsbeteende. Visa förklaringen till flaggan; VPN eller delad IP är inte ensamt skäl för avbokning.
+- Behörig personal ska kunna granska och avboka misstänkta bokningar med uttrycklig bekräftelse och motivering. Platser och status uppdateras i samma transaktion. Hantering av betalda bokningar och återbetalning måste specificeras före implementation.
+- Alla sådana API-anrop kräver `requireAdmin` på servern. Åtgärder loggas med administratör, tid, bokningsreferens, åtgärd och motivering i en skyddad granskningslogg.
+
 #### Sidhuvud i `AdminScreen`
 - **Desktop (`>= 768px`):**
   - Rubrik (`h1`): `Bokningar & Kassa` (`22px`, `Poppins`, `font-weight: 700`).

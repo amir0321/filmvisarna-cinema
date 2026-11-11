@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Server } from 'node:http';
@@ -136,6 +136,11 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     return token!;
   }
 
+  async function expireVerificationCooldown() {
+    const key = createHash('sha256').update('verify_email:cooldown:anna@example.test').digest('hex');
+    await pool.query("UPDATE auth_rate_limit SET window_start = now() - interval '61 seconds' WHERE key_hash = $1", [key]);
+  }
+
   test('registers an account, hashes its password and issues an authenticated session', async () => {
     const registered = await register('Anna@Example.Test');
     assert.equal(registered.user.email, 'anna@example.test');
@@ -158,6 +163,24 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal(wrong.body.error, unknown.body.error);
     assert.equal((await request('/login', { email: 'anna@example.test', password })).status, 200);
     assert.equal((await request('/register', { email: 'other@example.test', password: 'å'.repeat(37) })).status, 400);
+  });
+
+  test('sessions require a valid future JWT expiration even when the signature is correct', async () => {
+    const registered = await register();
+    const now = Math.floor(Date.now() / 1000);
+    for (const claims of [{}, { exp: now - 60 }, { exp: now }, { exp: 0 }, { exp: -1 },
+      { exp: null }, { exp: 'tomorrow' }, { exp: 1e308 }]) {
+      // Sign raw JSON so invalid claim types reach verification rather than signing validation.
+      const payload = Buffer.from(JSON.stringify({ sub: String(registered.user.id), version: 0, ...claims }));
+      const token = jwt.sign(payload, process.env.JWT_SECRET!, { algorithm: 'HS256' });
+      const result = await request('/me', undefined, token);
+      assert.equal(result.status, 401, JSON.stringify(claims));
+      assert.equal(result.body.error, 'Ogiltig eller utgången token.');
+    }
+    assert.equal((await request('/me', undefined, registered.token)).status, 200);
+    const loggedIn = await request('/login', { email: 'anna@example.test', password });
+    assert.equal(loggedIn.status, 200);
+    assert.equal((await request('/me', undefined, loggedIn.body.token)).status, 200);
   });
 
   test('stores only token hashes and verifies an email exactly once', async () => {
@@ -211,10 +234,14 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
   test('resending invalidates the old link and enforces the mail rate limit', async () => {
     const registered = await register();
     const old = tokenFor('verify_email');
+    assert.equal((await request('/resend-verification', {}, registered.token)).status, 429);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
     assert.notEqual(tokenFor('verify_email'), old);
     assert.equal((await request('/verify-email', { token: old })).status, 400);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 429);
     assert.equal((await request('/verify-email', { token: tokenFor('verify_email') })).status, 200);
   });
@@ -245,6 +272,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal(registered.verificationEmailSent, false);
     assert.equal(Number((await pool.query('SELECT count(*) FROM auth_action_token')).rows[0].count), 0);
     deliveryFails = false;
+    await expireVerificationCooldown();
     assert.equal((await request('/resend-verification', {}, registered.token)).status, 200);
     assert.equal(messages.length, 1);
     smtpConfigured = false;
@@ -272,7 +300,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
 
   test('password change revokes the old session and outstanding reset links', async () => {
     const registered = await register();
-    const legacySession = jwt.sign({}, process.env.JWT_SECRET!, { subject: String(registered.user.id), algorithm: 'HS256' });
+    const legacySession = jwt.sign({}, process.env.JWT_SECRET!, { subject: String(registered.user.id), algorithm: 'HS256', expiresIn: '1h' });
     assert.equal((await request('/me', undefined, legacySession)).status, 200);
     await request('/forgot-password', { email: 'anna@example.test' });
     await Promise.all(deliveries);

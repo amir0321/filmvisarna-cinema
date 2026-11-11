@@ -4,6 +4,8 @@ import { HttpError } from "../utils/httpErorr.js";
 import { generateUniqueBookingRef } from "../utils/bookingRef.js";
 import { sendConfirmationForBooking } from "./bookingNotification.service.js";
 import { generateCancellationJwt } from "./cancellations.service.js";
+import type pg from 'pg';
+import { consumeBookingLimit, hashBookingValue, normalizeBookingEmail } from './bookingLimits.service.js';
 
 import {
   BookingFilters,
@@ -83,8 +85,8 @@ function isSeatTaken(err: unknown): boolean {
   );
 }
 
-async function fetchBookings(where: string, params: unknown[]) {
-  const { rows } = await pool.query(
+async function fetchBookings(where: string, params: unknown[], db: pg.Pool = pool) {
+  const { rows } = await db.query(
     `${BOOKING_DETAILS_QUERY} WHERE ${where} ORDER BY st.starts_at DESC`,
     params,
   );
@@ -205,15 +207,97 @@ export async function getBookingByReference(reference: string) {
   return rows[0];
 }
 
-export async function createBooking(
-  input: CreateBookingInput,
-  userId?: number | null,
-): Promise<CreateBookingResult> {
-  const { screeningId, email, guestName, tickets, items = [] } = input;
+export interface BookingRequestOptions {
+  requestKey: string;
+  guestToken?: string;
+}
 
-  const client = await pool.connect();
+export function bookingFingerprint(input: CreateBookingInput): string {
+  return hashBookingValue(JSON.stringify({
+    screeningId: input.screeningId, email: normalizeBookingEmail(input.email), guestName: input.guestName?.trim() || null,
+    tickets: input.tickets.map(({ seatId, priceGroupId }) => ({ seatId, priceGroupId })).sort((a, b) => a.seatId - b.seatId),
+    items: (input.items ?? []).map(({ itemId, quantity }) => ({ itemId, quantity })).sort((a, b) => a.itemId - b.itemId),
+  }));
+}
+
+async function bookingResult(db: pg.Pool, bookingId: number, email: string): Promise<CreateBookingResult> {
+  const [booking] = await fetchBookings('b.id = $1', [bookingId], db);
+  return { bookingRef: booking.reference, totalPrice: Number(booking.totalPrice), booking,
+    cancelToken: generateCancellationJwt(booking.reference, email) };
+}
+
+export function createBookingService(dependencies: {
+  db: pg.Pool;
+  notify: typeof sendConfirmationForBooking;
+} = { db: pool, notify: sendConfirmationForBooking }) {
+  const { db, notify } = dependencies;
+  return async function book(
+    input: CreateBookingInput,
+    userId: number | null | undefined,
+    options: BookingRequestOptions,
+  ): Promise<CreateBookingResult> {
+    const { screeningId, guestName, tickets, items = [] } = input;
+    let email = normalizeBookingEmail(input.email);
+    if (userId) {
+      const { rows: [account] } = await db.query<{ email: string; isVerified: boolean }>(
+        'SELECT email, is_verified AS "isVerified" FROM app_user WHERE id = $1', [userId]);
+      if (!account?.isVerified) throw new HttpError(403, 'Verifiera din e-postadress innan du bokar biljetter.');
+      email = normalizeBookingEmail(account.email);
+    } else {
+      if (!options.guestToken || !/^[a-f0-9]{64}$/.test(options.guestToken)) {
+        throw new HttpError(403, 'Bekräfta gästbokningen via länken i ditt e-postmeddelande.');
+      }
+      const { rows: [intent] } = await db.query<{ email: string; screeningId: number; requestKey: string }>(
+        `SELECT email, (payload->>'screeningId')::int AS "screeningId", request_key AS "requestKey"
+         FROM guest_booking_intent WHERE token_hash = $1 AND expires_at > clock_timestamp()`, [hashBookingValue(options.guestToken)]);
+      if (!intent || intent.email !== email || intent.screeningId !== screeningId || intent.requestKey !== options.requestKey) {
+        throw new HttpError(400, 'Bekräftelselänken är ogiltig eller har gått ut. Begär en ny länk.');
+      }
+    }
+    const fingerprint = bookingFingerprint({ ...input, email });
+    const existingRequest = async (executor: pg.Pool | pg.PoolClient) => {
+      const { rows: [existing] } = await executor.query<{ id: number; requestHash: string }>(
+        'SELECT id, request_hash AS "requestHash" FROM booking WHERE identity_email = $1 AND request_key = $2', [email, options.requestKey]);
+      if (existing && existing.requestHash !== fingerprint) throw new HttpError(409, 'Bokningsförsöket har redan använts för ett annat innehåll. Försök igen med ett nytt val.');
+      return existing;
+  };
+  const previous = await existingRequest(db);
+  if (previous) return bookingResult(db, previous.id, email);
+  // Persist attempt counters independently, including failed booking attempts.
+  await consumeBookingLimit(db, `identity:${email}`, config.bookingLimits.attempts);
+
+  const client = await db.connect();
+  let bookingId: number;
+  let bookingRef: string;
   try {
     await client.query("BEGIN");
+    // Account and guest bookings serialize on the same verified email, even across servers/IPs.
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`booking-identity:${email}`]);
+    if (!userId) {
+      const intent = await client.query(`SELECT email FROM guest_booking_intent
+        WHERE token_hash = $1 AND expires_at > clock_timestamp() FOR UPDATE`, [hashBookingValue(options.guestToken!)]);
+      if (!intent.rowCount) throw new HttpError(400, 'Bekräftelselänken är ogiltig eller har gått ut. Begär en ny länk.');
+    }
+    const duplicate = await existingRequest(client);
+    if (duplicate) {
+      await client.query('COMMIT');
+      return bookingResult(db, duplicate.id, email);
+    }
+    const { rows: [usage] } = await client.query<{ bookings: string; unpaidSeats: string; screeningSeats: string }>(`
+      SELECT count(DISTINCT b.id) FILTER (WHERE NOT b.is_paid) AS bookings,
+        count(t.seat_id) FILTER (WHERE NOT b.is_paid) AS "unpaidSeats",
+        count(t.seat_id) FILTER (WHERE b.screening_id = $3) AS "screeningSeats"
+      FROM booking b JOIN screening s ON s.id = b.screening_id
+      LEFT JOIN app_user u ON u.id = b.user_id LEFT JOIN ticket t ON t.booking_id = b.id
+      WHERE b.status = 'confirmed' AND s.starts_at > clock_timestamp()
+        AND (COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) = $1 OR b.user_id = $2)`,
+    [email, userId ?? null, screeningId]);
+    if (Number(usage.screeningSeats) + tickets.length > config.bookingLimits.seatsPerScreening) {
+      throw new HttpError(409, `Du kan boka högst ${config.bookingLimits.seatsPerScreening} platser sammanlagt till samma visning.`);
+    }
+    if (Number(usage.bookings) >= config.bookingLimits.unpaidBookings || Number(usage.unpaidSeats) + tickets.length > config.bookingLimits.unpaidSeats) {
+      throw new HttpError(409, `Du kan ha högst ${config.bookingLimits.unpaidBookings} aktiva obetalda bokningar och ${config.bookingLimits.unpaidSeats} obetalda platser. Betala eller avboka en befintlig bokning först.`);
+    }
 
     // The screening must exist and not have started
     const screening = await client.query(
@@ -230,18 +314,12 @@ export async function createBooking(
     // Prices from price_group
     const priceGroupIds = [...new Set(tickets.map((t) => t.priceGroupId))];
     const groups = await client.query(
-      "SELECT id, price FROM price_group WHERE id = ANY($1::int[])",
+      "SELECT id FROM price_group WHERE id = ANY($1::int[])",
       [priceGroupIds],
     );
     if (groups.rowCount !== priceGroupIds.length) {
       throw new HttpError(400, "Ogiltig biljettyp.");
     }
-    const priceOfGroup = new Map<number, number>(
-      groups.rows.map((g: { id: number; price: string }) => [
-        g.id,
-        Number(g.price),
-      ]),
-    );
 
     // Seats must belong to this screening's cinema
     const seatIds = tickets.map((t) => t.seatId);
@@ -254,7 +332,7 @@ export async function createBooking(
     }
 
     // Generate unique booking reference with bookingRef utility (e.g. FV-ABC12)
-    const bookingRef = await generateUniqueBookingRef(async (candidateRef) => {
+    bookingRef = await generateUniqueBookingRef(async (candidateRef) => {
       const existing = await client.query(
         "SELECT 1 FROM booking WHERE booking_reference = $1",
         [candidateRef],
@@ -266,67 +344,45 @@ export async function createBooking(
     const finalGuestEmail = userId ? null : email;
 
     const booking = await client.query(
-      `INSERT INTO booking (screening_id, user_id, guest_email, guest_name, booking_reference)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [screeningId, finalUserId, finalGuestEmail, guestName ?? null, bookingRef],
+      `INSERT INTO booking (screening_id, user_id, guest_email, guest_name, booking_reference, identity_email, request_key, request_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [screeningId, finalUserId, finalGuestEmail, guestName ?? null, bookingRef, email, options.requestKey, fingerprint],
     );
-    const bookingId: number = booking.rows[0].id;
+    bookingId = booking.rows[0].id;
 
     // Create tickets (marks seats as taken)
-    let total = 0;
     for (const t of tickets) {
-      const price = priceOfGroup.get(t.priceGroupId)!;
       await client.query(
         `INSERT INTO ticket (screening_id, seat_id, booking_id, price_group_id)
          VALUES ($1, $2, $3, $4)`,
         [screeningId, t.seatId, bookingId, t.priceGroupId],
       );
-      total += price;
     }
 
     // Optional kiosk items
     if (items.length > 0) {
       const itemIds = items.map((i) => i.itemId);
       const found = await client.query(
-        "SELECT id, price FROM menu_item WHERE id = ANY($1::int[]) AND is_available",
+        "SELECT id FROM menu_item WHERE id = ANY($1::int[]) AND is_available",
         [itemIds],
       );
       if (found.rowCount !== itemIds.length) {
         throw new HttpError(400, "Ogiltiga eller slutsålda kioskprodukter.");
       }
-      const priceOfItem = new Map<number, number>(
-        found.rows.map((i: { id: number; price: string }) => [
-          i.id,
-          Number(i.price),
-        ]),
-      );
       for (const i of items) {
-        const price = priceOfItem.get(i.itemId)!;
         await client.query(
           `INSERT INTO booking_item (booking_id, menu_item_id, quantity)
            VALUES ($1, $2, $3)`,
           [bookingId, i.itemId, i.quantity],
         );
-        total += price * i.quantity;
       }
     }
 
-    const cancelToken = generateCancellationJwt(bookingRef, email);
-
+    if (!userId) {
+      await client.query('UPDATE guest_booking_intent SET booking_id = $1, payload = $2 WHERE token_hash = $3',
+        [bookingId, { ...input, email }, hashBookingValue(options.guestToken!)]);
+    }
     await client.query("COMMIT");
-
-    sendConfirmationForBooking(bookingId, bookingRef, email).catch((err) =>
-      console.error("Confirmation email failed:", err),
-    );
-
-    const created = await fetchBookings("b.id = $1", [bookingId]);
-
-    return {
-      bookingRef,
-      totalPrice: total,
-      booking: created[0] ?? null,
-      cancelToken,
-    };
   } catch (err) {
     await client.query("ROLLBACK");
 
@@ -337,9 +393,14 @@ export async function createBooking(
         "En eller flera stolar är redan bokade. Välj andra stolar.",
       );
     }
-    console.error("createBooking failed:", err);
+    console.error('[Booking] Creation failed');
     throw new HttpError(500, "Kunde inte skapa bokningen.");
   } finally {
     client.release();
   }
+  void notify(bookingId, bookingRef, email).catch(() => console.error('[Booking] Confirmation delivery failed'));
+  return bookingResult(db, bookingId, email);
+  };
 }
+
+export const createBooking = createBookingService();

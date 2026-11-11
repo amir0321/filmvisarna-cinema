@@ -14,7 +14,9 @@
     "seed:demo": "tsx src/seed.ts --demo",
     "seed:images": "tsx src/scripts/verify-seed-images.ts",
     "seed:check": "tsx src/scripts/verify-demo-seed.ts",
-    "migrate:auth": "tsx src/scripts/migrate-auth.ts"
+    "migrate:auth": "tsx src/scripts/migrate-auth.ts",
+    "migrate:bookings": "tsx src/scripts/migrate-bookings.ts",
+    "cleanup:bookings": "tsx src/scripts/cleanup-bookings.ts"
   },
   "keywords": [],
   "author": "",

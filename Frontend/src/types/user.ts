@@ -1,4 +1,6 @@
 export type UserRole = 'user' | 'admin'
+export type AuthRole = 'guest' | UserRole
+export type RoleLabel = 'Gäst' | 'Medlem' | 'Admin'
 
 export interface User {
   id: number
