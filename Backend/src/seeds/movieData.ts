@@ -162,14 +162,14 @@ const originalMovies: SeedMovie[] = [
 
 // These are retrospective demo premieres, with dates relative to the seed run.
 const extraMovies = [
-  { title: 'Oppenheimer', trailer: 'uYPbbksJxIg', duration: 180, age: '15', director: 'Christopher Nolan', genres: ['Drama', 'Thriller'], poster: 'ptpr0kGAckfQkJeJIt8st5dglvd.jpg', description: 'Fysikern J. Robert Oppenheimer leder utvecklingen av atombomben och ställs inför följderna av sitt arbete.' },
-  { title: 'Barbie', trailer: 'pBk4NYhWNMM', duration: 114, age: '7', director: 'Greta Gerwig', genres: ['Fantasy', 'Äventyr'], poster: 'iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', description: 'Barbie och Ken lämnar Barbieland för ett äventyr i den verkliga världen.' },
-  { title: 'Whiplash', trailer: '7d_jQycdQGo', duration: 106, age: '15', director: 'Damien Chazelle', genres: ['Drama'], poster: '7fn624j5lj3xTme2SgiLCeuedmO.jpg', description: 'En ung jazztrummis möter en lärare vars hårda metoder sätter både ambitionen och tillvaron på prov.' },
-  { title: 'Coco', trailer: 'Ga6RYejo6Hk', duration: 105, age: '7', director: 'Lee Unkrich', genres: ['Animation', 'Familj', 'Äventyr'], poster: 'gGEsBPAijhVUFoiNpgZXqRVWJt2.jpg', description: 'Musikälskande Miguel reser till de dödas värld och upptäcker sin familjs historia.' },
-  { title: 'Arrival', trailer: 'tFMo3UJ4B4g', duration: 116, age: '11', director: 'Denis Villeneuve', genres: ['Sci-Fi', 'Drama'], poster: 'x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg', description: 'En språkforskare försöker förstå besökare från en annan värld innan rädsla leder till en global konflikt.' },
-  { title: 'Soul', trailer: 'xOsLIiBStEs', duration: 100, age: '0', director: 'Pete Docter', genres: ['Animation', 'Familj', 'Fantasy'], poster: 'hm58Jw4Lw8OIeECIq5qyPYhAeRJ.jpg', description: 'Jazzmusikern Joe upptäcker vad som gör livet värdefullt under en oväntad resa bortom New York.' },
-  { title: 'Den vilda roboten', trailer: '67vbA5ZJdKQ', duration: 102, age: '7', director: 'Chris Sanders', genres: ['Animation', 'Familj', 'Äventyr'], poster: 'wTnV3PCVW5O92JMrFvvrRcV39RU.jpg', description: 'Roboten Roz blir strandsatt på en ö och lär sig leva tillsammans med djuren som bor där.' },
-  { title: 'Insidan ut 2', trailer: 'LEjhY15eCx0', duration: 96, age: '7', director: 'Kelsey Mann', genres: ['Animation', 'Familj', 'Äventyr'], poster: 'vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg', description: 'När Riley blir tonåring får hennes välbekanta känslor sällskap av nya och oväntade besökare.' },
+  { title: 'Oppenheimer', trailer: 'uYPbbksJxIg', duration: 180, age: '15', director: 'Christopher Nolan', actors: ['Cillian Murphy', 'Emily Blunt', 'Matt Damon'], genres: ['Drama', 'Thriller'], poster: 'ptpr0kGAckfQkJeJIt8st5dglvd.jpg', description: 'Fysikern J. Robert Oppenheimer leder utvecklingen av atombomben och ställs inför följderna av sitt arbete.' },
+  { title: 'Barbie', trailer: 'pBk4NYhWNMM', duration: 114, age: '7', director: 'Greta Gerwig', actors: ['Margot Robbie', 'Ryan Gosling', 'America Ferrera'], genres: ['Fantasy', 'Äventyr'], poster: 'iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', description: 'Barbie och Ken lämnar Barbieland för ett äventyr i den verkliga världen.' },
+  { title: 'Whiplash', trailer: '7d_jQycdQGo', duration: 106, age: '15', director: 'Damien Chazelle', actors: ['Miles Teller', 'J.K. Simmons', 'Paul Reiser'], genres: ['Drama'], poster: '7fn624j5lj3xTme2SgiLCeuedmO.jpg', description: 'En ung jazztrummis möter en lärare vars hårda metoder sätter både ambitionen och tillvaron på prov.' },
+  { title: 'Coco', trailer: 'Ga6RYejo6Hk', duration: 105, age: '7', director: 'Lee Unkrich', actors: ['Anthony Gonzalez', 'Gael García Bernal', 'Benjamin Bratt'], genres: ['Animation', 'Familj', 'Äventyr'], poster: 'gGEsBPAijhVUFoiNpgZXqRVWJt2.jpg', description: 'Musikälskande Miguel reser till de dödas värld och upptäcker sin familjs historia.' },
+  { title: 'Arrival', trailer: 'tFMo3UJ4B4g', duration: 116, age: '11', director: 'Denis Villeneuve', actors: ['Amy Adams', 'Jeremy Renner', 'Forest Whitaker'], genres: ['Sci-Fi', 'Drama'], poster: 'x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg', description: 'En språkforskare försöker förstå besökare från en annan värld innan rädsla leder till en global konflikt.' },
+  { title: 'Soul', trailer: 'xOsLIiBStEs', duration: 100, age: '0', director: 'Pete Docter', actors: ['Jamie Foxx', 'Tina Fey', 'Graham Norton'], genres: ['Animation', 'Familj', 'Fantasy'], poster: 'hm58Jw4Lw8OIeECIq5qyPYhAeRJ.jpg', description: 'Jazzmusikern Joe upptäcker vad som gör livet värdefullt under en oväntad resa bortom New York.' },
+  { title: 'Den vilda roboten', trailer: '67vbA5ZJdKQ', duration: 102, age: '7', director: 'Chris Sanders', actors: ['Lupita Nyong’o', 'Pedro Pascal', 'Kit Connor'], genres: ['Animation', 'Familj', 'Äventyr'], poster: 'wTnV3PCVW5O92JMrFvvrRcV39RU.jpg', description: 'Roboten Roz blir strandsatt på en ö och lär sig leva tillsammans med djuren som bor där.' },
+  { title: 'Insidan ut 2', trailer: 'LEjhY15eCx0', duration: 96, age: '7', director: 'Kelsey Mann', actors: ['Amy Poehler', 'Maya Hawke', 'Kensington Tallman'], genres: ['Animation', 'Familj', 'Äventyr'], poster: 'vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg', description: 'När Riley blir tonåring får hennes välbekanta känslor sällskap av nya och oväntade besökare.' },
 ];
 
 export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] {
@@ -182,7 +182,7 @@ export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] 
     duration_minutes: movie.duration,
     age_rating: movie.age,
     director: movie.director,
-    actors: [],
+    actors: movie.actors,
     imdb_rating: 8.0,
     description: movie.description,
     trailer_url: `https://www.youtube.com/watch?v=${movie.trailer}`,

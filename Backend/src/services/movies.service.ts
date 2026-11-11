@@ -21,6 +21,12 @@ const MOVIE_SELECT = `
       WHERE mp.movie_id = m.id AND mp.role = 'director'
       LIMIT 1
     )) AS director,
+    COALESCE((
+      SELECT array_agg(p.name ORDER BY p.name)
+      FROM movie_person mp
+      JOIN person p ON p.id = mp.person_id
+      WHERE mp.movie_id = m.id AND mp.role = 'actor'
+    ), '{}') AS actors,
     m.imdb_rating::float AS imdb_rating,
     m.release_date,
     COALESCE(
