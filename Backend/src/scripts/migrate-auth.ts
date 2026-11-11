@@ -4,8 +4,9 @@ import { pool } from '../db.js';
 
 async function migrate() {
   try {
-    const sql = await readFile(resolve(process.cwd(), 'sql/migrations/20261102_auth_actions.sql'), 'utf8');
-    await pool.query(sql);
+    for (const name of ['20261102_auth_actions.sql', '20261111_auth_sessions.sql']) {
+      await pool.query(await readFile(resolve(process.cwd(), 'sql/migrations', name), 'utf8'));
+    }
     console.log('Auth migration applied successfully.');
   } finally { await pool.end(); }
 }

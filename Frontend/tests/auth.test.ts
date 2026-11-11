@@ -2,47 +2,18 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { getSafeRedirectPath, isAuthPath } from '../src/utils/links.ts'
 import { validateAuth, validateNewPassword } from '../src/utils/authValidation.ts'
-import { getAuthRole, getRoleLabel, getTokenExpiresAt, isTokenValid } from '../src/utils/authSession.ts'
+import { getAuthRole, getRoleLabel } from '../src/utils/authSession.ts'
 import { getPostLoginPath, getProtectedRouteAccess } from '../src/utils/routeAccess.ts'
 import type { User } from '../src/types/user.ts'
 
-function jwt(payload: unknown, header: unknown = { alg: 'HS256', typ: 'JWT' }): string {
-  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
-  return `${encode(header)}.${encode(payload)}.c2lnbmF0dXJl`
-}
-
-test('JWT expiry uses seconds and expires exactly at exp, including fractional seconds', () => {
-  const token = jwt({ exp: 1_800_000_000.5, name: 'Åsa 🎬' })
-  assert.equal(getTokenExpiresAt(token), 1_800_000_000_500)
-  assert.equal(isTokenValid(token, 1_800_000_000_499), true)
-  assert.equal(isTokenValid(token, 1_800_000_000_500), false)
-  assert.equal(isTokenValid(token, 1_800_000_000_501), false)
-})
-
-test('invalid JWTs and absent or invalid exp claims cannot restore a session', () => {
-  for (const token of [null, '', 'invalid', 'a.b.c', jwt(null), jwt([]), jwt({}),
-    jwt({ exp: '1800000000' }), jwt({ exp: 0 }), jwt({ exp: -1 }),
-    jwt({ exp: null }), jwt({ exp: 1e308 }), jwt({ exp: 1_800_000_000 }, { alg: 'none' }),
-    jwt({ exp: 1_800_000_000 }, null), jwt({ exp: 1_800_000_000 }) + '.extra',
-    jwt({ exp: 1_800_000_000 }).replace(/\.[^.]+$/, '.a'),
-    'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOkluZmluaXR5fQ.c2ln']) {
-    assert.equal(getTokenExpiresAt(token), null, String(token))
-    assert.equal(isTokenValid(token, 0), false, String(token))
-  }
-  assert.equal(isTokenValid(jwt({ exp: 1 }), 1001), false)
-})
-
-test('session roles and Swedish labels require both a token and a user', () => {
+test('session roles use the server-verified user without exposing a token', () => {
   const user: User = { id: 1, email: 'anna@example.test', role: 'user' }
   const admin: User = { ...user, role: 'admin' }
-  const token = jwt({ exp: 1_800_000_000 })
-  for (const [account, sessionToken, role, label] of [
-    [null, null, 'guest', 'Gäst'], [null, token, 'guest', 'Gäst'],
-    [user, null, 'guest', 'Gäst'], [admin, null, 'guest', 'Gäst'],
-    [user, token, 'user', 'Medlem'], [admin, token, 'admin', 'Admin'],
+  for (const [account, role, label] of [
+    [null, 'guest', 'Gäst'], [user, 'user', 'Medlem'], [admin, 'admin', 'Admin'],
   ] as const) {
-    assert.equal(getAuthRole(account, sessionToken), role)
-    assert.equal(getRoleLabel(getAuthRole(account, sessionToken)), label)
+    assert.equal(getAuthRole(account), role)
+    assert.equal(getRoleLabel(getAuthRole(account)), label)
   }
 })
 

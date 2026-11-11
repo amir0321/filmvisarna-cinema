@@ -3,5 +3,5 @@ name: Delete screening (Admin)
 url: http://localhost:3000/api/screenings/1
 method: DELETE
 headers:
-  Authorization: Bearer {{admin_token}}
+  X-CSRF-Protection: "1"
 order: 6000

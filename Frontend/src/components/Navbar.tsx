@@ -18,7 +18,7 @@ const ADMIN_NAV_LINKS = [
 ] as const
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout, loggingOut, logoutError } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -28,9 +28,8 @@ export default function Navbar() {
   const initials = getUserInitials(user)
   const displayName = getUserDisplayName(user)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
+  const handleLogout = async () => {
+    try { await logout(); navigate('/') } catch { /* The menu displays the error. */ }
   }
 
   return (
@@ -151,6 +150,7 @@ export default function Navbar() {
                   </span>
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end nav-user-dropdown">
+                  {logoutError && <li className="px-3 py-2 text-danger small" role="alert">{logoutError}</li>}
                   <li className="px-3 py-2 border-bottom border-secondary border-opacity-25">
                     <div className="fw-semibold text-light small text-truncate">{displayName}</div>
                     <div className="text-secondary nav-dropdown-email text-truncate">{user.email}</div>
@@ -193,10 +193,11 @@ export default function Navbar() {
                     <button
                       type="button"
                       className="dropdown-item d-flex align-items-center gap-2 nav-dropdown-logout"
+                      disabled={loggingOut}
                       onClick={handleLogout}
                     >
                       <i className="bi bi-box-arrow-right" aria-hidden="true"></i>
-                      <span>Logga ut</span>
+                      <span>{loggingOut ? 'Loggar ut…' : 'Logga ut'}</span>
                     </button>
                   </li>
                 </ul>

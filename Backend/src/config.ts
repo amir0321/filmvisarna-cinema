@@ -9,8 +9,11 @@ const schema = z.object({
   }, 'must be an HTTP(S) origin without credentials, a path, query or fragment'),
   PORT: z.coerce.number().int().default(3000),
   JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
-  JWT_EXPIRES_IN: z.string().default("7d"),
-  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  JWT_EXPIRES_IN: z.string().default("8h"),
+  CORS_ORIGIN: z.string().default("http://localhost:5173").refine(value => value.split(',').every(origin => {
+    try { return new URL(origin.trim()).origin === origin.trim() && ['http:', 'https:'].includes(new URL(origin.trim()).protocol); }
+    catch { return false; }
+  }), 'must contain explicit HTTP(S) origins without wildcards or paths'),
   TIMEZONE: z.string().default("Europe/Stockholm"),
   SCREENING_BUFFER_MINUTES: z.coerce.number().int().min(0).default(20),
   CANCELLATION_DEADLINE_HOURS: z.coerce.number().int().min(0).default(2),
