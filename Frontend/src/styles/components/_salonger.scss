@@ -1,7 +1,7 @@
 .fv-salonger__hero {
   position: relative;
   background: linear-gradient(135deg, $fv-bg 0%, $fv-card-bg 50%, $fv-bg 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid $fv-border;
 
   &::before {
     content: '';
@@ -10,15 +10,15 @@
     opacity: 0.05;
     pointer-events: none;
     background-image:
-      linear-gradient(#fff 1px, transparent 1px),
-      linear-gradient(90deg, #fff 1px, transparent 1px);
+      linear-gradient($fv-white 1px, transparent 1px),
+      linear-gradient(90deg, $fv-white 1px, transparent 1px);
     background-size: 40px 40px;
   }
 }
 
 .fv-salonger__hero-inner {
   position: relative;
-  max-width: 1280px;
+  max-width: $fv-container-7xl;
   margin: 0 auto;
   padding: 5rem 1.25rem 3.5rem;
 }
@@ -27,7 +27,7 @@
   display: inline-block;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: rgba(229, 9, 20, 0.15);
+  background: tint($fv-primary, 0.15);
   color: $fv-primary;
   font-size: 0.75rem;
   font-weight: 600;
@@ -37,6 +37,7 @@
 
 .fv-salonger__title {
   margin: 1rem 0;
+  font-family: $fv-font-display;
   font-size: clamp(2.25rem, 5vw, 3rem);
   font-weight: 700;
   color: $fv-fg;
@@ -52,13 +53,17 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-  max-width: 1280px;
+  max-width: $fv-container-7xl;
   margin: 0 auto;
   padding: 3rem 1.25rem;
 
-  @media (min-width: 1024px) {
+  @media (min-width: $fv-bp-lg) {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.fv-salonger__state {
+  grid-column: 1 / -1;
 }
 
 .fv-salonger__card {
@@ -66,34 +71,57 @@
   flex-direction: column;
   overflow: hidden;
   background: $fv-card-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
   &--primary {
-  --tone: #{$fv-primary};
-}
-&--success {
-  --tone: #{$fv-success};
-}
+    --tone: #{$fv-primary};
+  }
+
+  &--success {
+    --tone: #{$fv-success};
+  }
 }
 
 .fv-salonger__media {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(180deg, #05070c, $fv-card-bg);
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
+  background: linear-gradient(180deg, $fv-video-bg, $fv-card-bg);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba($fv-card-bg, 0.95) 0%,
+      rgba($fv-bg, 0.35) 55%,
+      rgba($fv-bg, 0.15) 100%
+    );
+    pointer-events: none;
+  }
+}
+
+.fv-salonger__media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .fv-salonger__media-top {
   position: absolute;
   top: 1rem;
   right: 1rem;
+  z-index: 1;
 }
 
 .fv-salonger__media-bottom {
   position: absolute;
   left: 1rem;
   bottom: 1rem;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -101,9 +129,9 @@
 
 .fv-salonger__pill {
   padding: 0.3rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba($fv-white, 0.18);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba($fv-white, 0.08);
   backdrop-filter: blur(6px);
   color: $fv-fg;
   font-size: 0.8rem;
@@ -112,11 +140,11 @@
   &--solid {
     background: var(--tone);
     border-color: var(--tone);
-    color: #fff;
+    color: $fv-white;
   }
 
   &--dark {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba($color-black, 0.6);
   }
 }
 
@@ -136,6 +164,7 @@
 
 .fv-salonger__name {
   margin: 0;
+  font-family: $fv-font-display;
   font-size: 1.75rem;
   font-weight: 700;
   color: $fv-fg;
@@ -152,7 +181,7 @@
   gap: 0.4rem;
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
+  background: tint($fv-info, 0.12);
   color: $fv-info;
   font-size: 0.8rem;
   white-space: nowrap;
@@ -178,7 +207,7 @@
   display: block;
   margin-top: auto;
   padding: 0.85rem;
-  border-radius: 10px;
+  border-radius: $fv-radius-md;
   background: $fv-primary;
   color: $fv-white;
   font-weight: 700;
@@ -190,13 +219,14 @@
     filter: brightness(1.1);
   }
 }
+
 .fv-minimap {
-  --example: #{$fv-success};
+  --example: var(--tone, #{$fv-success});
   margin-bottom: 1.25rem;
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid $fv-border;
+  border-radius: $fv-radius-xl;
+  background: rgba($color-black, 0.2);
 }
 
 .fv-minimap__title {
@@ -213,7 +243,7 @@
   height: 14px;
   margin: 0 auto 0.9rem;
   border-radius: 40% 40% 0 0 / 100% 100% 0 0;
-  background: linear-gradient(#475569, $fv-seat-available);
+  background: linear-gradient($fv-secondary, $fv-seat-available);
   color: $fv-muted-fg;
   font-size: 0.55rem;
   letter-spacing: 0.15em;
@@ -221,28 +251,40 @@
   text-align: center;
 }
 
+.fv-minimap__rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .fv-minimap__row {
   position: relative;
   display: flex;
   gap: 4px;
+
+  &--front {
+    opacity: 0.5;
+  }
 }
 
 .fv-minimap__label {
   position: absolute;
   right: 100%;
   margin-right: 0.5rem;
+  font-family: $fv-font-mono;
   font-size: 0.65rem;
-  line-height: 12px;
+  line-height: 10px;
   color: $fv-muted-fg;
 }
 
 .fv-minimap__seat {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: 10px;
+  height: 9px;
+  border-radius: 3px 3px 2px 2px;
   background: $fv-seat-available;
 
- &--example {
+  &--example {
     background: var(--example);
   }
 
@@ -268,7 +310,7 @@
   border-radius: 50%;
   background: $fv-seat-available;
 
-   &--example {
+  &--example {
     background: var(--example);
   }
 
@@ -276,8 +318,9 @@
     background: $fv-info;
   }
 }
+
 .fv-salonger__info-wrap {
-  max-width: 1280px;
+  max-width: $fv-container-7xl;
   margin: 0 auto;
   padding: 0 1.25rem 4rem;
 }
@@ -288,16 +331,17 @@
   gap: 2rem;
   padding: 2rem;
   background: $fv-card-bg;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
 
-  @media (min-width: 768px) {
+  @media (min-width: $fv-bp-md) {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 .fv-salonger__info-title {
   margin: 0 0 1rem;
+  font-family: $fv-font-display;
   font-size: 1.25rem;
   font-weight: 700;
   color: $fv-fg;
@@ -338,9 +382,9 @@
 
 .fv-salonger__fact {
   padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid $fv-border;
+  border-radius: $fv-radius-xl;
+  background: rgba($fv-white, 0.04);
 
   span {
     display: block;
