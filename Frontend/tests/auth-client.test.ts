@@ -60,7 +60,7 @@ test('protected failures expire the UI but initial restoration and password vali
 
 test('late unauthorized responses from an earlier session cannot expire a new login', async () => {
   let resolveResponse!: (response: Response) => void
-  globalThis.fetch = () => new Promise(resolve => { resolveResponse = resolve })
+  globalThis.fetch = () => new Promise<Response>(resolve => { resolveResponse = resolve })
   const pending = apiClient.get('/bookings/me')
   advanceSessionRevision()
   resolveResponse(Response.json({ error: 'Expired' }, { status: 401 }))
