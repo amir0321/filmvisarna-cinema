@@ -9,6 +9,7 @@ export interface Movie {
   landscape_image_url: string | null
   trailer_url: string | null
   director: string | null
+  actors?: string[]
   imdb_rating: number | null
   release_date: string | null
   genres: string[]

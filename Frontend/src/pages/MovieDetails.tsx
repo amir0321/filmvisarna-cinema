@@ -1,14 +1,35 @@
-import { getBookingUrl } from '../utils/links'
-import { useMemo } from 'react'
-import { useScreenings } from '../hooks/useScreenings'
+import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { useMovie } from '../hooks/useMovies'
+import { EmptyState } from '../components/EmptyState'
+import { Poster } from '../components/Poster'
+import { CardListSkeleton, Skeleton } from '../components/Skeleton'
 import TrailerModal from '../components/TrailerModal'
+import { useMovie } from '../hooks/useMovies'
+import { useScreenings } from '../hooks/useScreenings'
+import type { Screening } from '../types/screening'
+import {
+  formatDateLong,
+  formatDateShort,
+  formatTime,
+  toCinemaIsoDate,
+} from '../utils/date'
+import { getBookingUrl } from '../utils/links'
+
+function formatAgeRating(ageRating: string | null): string {
+  if (!ageRating) return 'Ej angiven'
+  const normalized = ageRating.trim().toLowerCase()
+  if (normalized === '0' || normalized === 'alla' || normalized === 'barntillåten') {
+    return 'Alla åldrar'
+  }
+  return normalized.endsWith('år') ? ageRating : `${ageRating} år`
+}
 
 export default function MovieDetails() {
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const isTrailerOpen = searchParams.get('trailer') === '1'
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [failedHeroSources, setFailedHeroSources] = useState<string[]>([])
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -18,63 +39,151 @@ export default function MovieDetails() {
   } = useScreenings({ movieId: Number(id) })
 
   const screeningsByDate = useMemo(() => {
-    const groups = new Map<string, typeof screenings>()
+    const groups = new Map<string, Screening[]>()
 
     screenings?.forEach((screening) => {
-      const date = new Date(screening.startsAt).toLocaleDateString('sv-SE')
+      const date = toCinemaIsoDate(screening.startsAt)
 
       if (!groups.has(date)) {
         groups.set(date, [])
       }
       groups.get(date)!.push(screening)
     })
-
     return Array.from(groups.entries())
   }, [screenings])
 
-  if (loading) {
-    return <div className='py-4'>Laddar film...</div>
-  }
+  const activeDate =
+    selectedDate && screeningsByDate.some(([date]) => date === selectedDate)
+      ? selectedDate
+      : screeningsByDate[0]?.[0] ?? null
 
-  if (error || !movie) {
+  const selectedScreenings: Screening[] =
+    screeningsByDate.find(([date]) => date === activeDate)?.[1] ?? []
+
+  if (loading) {
     return (
-      <div className='py-4'>
-        <h1 className='h2 fw-bold'>Filmen kunde inte hittas</h1>
-        <p className='text-secondary'>Filmen kunde inte laddas. Kontrollera att länken är korrekt.
-        </p>
-        <button className='btn btn-outline-danger' onClick={refetch}>
-          Försök igen
-        </button>
+      <div className='movie-details-page' role='status' aria-busy='true'>
+        <span className='visually-hidden'>Laddar film…</span>
+        <div className='movie-details-hero'>
+          <Skeleton variant='rect' height='100%' />
+        </div>
+        <div className='movie-details-content'>
+          <div className='movie-details-grid'>
+            <div className='movie-details-header'>
+              <Skeleton variant='pill' width='120px' height='28px' className='mb-3' />
+              <Skeleton variant='text' width='65%' height='44px' className='mb-2' />
+              <Skeleton variant='text' width='35%' height='20px' />
+            </div>
+            <div className='movie-details-sidebar'>
+              <Skeleton variant='rect' height='420px' className='rounded-4 mb-4' />
+              <Skeleton variant='rect' height='180px' className='rounded-4' />
+            </div>
+            <div className='movie-details-body'>
+              <Skeleton variant='text' width='100%' height='80px' className='mb-4' />
+              <CardListSkeleton count={2} />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
+  if (error || !movie) {
+    return (
+      <div className='py-5'>
+        <EmptyState
+          variant='error'
+          title='Filmen kunde inte hittas'
+          description={
+            error || 'Filmen kunde inte laddas. Kontrollera att länken är korrekt.'
+          }
+          actionLabel='Försök igen'
+          onAction={refetch}
+        />
+      </div>
+    )
+  }
+
+  const heroSrc = [movie.landscape_image_url, movie.poster_url].find(
+    (source): source is string => Boolean(source && !failedHeroSources.includes(source)),
+  )
 
   return (
-    <div className='py-4'>
-      <div className='row g-4'>
-        <div className='col-12 col-md-4'>
-          {movie.poster_url ? (
-            <img
-              src={movie.poster_url}
-              alt={`Affisch för ${movie.title}`}
-              className='img-fluid rounded-4 shadow'
-            />
-          ) : (
-            <div className='bg-card rounded-4 p-5 text-center'>
-              Ingen affisch tillgänglig
-            </div>
-          )}
+    <div className='movie-details-page'>
+      <section className='movie-details-hero'>
+        {heroSrc && (
+          <img
+            src={heroSrc}
+            alt=''
+            className='movie-details-hero__image'
+            onError={() =>
+              setFailedHeroSources((prev) =>
+                prev.includes(heroSrc) ? prev : [...prev, heroSrc],
+              )
+            }
+          />
+        )}
 
-          <div className='card bg-card border-secondary rounded-4 mt-4'>
-            <div className='card-body p-4'>
+        <div className='movie-details-hero__overlay' />
+
+        <Link to='/filmer' className='movie-details-hero__back'>
+          <span aria-hidden='true'>←</span>
+          Tillbaka
+        </Link>
+
+        {movie.trailer_url && (
+          <button
+            type='button'
+            className='movie-details-hero__play'
+            aria-label={`Spela trailer för ${movie.title}`}
+            onClick={() => setSearchParams({ trailer: '1' }, { replace: true })}
+          >
+            ▶
+          </button>
+        )}
+      </section>
+
+      <div className='movie-details-content'>
+        <div className='movie-details-grid'>
+          {/* Titelblock: visas högst upp på mobil, och överst i högerkolumnen på desktop */}
+          <header className='movie-details-header'>
+            <div className='d-flex flex-wrap gap-2 mb-3'>
+              {movie.genres.map((genre) => (
+                <span key={genre} className='genre-badge'>
+                  {genre}
+                </span>
+              ))}
+            </div>
+
+            <h1 className='movie-details-title mb-2'>{movie.title}</h1>
+
+            {movie.director && (
+              <p className='movie-details-director mb-0'>
+                Regi: {movie.director}
+              </p>
+            )}
+          </header>
+
+          {/* Vänster kolumn: affisch och fakta */}
+          <aside className='movie-details-sidebar'>
+            <div className='movie-details-poster-column'>
+              <Poster
+                src={movie.poster_url}
+                fallbackSrc={movie.landscape_image_url}
+                alt={`Affisch för ${movie.title}`}
+                title={movie.title}
+                className='movie-details-poster'
+              />
+            </div>
+
+            <div className='movie-details-facts'>
               <h2 className='h6 fw-bold text-secondary text-uppercase mb-3'>
                 Fakta
               </h2>
 
               <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
                 <strong>Åldersgräns</strong>
-                <span>{movie.age_rating || 'Ej angiven'}</span>
+                <span>{formatAgeRating(movie.age_rating)}</span>
               </div>
 
               <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
@@ -91,119 +200,122 @@ export default function MovieDetails() {
                 </span>
               </div>
             </div>
-          </div>
-        </div>
+          </aside>
 
-        <div className='col-12 col-md-8'>
-          <div className='d-flex flex-wrap gap-2 mb-3'>
-            {movie.genres.map((genre) => (
-              <span key={genre} className='badge bg-secondary'>
-                {genre}
-              </span>
-            ))}
-          </div>
+          {/* Höger kolumn: synopsis, medverkande och visningar */}
+          <div className='movie-details-body'>
+            <div className='movie-details-main'>
+              <p className='movie-details-synopsis'>
+                {movie.description || 'Synopsis saknas.'}
+              </p>
 
-          <h1 className='display-5 fw-bold mb-3'>{movie.title}</h1>
-          {movie.trailer_url && (
-            <button
-              type='button'
-              className='btn btn-outline-light mb-3'
-              onClick={() => setSearchParams({ trailer: '1' }, { replace: true })}>
-              <i className='bi bi-play-fill me-2' aria-hidden='true'></i>
-              Se trailer
-            </button>
-          )}
-          {movie.director && (
-            <p className='text-secondary mb-3'>
-              Regi: {movie.director}
-            </p>
-          )}
-
-          <p className='fs-5'>
-            {movie.description || 'Synopsis saknas.'}
-          </p>
-
-          <section className='mt-5'>
-            <h2 className='h3 fw-bold mb-4'>Visningstider</h2>
-            {screeningsLoading && (
-              <p className='text-secondary'>Laddar visningstider...</p>
-            )}
-
-            {screeningsError && (
-              <div className='alert alert-danger' role='alert'>
-                Kunde inte ladda visningstider: {screeningsError}
-                <button
-                  type='button'
-                  className='btn btn-outline-danger btn-sm ms-3'
-                  onClick={refetchScreenings}>
-                  Försök igen
-                </button>
-              </div>
-            )}
-
-            {!screeningsLoading &&
-              !screeningsError &&
-              (!screenings || screenings.length === 0) && (
-                <p className='text-secondary'>
-                  Det finns inga kommande visningar för den här filmen.
-                </p>
+              {movie.actors && movie.actors.length > 0 && (
+                <section className='movie-details-cast mt-4' aria-label='Medverkande'>
+                  <h2 className='movie-details-cast__heading'>Medverkande</h2>
+                  <div className='movie-details-cast__list'>
+                    {movie.actors.map((actor) => (
+                      <span key={actor} className='movie-details-cast__pill'>
+                        {actor}
+                      </span>
+                    ))}
+                  </div>
+                </section>
               )}
 
-            {!screeningsLoading && screenings && screenings.length > 0 && (
-              <div className='d-flex flex-column gap-4'>
-                {screeningsByDate.map(([date, dateScreenings]) => (
-                  <section key={date}>
-                    <h3 className='h4 fw-bold text-capitalize mb-3'>
-                      {new Date(`${date}T12:00:00`).toLocaleDateString('sv-SE', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                      })}
-                    </h3>
+              <section className='mt-5 screening-section'>
+                <h2 className='h4 fw-bold mb-4'>Välj dag &amp; tid</h2>
 
-                    <div className='d-flex flex-column gap-3'>
-                      {dateScreenings?.map((screening) => (
-                        <div
-                          key={screening.id}
-                          className='card bg-card border-secondary'>
+                {screeningsByDate.length > 0 && (
+                  <div className='d-flex flex-wrap gap-2 mb-4'>
+                    {screeningsByDate.map(([date]) => (
+                      <button
+                        key={date}
+                        type='button'
+                        className={`btn ${
+                          activeDate === date ? 'btn-danger' : 'btn-outline-secondary'
+                        }`}
+                        onClick={() => setSelectedDate(date)}
+                      >
+                        {formatDateShort(date)}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                          <div className='card-body d-flex flex-wrap justify-content-between align-items-center gap-3'>
-                            <div>
-                              <p className='fw-bold mb-2'>
-                                {new Date(screening.startsAt).toLocaleTimeString(
-                                  'sv-SE',
-                                  {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  },
-                                )}
-                              </p>
+                {activeDate && (
+                  <h3 className='screening-date-heading'>
+                    {formatDateLong(activeDate)}
+                  </h3>
+                )}
 
-                              <span className='badge bg-secondary'>
-                                Salong: {screening.cinema}
-                              </span>
+                {screeningsLoading && <CardListSkeleton count={2} />}
+
+                {!screeningsLoading && screeningsError && (
+                  <div className='alert alert-danger' role='alert'>
+                    Kunde inte ladda visningstider: {screeningsError}
+                    <button
+                      type='button'
+                      className='btn btn-outline-danger btn-sm ms-3'
+                      onClick={refetchScreenings}
+                    >
+                      Försök igen
+                    </button>
+                  </div>
+                )}
+
+                {!screeningsLoading &&
+                  !screeningsError &&
+                  (!screenings || screenings.length === 0) && (
+                    <p className='text-secondary mb-0'>
+                      Det finns inga kommande visningar för den här filmen.
+                    </p>
+                  )}
+
+                {!screeningsLoading && !screeningsError && selectedScreenings.length > 0 && (
+                  <>
+                    <div className='screening-list'>
+                      {selectedScreenings.map((screening) => (
+                        <div key={screening.id} className='screening-card'>
+                          <Link
+                            to={getBookingUrl(screening.id)}
+                            className='screening-card__link'
+                          >
+                            <div className='screening-card__time'>
+                              <strong>{formatTime(screening.startsAt)}</strong>
+                              <span>–{formatTime(screening.endsAt)}</span>
                             </div>
 
-                            <div className='d-flex align-items-center gap-3'>
-                              <span className='text-secondary small'>
-                                {screening.availableSeats ?? '-'} platser lediga
-                              </span>
+                            <div className='screening-card__details'>
+                              <span>{screening.cinema}</span>
 
-                              <Link
-                                to={getBookingUrl(screening.id)}
-                                className='btn btn-danger'>
-                                Boka
-                              </Link>
+                              <span
+                                className={`screening-card__seats ${
+                                  screening.availableSeats == null
+                                    ? ''
+                                    : screening.availableSeats > 20
+                                      ? 'screening-card__seats--high'
+                                      : screening.availableSeats > 5
+                                        ? 'screening-card__seats--medium'
+                                        : 'screening-card__seats--low'
+                                }`}
+                              >
+                                {screening.availableSeats ?? '-'} kvar
+                              </span>
                             </div>
-                          </div>
+                          </Link>
                         </div>
                       ))}
                     </div>
-                  </section>
-                ))}
-              </div>
-            )}
-          </section>
+
+                    <p className='screening-info'>
+                      Välj en tid ovan för att gå vidare till stolsväljaren.
+                      Betalning sker i kassan.
+                    </p>
+                  </>
+                )}
+              </section>
+            </div>
+          </div>
         </div>
       </div>
 
