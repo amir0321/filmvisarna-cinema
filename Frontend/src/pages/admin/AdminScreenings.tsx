@@ -1,7 +1,8 @@
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import apiClient from '../../api/client'
 import { useCinemas, useMovies, usePagination, useScreenings } from '../../hooks'
+import { useScreeningProgramme } from '../../hooks/useScreeningProgramme'
 import type { Screening } from '../../types'
 import DatePickerPopover from '../../components/DatePickerPopover'
 import { EmptyState } from '../../components/EmptyState'
@@ -23,7 +24,6 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
 ]
 
 const PAGE_SIZE = 15
-const MAX_DAYS_AHEAD = 90
 
 function isInPeriod(screening: Screening, period: Period, today: string): boolean {
   const date = toCinemaIsoDate(screening.startsAt)
@@ -50,11 +50,12 @@ export default function AdminScreenings() {
   const [editingScreening, setEditingScreening] = useState<Screening | null>(null)
   const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string } | null>(null)
   const datePickerButtonRef = useRef<HTMLButtonElement>(null)
-  const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), [])
+  const closeDatePicker = () => setIsDatePickerOpen(false)
 
   const { data: screenings, loading, error, refetch } = useScreenings()
   const { data: movies } = useMovies()
   const { data: cinemas } = useCinemas()
+  const programme = useScreeningProgramme()
 
   const filteredScreenings = (screenings ?? [])
     .filter((screening) =>
@@ -142,8 +143,9 @@ export default function AdminScreenings() {
               id="admin-date-picker"
               anchorRef={datePickerButtonRef}
               selectedDate={pickedDate}
-              minDate={today}
-              maxDate={addDaysToIsoDate(today, MAX_DAYS_AHEAD)}
+              programme={programme}
+              minDate={programme.today}
+              maxDate={programme.maxDate}
               onSelect={chooseDate}
               onClose={closeDatePicker}
             />
