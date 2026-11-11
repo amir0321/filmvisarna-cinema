@@ -10,6 +10,8 @@ export interface CinemaOverview {
   opened_year: number | null
 }
 
+export type CinemaSummary = CinemaOverview
+
 export interface CinemaDetail extends CinemaOverview {
   seats: Seat[]
 }
