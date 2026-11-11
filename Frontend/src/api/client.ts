@@ -1,7 +1,7 @@
 import type { ApiResponse } from '../types'
 
 const API_BASE_URL = '/api'
-const TOKEN_KEY = 'token'
+export const AUTH_TOKEN_KEY = 'token'
 export const AUTH_UNAUTHORIZED_EVENT = 'fv:auth-unauthorized'
 
 export class ApiError extends Error {
@@ -18,7 +18,7 @@ export class ApiError extends Error {
 
 export function getAuthToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(AUTH_TOKEN_KEY)
   } catch {
     return null
   }
@@ -26,7 +26,7 @@ export function getAuthToken(): string | null {
 
 export function setAuthToken(token: string): void {
   try {
-    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(AUTH_TOKEN_KEY, token)
   } catch {
     // Ignore localStorage write error if disabled
   }
@@ -34,7 +34,7 @@ export function setAuthToken(token: string): void {
 
 export function clearAuthToken(): void {
   try {
-    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(AUTH_TOKEN_KEY)
   } catch {
     // Ignore localStorage errors
   }

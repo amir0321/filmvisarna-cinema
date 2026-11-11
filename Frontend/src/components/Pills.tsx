@@ -54,6 +54,7 @@ export interface FilterOption<T extends string = string> {
   value: T
   label: string
   count?: number
+  disabled?: boolean
 }
 
 export interface FilterPillGroupProps<T extends string = string> {
@@ -89,6 +90,7 @@ export function FilterPillGroup<T extends string = string>({
             active={isActive}
             variant={variant}
             onClick={() => onChange(option.value)}
+            disabled={option.disabled}
           >
             {option.label}
             {option.count !== undefined ? ` (${option.count})` : null}

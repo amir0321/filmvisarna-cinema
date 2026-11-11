@@ -45,13 +45,19 @@
     background-color 0.15s ease,
     border-color 0.15s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: $color-surface-chip-hover;
   }
 
-  &--active,
-  &--active:hover {
+  &--active:not(:disabled),
+  &--active:hover:not(:disabled) {
     border-color: $color-primary;
     background-color: $color-primary;
+  }
+
+  &:disabled {
+    color: $text-muted;
+    cursor: not-allowed;
+    opacity: 0.45;
   }
 }

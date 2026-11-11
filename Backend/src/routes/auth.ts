@@ -195,7 +195,7 @@ export function createAuthRouter(actions = authActionService) {
     const [user] = await query<{ is_verified: boolean }>('SELECT is_verified FROM app_user WHERE id = $1', [req.user!.id]);
     if (user?.is_verified) return res.json({ success: true, message: 'Din e-postadress är redan verifierad.' });
     const sent = await actions.sendLink(req.user!.email, 'verify_email');
-    if (!sent) throw new HttpError(429, 'Mejlet kunde inte skickas. Vänta 15 minuter innan du försöker igen, eller kontrollera om adressen redan är verifierad.');
+    if (!sent) throw new HttpError(429, 'Vänta minst en minut mellan verifieringsmejl. Efter tre utskick behöver du vänta 15 minuter.');
     res.json({ success: true, message: 'Ett nytt verifieringsmejl har skickats. Kontrollera även skräpposten.' });
   });
 

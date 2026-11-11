@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { useMovies, useScreenings } from '../hooks'
+import { useMovies } from '../hooks'
+import { useScreeningProgramme } from '../hooks/useScreeningProgramme'
 import type { Movie, Screening } from '../types'
 import { MovieGridSkeleton } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from '../components/Tabs'
 import MovieFilters, { type MovieSort } from '../components/movies/MovieFilters'
 import MovieListCard from '../components/movies/MovieListCard'
-import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate, todayIsoDate } from '../utils/date'
+import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate } from '../utils/date'
 import { getAgeLimit } from '../utils/movie'
 import Pagination from '../components/Pagination'
 import { usePagination } from '../hooks/usePagination'
-import { readAgeFilter, readDate, setAgeFilter } from '../utils/movieFilters'
+import { readAgeFilter, readMovieDateFilter, setAgeFilter } from '../utils/movieFilters'
 
 type MoviesTab = 'now' | 'upcoming'
 
@@ -48,13 +49,14 @@ function matchesSearch(movie: Movie, search: string): boolean {
 export default function Movies() {
   const [searchParams, setSearchParams] = useSearchParams()
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const today = todayIsoDate()
+  const programme = useScreeningProgramme()
+  const today = programme.today
   const [tab, setTab] = useState<MoviesTab>('now')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<MovieSort>('popular')
   const [genre, setGenre] = useState('all')
   const age = String(readAgeFilter(searchParams) ?? 'all')
-  const date = readDate(searchParams, today, DAYS_SHOWN - 1) ?? today
+  const date = readMovieDateFilter(searchParams, today, programme.dates)
 
   function setAge(value: string) {
     setSearchParams((previous) => setAgeFilter(previous, value === 'all' ? null : Number(value)))
@@ -63,14 +65,17 @@ export default function Movies() {
   function setDate(value: string) {
     setSearchParams((previous) => {
       const next = new URLSearchParams(previous)
-      if (value === today) next.delete('date')
-      else next.set('date', value)
+      next.delete('when')
+      next.set('date', value)
       return next
     })
   }
 
-  const { data: movies, loading, error, refetch } = useMovies()
-  const { data: screenings } = useScreenings({ date })
+  const { data: movies, loading: moviesLoading, error: moviesError, refetch: refetchMovies } = useMovies()
+  const loading = moviesLoading || (tab === 'now' && programme.loading)
+  const error = moviesError ?? (tab === 'now' ? programme.error : null)
+  const refetch = () => { void refetchMovies(); void programme.refetch() }
+  const screenings = programme.screenings.filter(screening => toCinemaIsoDate(screening.startsAt) === date)
 
   useEffect(() => {
     if (searchParams.get('sok') !== '1' || !searchInputRef.current) return
@@ -102,7 +107,7 @@ export default function Movies() {
 
   const dateOptions = Array.from({ length: DAYS_SHOWN }, (_, index) => {
     const isoDate = addDaysToIsoDate(today, index)
-    return { value: isoDate, label: formatDayChipLabel(isoDate) }
+    return { value: isoDate, label: formatDayChipLabel(isoDate), disabled: programme.loading || Boolean(programme.error) || !programme.availableDates.has(isoDate) }
   })
 
   const screeningsByMovie = new Map<number, Screening[]>()
@@ -121,6 +126,11 @@ export default function Movies() {
     .sort((a, b) => compareMovies(a, b, sort, bookedSeats))
 
   const { page, totalPages, pageItems, setPage } = usePagination(filteredMovies, 10)
+  const [paginationDate, setPaginationDate] = useState(date)
+  if (paginationDate !== date) {
+    setPaginationDate(date)
+    if (tab === 'now') setPage(1)
+  }
 
   const hasActiveFilters = search !== '' || genre !== 'all' || age !== 'all'
 
@@ -167,6 +177,7 @@ export default function Movies() {
 
       <TabsPanel value={tab} className="container movies-container py-4">
         <MovieFilters
+          programme={programme}
           inputRef={searchInputRef}
           search={search}
           onSearchChange={(value) => {
@@ -224,7 +235,7 @@ export default function Movies() {
               description={
                 hasActiveFilters
                   ? 'Inga filmer matchar dina valda filter. Prova att återställa filtreringen.'
-                  : 'Det finns inga filmer att visa här just nu.'
+                  : tab === 'now' ? 'Det finns inga återstående visningar för valt datum.' : 'Det finns inga filmer att visa här just nu.'
               }
               actionLabel={hasActiveFilters ? 'Rensa filter' : undefined}
               onAction={hasActiveFilters ? clearFilters : undefined}

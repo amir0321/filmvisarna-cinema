@@ -1,7 +1,7 @@
 DROP VIEW IF EXISTS booking_totals, screening_times, cinema_overview;
 DROP TABLE IF EXISTS
   booking_item, combo_item, menu_item,
-  ticket, booking, price_group,
+  guest_booking_intent, booking_rate_limit, ticket, booking, price_group,
   screening, seat, cinema,
   movie_person, person, movie_genre, genre, movie,
   auth_action_token, auth_rate_limit, app_user

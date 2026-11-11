@@ -42,8 +42,13 @@ async function resolveUser(req: Request): Promise<AuthUser | undefined> {
     const payload = jwt.verify(token, config.jwtSecret, {
       algorithms: ["HS256"],
     });
-    userId = Number(typeof payload === "string" ? NaN : payload.sub);
-    authVersion = typeof payload === 'string' ? -1 : payload.version ?? 0;
+    // Verification checks expiry when present; explicitly require it for every session.
+    if (typeof payload === "string" || typeof payload.exp !== "number" ||
+        !Number.isFinite(payload.exp) || payload.exp <= 0 || !Number.isFinite(payload.exp * 1000)) {
+      throw new Error("JWT must contain a valid expiration time");
+    }
+    userId = Number(payload.sub);
+    authVersion = payload.version ?? 0;
   } catch {
     throw new HttpError(401, "Ogiltig eller utgången token.");
   }

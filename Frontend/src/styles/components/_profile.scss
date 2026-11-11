@@ -1,0 +1,8 @@
+@use '../tokens' as tokens;
+
+.fv-profile-avatar {
+  width: 88px;
+  height: 88px;
+  background: tokens.$avatar-gradient;
+  color: #fff;
+}

@@ -199,6 +199,14 @@ textarea:focus-visible,
   font-weight: 500;
   transition: all 0.15s ease;
   cursor: pointer;
+
+  &:disabled {
+    background-color: $color-surface;
+    border-color: $border-default;
+    color: $text-muted;
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
 }
 
 .chip-inactive {
@@ -206,7 +214,7 @@ textarea:focus-visible,
   color: $text-muted;
   border: 1px solid $border-default;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: $white-overlay-20;
     color: $text-primary;
   }

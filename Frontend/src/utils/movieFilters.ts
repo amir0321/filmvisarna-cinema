@@ -1,5 +1,7 @@
 import { addDaysToIsoDate } from './date.ts'
 
+export const MAX_DATE_FILTER_DAYS_AHEAD = 60
+
 export type DateFilter =
   | { kind: 'preset'; when: 'today' | 'tomorrow' | 'weekend' }
   | { kind: 'date'; date: string }
@@ -19,11 +21,37 @@ export function readDate(params: URLSearchParams, today: string, daysAhead: numb
   return date >= today && date <= addDaysToIsoDate(today, daysAhead) ? date : null
 }
 
-export function readHomeDateFilter(params: URLSearchParams, today: string): DateFilter {
-  const date = readDate(params, today, 60)
+export function readMovieDateFilter(params: URLSearchParams, today: string, dates: readonly string[]): string {
+  return readDate(params, today, MAX_DATE_FILTER_DAYS_AHEAD) ?? dates[0] ?? today
+}
+
+export function readHomeDateFilter(params: URLSearchParams, today: string, dates: readonly string[] = []): DateFilter {
+  const date = readDate(params, today, MAX_DATE_FILTER_DAYS_AHEAD)
   if (date) return { kind: 'date', date }
   const when = params.get('when')
-  return { kind: 'preset', when: when === 'tomorrow' || when === 'weekend' ? when : 'today' }
+  if (when === 'today' || when === 'tomorrow' || when === 'weekend') return { kind: 'preset', when }
+  const first = dates[0]
+  if (!first || first === today) return { kind: 'preset', when: 'today' }
+  if (first === addDaysToIsoDate(today, 1)) return { kind: 'preset', when: 'tomorrow' }
+  return { kind: 'date', date: first }
+}
+
+export function getDateFilterRange(filter: DateFilter, today: string): { from: string; to: string } {
+  if (filter.kind === 'date') return { from: filter.date, to: filter.date }
+  if (filter.when === 'today') return { from: today, to: today }
+  if (filter.when === 'tomorrow') {
+    const tomorrow = addDaysToIsoDate(today, 1)
+    return { from: tomorrow, to: tomorrow }
+  }
+  // Match the API: the coming Saturday/Sunday, or the current weekend on Sunday.
+  const weekday = new Date(`${today}T12:00:00Z`).getUTCDay()
+  const saturday = addDaysToIsoDate(today, weekday === 0 ? -1 : 6 - weekday)
+  return { from: saturday, to: addDaysToIsoDate(saturday, 1) }
+}
+
+export function hasDateFilterScreenings(filter: DateFilter, today: string, dates: readonly string[]): boolean {
+  const { from, to } = getDateFilterRange(filter, today)
+  return dates.some(date => date >= from && date <= to)
 }
 
 export function setDateFilter(params: URLSearchParams, filter: DateFilter): URLSearchParams {
@@ -31,7 +59,7 @@ export function setDateFilter(params: URLSearchParams, filter: DateFilter): URLS
   next.delete('when')
   next.delete('date')
   if (filter.kind === 'date') next.set('date', filter.date)
-  else if (filter.when !== 'today') next.set('when', filter.when)
+  else next.set('when', filter.when)
   return next
 }
 
