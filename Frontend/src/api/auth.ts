@@ -1,5 +1,5 @@
 import apiClient, { ApiError } from './client'
-import type { AuthResponse } from '../types/user'
+import type { AuthResponse, User } from '../types/user'
 
 export function getMe(signal?: AbortSignal): Promise<AuthResponse> {
   return apiClient.get('/auth/me', { signal, ignoreUnauthorized: true })
@@ -62,3 +62,38 @@ export function extractAuthFieldErrors(error: unknown): AuthFieldErrors {
   }
   return errors
 }
+
+export interface UpdateProfilePayload {
+  firstName: string
+  lastName: string
+  phone: string | null
+}
+
+export interface UpdateProfileResponse {
+  success: boolean
+  message: string
+  user: User
+}
+
+export function updateProfile(
+  payload: UpdateProfilePayload,
+): Promise<UpdateProfileResponse> {
+  return apiClient.put('/auth/me', payload)
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface ChangePasswordResponse {
+  success: boolean
+  message: string
+}
+
+export function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<ChangePasswordResponse> {
+  return apiClient.post('/auth/change-password', payload)
+}
+
