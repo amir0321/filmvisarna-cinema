@@ -32,7 +32,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
   const deliveries: Promise<unknown>[] = [];
   let smtpConfigured = true;
   let deliveryFails = false;
-  let signToken: (id: number, version?: number) => string;
+  let createSession: (id: number, version?: number) => Promise<{ token: string; expiresAt: number }>;
 
   before(async () => {
     admin = new pg.Pool({ connectionString: databaseUrl });
@@ -45,7 +45,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     process.env.NODE_ENV = 'test';
     process.env.FRONTEND_URL = 'http://localhost:5173';
     ({ pool } = await import('../db.js'));
-    ({ signToken } = await import('../middleware/auth.js'));
+    ({ createSession } = await import('../services/sessions.service.js'));
     // Start from the pre-PR account table to exercise the additive migration.
     await pool.query(`CREATE TABLE app_user (
       id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -58,6 +58,9 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     const migration = await readFile(resolve('sql/migrations/20261102_auth_actions.sql'), 'utf8');
     await pool.query(migration);
     await pool.query(migration); // Existing databases can safely run it again.
+    const sessionsMigration = await readFile(resolve('sql/migrations/20261111_auth_sessions.sql'), 'utf8');
+    await pool.query(sessionsMigration);
+    await pool.query(sessionsMigration);
     const legacy = (await pool.query('SELECT email, password_hash, first_name, auth_version FROM app_user')).rows[0];
     assert.deepEqual(legacy, { email: 'legacy@example.test', password_hash: 'unchanged-hash', first_name: 'Legacy', auth_version: 0 });
     const { createAuthActionService } = await import('../services/authActions.service.js');
@@ -80,6 +83,8 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
       },
     };
     const app = express();
+    const { csrfProtection } = await import('../middleware/csrf.js');
+    app.use(csrfProtection);
     app.use(express.json());
     app.use('/api/auth', createAuthRouter(actions));
     app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
@@ -115,11 +120,15 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
   async function request(path: string, body?: unknown, token?: string) {
     const response = await fetch(`${baseUrl}${path}`, {
       method: body === undefined ? 'GET' : 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Protection': '1', Origin: 'http://localhost:5173', ...(token ? { Cookie: `filmvisarna_session=${token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
     });
-    return { status: response.status, body: await response.json() as ApiBody, headers: response.headers };
+    const responseBody = await response.json() as ApiBody;
+    assert.equal('token' in responseBody, false, 'session credentials must never be exposed in JSON');
+    // Test fixture only: capture the HttpOnly cookie as a browser would.
+    responseBody.token = /filmvisarna_session=([^;]+)/.exec(response.headers.get('set-cookie') ?? '')?.[1] ?? '';
+    return { status: response.status, body: responseBody, headers: response.headers };
   }
 
   async function register(email = 'anna@example.test') {
@@ -181,6 +190,82 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     const loggedIn = await request('/login', { email: 'anna@example.test', password });
     assert.equal(loggedIn.status, 200);
     assert.equal((await request('/me', undefined, loggedIn.body.token)).status, 200);
+  });
+
+  test('session cookies are HttpOnly, host-only and unavailable to bearer authentication', async () => {
+    const registered = await register();
+    const login = await request('/login', { email: 'anna@example.test', password });
+    const cookie = login.headers.get('set-cookie')!;
+    assert.match(cookie, /; HttpOnly/);
+    assert.match(cookie, /; SameSite=Lax/);
+    assert.match(cookie, /; Path=\//);
+    assert.doesNotMatch(cookie, /Domain=/i);
+    assert.equal(login.headers.get('cache-control'), 'no-store');
+    const { rows } = await pool.query('SELECT token_hash FROM auth_session');
+    assert.equal(rows.length, 2);
+    assert.ok(rows.every(row => /^[a-f0-9]{64}$/.test(row.token_hash)));
+    assert.ok(rows.every(row => row.token_hash !== registered.token && row.token_hash !== login.body.token));
+    const bearer = await fetch(`${baseUrl}/me`, { headers: { Authorization: `Bearer ${registered.token}` } });
+    assert.equal(bearer.status, 401);
+  });
+
+  test('logout revokes a copied cookie immediately while other sessions remain usable', async () => {
+    const registered = await register();
+    const second = await request('/login', { email: 'anna@example.test', password });
+    assert.notEqual(registered.token, second.body.token);
+    const logout = await request('/logout', {}, registered.token);
+    assert.equal(logout.status, 200);
+    assert.match(logout.headers.get('set-cookie')!, /filmvisarna_session=;/);
+    assert.match(logout.headers.get('set-cookie')!, /Expires=Thu, 01 Jan 1970/);
+    assert.equal((await request('/me', undefined, registered.token)).status, 401);
+    assert.equal((await request('/me', undefined, second.body.token)).status, 200);
+    assert.equal((await request('/logout', {}, registered.token)).status, 200);
+    assert.equal((await request('/logout', {})).status, 200);
+  });
+
+  test('expired server sessions and signed but unregistered JWTs are rejected', async () => {
+    const registered = await register();
+    await pool.query('UPDATE auth_session SET expires_at = now() - interval \'1 second\'');
+    assert.equal((await request('/me', undefined, registered.token)).status, 401);
+    const forged = jwt.sign({ version: 0 }, process.env.JWT_SECRET!, { subject: String(registered.user.id), expiresIn: '1h' });
+    assert.equal((await request('/me', undefined, forged)).status, 401);
+  });
+
+  test('logout fails without clearing the cookie if database revocation is unavailable', async () => {
+    const registered = await register();
+    await pool.query('ALTER TABLE auth_session RENAME TO temporarily_unavailable_session');
+    try {
+      const failedLogout = await request('/logout', {}, registered.token);
+      assert.equal(failedLogout.status, 500);
+      assert.equal(failedLogout.headers.get('set-cookie'), null);
+    } finally {
+      await pool.query('ALTER TABLE temporarily_unavailable_session RENAME TO auth_session');
+    }
+    assert.equal((await request('/me', undefined, registered.token)).status, 200);
+    assert.equal((await request('/logout', {}, registered.token)).status, 200);
+    assert.equal((await request('/me', undefined, registered.token)).status, 401);
+  });
+
+  test('CSRF blocks form posts, untrusted origins and login/logout forgery without mutating sessions', async () => {
+    const registered = await register();
+    for (const path of ['/logout', '/login', '/register', '/forgot-password', '/reset-password', '/change-password']) {
+      const rejectedHeaders: Record<string, string>[] = [ {}, { 'X-CSRF-Protection': '1', Origin: 'https://evil.example' },
+        { 'X-CSRF-Protection': '1', Origin: 'null' }, { Origin: 'http://localhost:5173' } ];
+      for (const headers of rejectedHeaders) {
+        const response = await fetch(`${baseUrl}${path}`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json', Cookie: `filmvisarna_session=${registered.token}`, ...headers }, body: '{}' });
+        assert.equal(response.status, 403, `${path}: ${JSON.stringify(headers)}`);
+      }
+    }
+    assert.equal((await request('/me', undefined, registered.token)).status, 200);
+  });
+
+  test('logout still works after the auth IP rate limit is exhausted', async () => {
+    const registered = await register();
+    for (let i = 0; i < 29; i++) await request('/verify-email', { token: 'invalid' });
+    assert.equal((await request('/verify-email', { token: 'invalid' })).status, 429);
+    assert.equal((await request('/logout', {}, registered.token)).status, 200);
+    assert.equal((await request('/me', undefined, registered.token)).status, 401);
   });
 
   test('stores only token hashes and verifies an email exactly once', async () => {
@@ -301,7 +386,7 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
   test('password change revokes the old session and outstanding reset links', async () => {
     const registered = await register();
     const legacySession = jwt.sign({}, process.env.JWT_SECRET!, { subject: String(registered.user.id), algorithm: 'HS256', expiresIn: '1h' });
-    assert.equal((await request('/me', undefined, legacySession)).status, 200);
+    assert.equal((await request('/me', undefined, legacySession)).status, 401);
     await request('/forgot-password', { email: 'anna@example.test' });
     await Promise.all(deliveries);
     const token = tokenFor('reset_password');
@@ -312,6 +397,6 @@ describe('auth API with PostgreSQL', { skip: !databaseUrl }, () => {
     const newSession = await request('/login', { email: 'anna@example.test', password: 'ChangedPassword123!' });
     assert.equal(newSession.status, 200);
     assert.equal((await request('/me', undefined, newSession.body.token)).status, 200);
-    assert.equal((await request('/me', undefined, signToken(registered.user.id, 0))).status, 401);
+    assert.equal((await request('/me', undefined, (await createSession(registered.user.id, 0)).token)).status, 401);
   });
 });

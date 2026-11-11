@@ -26,7 +26,7 @@ cp .env.example .env
 | `PORT` | HTTP port for Express server | `3000` |
 | `DATABASE_URL` | Full PostgreSQL connection string | `postgresql://user:pass@host:5432/filmvisarna` |
 | `JWT_SECRET` | Secret key used to sign JWTs (min 32 chars) | `your_jwt_secret_key_that_is_at_least_32_characters_long` |
-| `JWT_EXPIRES_IN` | Token expiration time | `7d` |
+| `JWT_EXPIRES_IN` | Session expiration time | `8h` |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:5173` |
 | `TIMEZONE` | Timezone for screenings and email dates | `Europe/Stockholm` |
 | `SCREENING_BUFFER_MINUTES` | Cleaning buffer required between screenings | `20` |
@@ -105,6 +105,18 @@ All SQL migrations and initialization scripts are located in `Backend/sql/`:
 
 ---
 
+## Cookie sessions and CSRF protection
+
+Login and registration set a host-only `HttpOnly; SameSite=Lax; Path=/` cookie. In production the cookie also uses `Secure` and the `__Host-` prefix, so HTTPS is required. Serve the SPA and `/api` from the same origin (Vite already proxies `/api` locally); cross-site hosting is not supported by this cookie policy. Session credentials never appear in JSON or browser storage. `GET /api/auth/me` returns `{ user, expiresAt }`, where `expiresAt` is milliseconds since Unix epoch.
+
+Each JWT has a random ID and a SHA-256 hash stored in PostgreSQL's `auth_session`. Every protected request checks its signature, expiry, database session, current user role and `auth_version`. `POST /api/auth/logout` deletes only the current session before clearing the cookie, is idempotent and remains available when login throttling is exhausted. A copied cookie stops working after logout, across API workers and restarts. If revocation fails, the endpoint fails and the UI offers a retry. Password changes and resets continue to invalidate all sessions through `auth_version`.
+
+All API writes (`POST`, `PUT`, `PATCH`, `DELETE`) require `X-CSRF-Protection: 1`, including login, logout, guest requests and uploads. Browser requests must also have an allowed `Origin` (`FRONTEND_URL` or an explicit `CORS_ORIGIN` entry). Wildcards and non-origin entries are rejected at startup. The custom header forces browser CORS preflight; requests without Origin are permitted only with this header for CLI clients. CORS allows credentials only for the configured origins. `GET` and `HEAD` must remain read-only.
+
+The default lifetime is now eight hours. Existing `.env`/deployment values for `JWT_EXPIRES_IN` still override the default; change them explicitly if currently set to `7d`. Expired session rows are pruned when a new session is created. Run `npm run migrate:auth` before starting the new API. Deploy frontend and backend together: old bearer tokens are no longer accepted and users must sign in again. The frontend removes the old `localStorage.token` on startup and synchronizes session changes across tabs without transmitting credentials.
+
+These controls follow the [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) and [CSRF custom-header guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#employing-custom-request-headers-for-ajaxapi). HttpOnly limits token theft through JavaScript; XSS prevention remains necessary because injected scripts can still make requests as the user.
+
 ## Password recovery and email verification
 
 Before starting the updated API against an **existing database**, run this additive migration from `Backend/`:
@@ -113,7 +125,7 @@ Before starting the updated API against an **existing database**, run this addit
 npm run migrate:auth
 ```
 
-This uses the database configured in `.env`, adds `app_user.auth_version` and creates `auth_action_token` and `auth_rate_limit`. It does not delete accounts or bookings and can be repeated. New installations get the same definitions from `01_schema.sql` and `03_security.sql`. Do not run `00_drop.sql` to upgrade an existing database.
+This uses the database configured in `.env`, adds `app_user.auth_version` and creates `auth_action_token`, `auth_rate_limit` and `auth_session`. It does not delete accounts or bookings and can be repeated. New installations get the same definitions from `01_schema.sql` and `03_security.sql`. Do not run `00_drop.sql` to upgrade an existing database.
 
 Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` and an allowed `EMAIL_FROM` for real delivery, plus `FRONTEND_URL` pointing to the deployed SPA. SMTP on port 587 must support STARTTLS; port 465 uses TLS immediately. Auth emails never use the existing Ethereal fallback. Without SMTP, registration still creates the account and returns `verificationEmailSent: false`; mail request endpoints return 503. Password recovery acknowledges unknown and known accounts identically before background delivery. Delivery failures are logged without the recipient, token, link or SMTP message content.
 
@@ -121,12 +133,12 @@ Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` and an allowed 
 | --- | --- | --- |
 | `POST /api/auth/forgot-password` | `{ email }` | Neutral 200 response, reset link by email for existing accounts |
 | `POST /api/auth/reset-password` | `{ token, password }` | Consumes a valid reset token, changes password, revokes existing JWT sessions |
-| `POST /api/auth/resend-verification` | Bearer JWT | Sends another verification link for the signed-in account |
-| `POST /api/auth/verify-email` | `{ token }` | Confirms ownership of the email; a Bearer JWT alone cannot verify it |
+| `POST /api/auth/resend-verification` | Session cookie | Sends another verification link for the signed-in account |
+| `POST /api/auth/verify-email` | `{ token }` | Confirms ownership of the email; a session cookie alone cannot verify it |
 
 Registration sends a verification email automatically. Verification does not block existing booking or login behavior; the frontend shows a notice with a resend action until the address is verified. Resetting a password requires signing in again and does not automatically log the user in. New passwords are validated at 8–72 characters and at most 72 UTF-8 bytes, including on the server.
 
-Links contain 32 random bytes in a URL **fragment**, which the SPA removes from browser history after reading. Only SHA-256 token hashes are stored. Reset links expire in 30 minutes; verification links in 24 hours. New links invalidate older links for the same purpose. Consumption and password updates happen atomically, including under parallel requests. Verification and reset tokens cannot be used interchangeably. POST auth requests are limited to 30 per IP per 15 minutes, and mail requests to 3 per account and purpose per 15 minutes, in PostgreSQL across workers. Do not enable a broad `trust proxy`: explicitly configure trusted proxy addresses before deploying behind one; otherwise rate limiting uses the direct peer IP. Periodically remove expired token records and rate buckets older than one day.
+Links contain 32 random bytes in a URL **fragment**, which the SPA removes from browser history after reading. Only SHA-256 token hashes are stored. Reset links expire in 30 minutes; verification links in 24 hours. New links invalidate older links for the same purpose. Consumption and password updates happen atomically, including under parallel requests. Verification and reset tokens cannot be used interchangeably. POST auth requests (except logout) are limited to 30 per IP per 15 minutes, and mail requests to 3 per account and purpose per 15 minutes, in PostgreSQL across workers. Do not enable a broad `trust proxy`: explicitly configure trusted proxy addresses before deploying behind one; otherwise rate limiting uses the direct peer IP. Periodically remove expired token records and rate buckets older than one day.
 
 The recovery controls follow the [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
 
@@ -140,7 +152,7 @@ AUTH_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna
 
 The tests create and remove a randomly named schema in that database. They never fall back to `DATABASE_URL` or `.env` for the test connection. Without `AUTH_TEST_DATABASE_URL`, the integration suite is explicitly skipped. GitHub CI supplies a separate PostgreSQL service and runs `npm test` for the complete backend suite.
 
-Coverage includes the additive migration and existing account data, registration and login, mandatory JWT expiration, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits and session revocation after password reset or change. Session JWTs without a valid future `exp` are rejected with 401; users with older tokens lacking expiration must log in again. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
+Coverage includes the additive migration and existing account data, registration and login, mandatory JWT expiration, password validation, mail-delivery failures, expired/replaced/single-use links, concurrent token consumption, rate limits, cookie flags, database session expiry, CSRF rejection, copied-cookie rejection after logout, independent sessions and session revocation after password reset or change. Session JWTs without a valid future `exp` are rejected with 401; users with older tokens lacking expiration must log in again. Email delivery is captured in memory; the tests send no real messages. Verify the deployed SMTP credentials and `FRONTEND_URL` separately before release.
 
 ## HTTP Status Codes Overview
 
@@ -172,22 +184,28 @@ Standard felmeddelande i JSON:
 
 #### `POST /api/auth/register`
 - **Åtkomst:** Publik (alla)
-- **`201 Created`**: Kontot skapat. Returnerar JWT-token och användaruppgifter.
+- **`201 Created`**: Kontot skapat. Sätter en HttpOnly-cookie och returnerar `{ user, expiresAt, verificationEmailSent }`.
 - **`400 Bad Request`**: Ogiltig e-postadress eller lösenord (< 8 eller > 72 tecken).
 - **`409 Conflict`**: E-postadressen är redan registrerad.
 - **`500 Server Error`**: Databas- eller serverfel.
 
 #### `POST /api/auth/login`
 - **Åtkomst:** Publik (alla)
-- **`200 OK`**: Inloggningen lyckades. Returnerar JWT-token.
+- **`200 OK`**: Inloggningen lyckades. Sätter en HttpOnly-cookie och returnerar `{ user, expiresAt }`.
 - **`400 Bad Request`**: Saknar e-post eller lösenord.
 - **`401 Unauthorized`**: Fel e-postadress eller lösenord.
 - **`500 Server Error`**: Internt serverfel.
 
 #### `GET /api/auth/me`
 - **Åtkomst:** Inloggad användare
-- **`200 OK`**: Profiluppgifter för den inloggade användaren.
-- **`401 Unauthorized`**: Saknar eller ogiltig Bearer-token.
+- **`200 OK`**: `{ user, expiresAt }` med profiluppgifter och sessionens utgångstid.
+- **`401 Unauthorized`**: Saknar giltig sessionscookie eller sessionen har spärrats.
+
+#### `POST /api/auth/logout`
+- **Åtkomst:** Sessionscookie och `X-CSRF-Protection: 1`. Även anrop utan session accepteras.
+- **`200 OK`**: Sessionen har spärrats på servern och cookien rensats.
+- **`403 Forbidden`**: CSRF-kontrollen misslyckades.
+- **`500 Server Error`**: Sessionen kunde inte spärras. Cookien behålls för ett nytt försök.
 
 ---
 

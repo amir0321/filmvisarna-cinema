@@ -13,7 +13,7 @@ import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
 
 export default function MyBookings() {
-  const { user, token, roleLabel, loading } = useAuth();
+  const { user, isAuthenticated, roleLabel, loading } = useAuth();
   const { data: movies } = useMovies();
 
   const [activeTab, setActiveTab] = useState<string>("active");
@@ -91,7 +91,7 @@ export default function MyBookings() {
 
       <p role="status" className="text-secondary">{feedback}</p>
 
-      {!token ? (
+      {!isAuthenticated ? (
         <EmptyState
           icon="bi-person-lock"
           title="Logga in för att se dina bokningar"

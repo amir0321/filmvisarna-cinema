@@ -100,13 +100,13 @@ export async function createBooking(payload: BookingRequestPayload, requestKey: 
 }
 
 export function requestGuestBooking(payload: BookingRequestPayload, requestKey: string, signal?: AbortSignal): Promise<{ message: string }> {
-  return apiClient.post('/bookings/guest/request', payload, { signal, headers: { Authorization: '', 'Idempotency-Key': requestKey } });
+  return apiClient.post('/bookings/guest/request', payload, { signal, credentials: 'omit', headers: { 'Idempotency-Key': requestKey } });
 }
 
 export function previewGuestBooking(token: string, signal?: AbortSignal): Promise<GuestBookingPreview> {
-  return apiClient.post('/bookings/guest/preview', { token }, { signal, headers: { Authorization: '' } });
+  return apiClient.post('/bookings/guest/preview', { token }, { signal, credentials: 'omit' });
 }
 
 export async function confirmGuestBooking(token: string, seatIds?: number[], signal?: AbortSignal): Promise<BookingCreatedResult> {
-  return mapCreatedBooking(await apiClient.post<CreatedBookingApiResponse>('/bookings/guest/confirm', { token, seatIds }, { signal, headers: { Authorization: '' } }));
+  return mapCreatedBooking(await apiClient.post<CreatedBookingApiResponse>('/bookings/guest/confirm', { token, seatIds }, { signal, credentials: 'omit' }));
 }

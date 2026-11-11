@@ -3,5 +3,5 @@ name: Resend verification
 url: http://localhost:3000/api/auth/resend-verification
 method: POST
 headers:
-  Authorization: Bearer {{user_token}}
+  X-CSRF-Protection: "1"
 order: 5003

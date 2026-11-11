@@ -3,5 +3,5 @@ name: Check in booking (Admin)
 url: http://localhost:3000/api/bookings/1/checkin
 method: PATCH
 headers:
-  Authorization: Bearer {{admin_token}}
+  X-CSRF-Protection: "1"
 order: 3400

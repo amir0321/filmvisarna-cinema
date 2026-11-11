@@ -3,7 +3,7 @@ name: Update profile
 url: http://localhost:3000/api/auth/me
 method: PUT
 headers:
-  Authorization: Bearer {{user_token}}
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |
