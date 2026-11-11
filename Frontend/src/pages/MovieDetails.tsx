@@ -1,14 +1,16 @@
 import { getBookingUrl } from '../utils/links'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useScreenings } from '../hooks/useScreenings'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useMovie } from '../hooks/useMovies'
 import TrailerModal from '../components/TrailerModal'
+import type { Screening } from '../types/screening'
 
 export default function MovieDetails() {
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const isTrailerOpen = searchParams.get('trailer') === '1'
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -18,7 +20,7 @@ export default function MovieDetails() {
   } = useScreenings({ movieId: Number(id) })
 
   const screeningsByDate = useMemo(() => {
-    const groups = new Map<string, typeof screenings>()
+    const groups = new Map<string, Screening[]>()
 
     screenings?.forEach((screening) => {
       const date = new Date(screening.startsAt).toLocaleDateString('sv-SE')
@@ -28,9 +30,16 @@ export default function MovieDetails() {
       }
       groups.get(date)!.push(screening)
     })
-
     return Array.from(groups.entries())
   }, [screenings])
+
+  const activeDate =
+    selectedDate && screeningsByDate.some(([date]) => date === selectedDate)
+      ? selectedDate
+      : screeningsByDate[0]?.[0] ?? null
+
+  const selectedScreenings: Screening[] =
+    screeningsByDate.find(([date]) => date === activeDate)?.[1] ?? []
 
   if (loading) {
     return <div className='py-4'>Laddar film...</div>
@@ -48,7 +57,6 @@ export default function MovieDetails() {
       </div>
     )
   }
-
 
   return (
     <div className='movie-details-page'>
@@ -81,8 +89,11 @@ export default function MovieDetails() {
       </section>
 
       <div className='movie-details-content'>
+
         <div className='row g-4'>
-          <div className='col-12 col-md-4'>
+
+          {/* Vänster kolumn: poster och fakta */}
+          <div className='col-12 col-md-4 d-none d-md-block'>
             {movie.poster_url ? (
               <img
                 src={movie.poster_url}
@@ -95,34 +106,33 @@ export default function MovieDetails() {
               </div>
             )}
 
-            <div className='card bg-card border-secondary rounded-4 mt-4'>
-              <div className='card-body p-4'>
-                <h2 className='h6 fw-bold text-secondary text-uppercase mb-3'>
-                  Fakta
-                </h2>
+            <div className='movie-details-facts'>
+              <h2 className='h6 fw-bold text-secondary text-uppercase mb-3'>
+                Fakta
+              </h2>
 
-                <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
-                  <strong>Åldersgräns</strong>
-                  <span>{movie.age_rating || 'Ej angiven'}</span>
-                </div>
+              <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
+                <strong>Åldersgräns</strong>
+                <span>{movie.age_rating || 'Ej angiven'}</span>
+              </div>
 
-                <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
-                  <strong>Speltid</strong>
-                  <span>{movie.duration_minutes} minuter</span>
-                </div>
+              <div className='d-flex justify-content-between gap-3 py-2 border-bottom'>
+                <strong>Speltid</strong>
+                <span>{movie.duration_minutes} minuter</span>
+              </div>
 
-                <div className='d-flex justify-content-between gap-3 py-2'>
-                  <strong>Premiärår</strong>
-                  <span>
-                    {movie.release_date
-                      ? new Date(movie.release_date).getFullYear()
-                      : 'Ej angiven'}
-                  </span>
-                </div>
+              <div className='d-flex justify-content-between gap-3 py-2'>
+                <strong>Premiärår</strong>
+                <span>
+                  {movie.release_date
+                    ? new Date(movie.release_date).getFullYear()
+                    : 'Ej angiven'}
+                </span>
               </div>
             </div>
           </div>
 
+          {/* Höger kolumn: filminformation och visningar */}
           <div className='col-12 col-md-8'>
             <div className='d-flex flex-wrap gap-2 mb-3'>
               {movie.genres.map((genre) => (
@@ -133,6 +143,7 @@ export default function MovieDetails() {
             </div>
 
             <h1 className='display-5 fw-bold mb-3'>{movie.title}</h1>
+
             {movie.director && (
               <p className='text-secondary mb-3'>
                 Regi: {movie.director}
@@ -143,8 +154,38 @@ export default function MovieDetails() {
               {movie.description || 'Synopsis saknas.'}
             </p>
 
-            <section className='mt-5'>
-              <h2 className='h3 fw-bold mb-4'>Visningstider</h2>
+            <section className='mt-5 screening-section'>
+              <h2 className='h4 fw-bold mb-4'>Välj dag & tid</h2>
+
+              {/* Datumväljare */}
+              <div className='d-flex flex-wrap gap-2 mb-4'>
+                {screeningsByDate.map(([date]) => (
+                  <button
+                    key={date}
+                    type='button'
+                    className={`btn ${activeDate === date ? 'btn-danger' : 'btn-outline-secondary'
+                      }`}
+                    onClick={() => setSelectedDate(date)}
+                  >
+                    {new Date(`${date}T12:00:00`).toLocaleDateString('sv-SE', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </button>
+                ))}
+              </div>
+
+              {activeDate && (
+                <h3 className='screening-date-heading'>
+                  {new Date(`${activeDate}T12:00:00`).toLocaleDateString('sv-SE', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })}
+                </h3>
+              )}
+
               {screeningsLoading && (
                 <p className='text-secondary'>Laddar visningstider...</p>
               )}
@@ -169,57 +210,51 @@ export default function MovieDetails() {
                   </p>
                 )}
 
-              {!screeningsLoading && screenings && screenings.length > 0 && (
-                <div className='d-flex flex-column gap-4'>
-                  {screeningsByDate.map(([date, dateScreenings]) => (
-                    <section key={date}>
-                      <h3 className='h4 fw-bold text-capitalize mb-3'>
-                        {new Date(`${date}T12:00:00`).toLocaleDateString('sv-SE', {
-                          weekday: 'long',
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                      </h3>
+              {!screeningsLoading && selectedScreenings.length > 0 && (
+                <div className='screening-list'>
+                  {selectedScreenings.map((screening) => (
+                    <div
+                      key={screening.id}
+                      className='screening-card'
+                    >
+                      <Link
+                        to={getBookingUrl(screening.id)}
+                        className='screening-card__link'
+                      >
+                        <div className='screening-card__time'>
+                          <strong>
+                            {new Date(screening.startsAt).toLocaleTimeString('sv-SE', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </strong>
 
-                      <div className='d-flex flex-column gap-3'>
-                        {dateScreenings?.map((screening) => (
-                          <div
-                            key={screening.id}
-                            className='card bg-card border-secondary'>
+                          <span>
+                            –{new Date(screening.endsAt).toLocaleTimeString('sv-SE', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
 
-                            <div className='card-body d-flex flex-wrap justify-content-between align-items-center gap-3'>
-                              <div>
-                                <p className='fw-bold mb-2'>
-                                  {new Date(screening.startsAt).toLocaleTimeString(
-                                    'sv-SE',
-                                    {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    },
-                                  )}
-                                </p>
+                        <div className='screening-card__details'>
+                          <span>Salong {screening.cinema}</span>
 
-                                <span className='badge bg-secondary'>
-                                  Salong: {screening.cinema}
-                                </span>
-                              </div>
-
-                              <div className='d-flex align-items-center gap-3'>
-                                <span className='text-secondary small'>
-                                  {screening.availableSeats ?? '-'} platser lediga
-                                </span>
-
-                                <Link
-                                  to={getBookingUrl(screening.id)}
-                                  className='btn btn-danger'>
-                                  Boka
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
+                          <span
+                            className={`screening-card__seats ${screening.availableSeats == null
+                              ? ''
+                              : screening.availableSeats > 20
+                                ? 'screening-card__seats--high'
+                                : screening.availableSeats > 5
+                                  ? 'screening-card__seats--medium'
+                                  : 'screening-card__seats--low'
+                              }`}
+                          >
+                            {screening.availableSeats ?? '-'} kvar
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
                   ))}
                 </div>
               )}
@@ -227,7 +262,6 @@ export default function MovieDetails() {
           </div>
         </div>
       </div>
-
       {movie.trailer_url && (
         <TrailerModal
           isOpen={isTrailerOpen}
