@@ -1,6 +1,6 @@
 .fv-salonger__hero {
   position: relative;
-  background: linear-gradient(135deg, #0b0f19 0%, #161f30 50%, #0b0f19 100%);
+  background: linear-gradient(135deg, $fv-bg 0%, $fv-card-bg 50%, $fv-bg 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
   &::before {
@@ -28,7 +28,7 @@
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   background: rgba(229, 9, 20, 0.15);
-  color: #e50914;
+  color: $fv-primary;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -68,12 +68,18 @@
   background: $fv-card-bg;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
+  &--primary {
+  --tone: #{$fv-primary};
+}
+&--success {
+  --tone: #{$fv-success};
+}
 }
 
 .fv-salonger__media {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(180deg, #05070c, #161f30);
+  background: linear-gradient(180deg, #05070c, $fv-card-bg);
   background-size: cover;
   background-position: center;
 }
@@ -147,7 +153,7 @@
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
+  color: $fv-info;
   font-size: 0.8rem;
   white-space: nowrap;
 }
@@ -185,7 +191,7 @@
   }
 }
 .fv-minimap {
-  --example: #10b981;
+  --example: #{$fv-success};
   margin-bottom: 1.25rem;
   padding: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -207,7 +213,7 @@
   height: 14px;
   margin: 0 auto 0.9rem;
   border-radius: 40% 40% 0 0 / 100% 100% 0 0;
-  background: linear-gradient(#475569, #334155);
+  background: linear-gradient(#475569, $fv-seat-available);
   color: $fv-muted-fg;
   font-size: 0.55rem;
   letter-spacing: 0.15em;
@@ -230,23 +236,18 @@
   color: $fv-muted-fg;
 }
 
-.fv-minimap__row {
-  display: flex;
-  gap: 4px;
-}
-
 .fv-minimap__seat {
   width: 12px;
   height: 12px;
   border-radius: 3px;
-  background: #334155;
+  background: $fv-seat-available;
 
  &--example {
     background: var(--example);
   }
 
   &--wheelchair {
-    background: #3b82f6;
+    background: $fv-info;
   }
 }
 
@@ -265,14 +266,14 @@
   height: 10px;
   margin-right: 0.35rem;
   border-radius: 50%;
-  background: #334155;
+  background: $fv-seat-available;
 
    &--example {
     background: var(--example);
   }
 
   &--wheelchair {
-    background: #3b82f6;
+    background: $fv-info;
   }
 }
 .fv-salonger__info-wrap {
@@ -323,7 +324,7 @@
     height: 6px;
     margin-right: 0.75rem;
     border-radius: 50%;
-    background: #3b82f6;
+    background: $fv-info;
     vertical-align: middle;
   }
 }

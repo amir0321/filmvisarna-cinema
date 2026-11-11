@@ -1,13 +1,13 @@
-import type { CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { useCinemas } from '../hooks/useCinemas'
 import { MiniAuditoriumMap } from '../components/MiniAuditoriumMap'
+import { EmptyState } from '../components/EmptyState'
 
 // Fixed texts from the design. The order matches the backend (Stora = first, Lilla = second).
 const SALONG_INFO = [
   {
     title: 'Salong 1',
-    color: '#E50914',
+    tone: 'primary',
     label: 'Premiärsalong',
     tags: ['4K Laser', 'Dolby Atmos'],
     points: [
@@ -20,7 +20,7 @@ const SALONG_INFO = [
   },
   {
     title: 'Salong 2',
-    color: '#10B981',
+    tone: 'success',
     label: 'Bekväma fåtöljer',
     tags: ['2D', 'Stereo'],
     points: [
@@ -37,10 +37,10 @@ function formatScreen(size: string | null) {
   return size ? `${size.replace('×', ' × ')} duk` : '–'
 }
 export default function Salonger() {
-  const { data, loading, error } = useCinemas()
+  const { data, loading, error, refetch } = useCinemas()
 
   return (
-    <main className="fv-salonger">
+    <div className="fv-salonger full-bleed">
       <section className="fv-salonger__hero">
         <div className="fv-salonger__hero-inner">
           <span className="fv-salonger__badge">Filmvisarna Småstad</span>
@@ -53,7 +53,14 @@ export default function Salonger() {
 
       <section className="fv-salonger__cards">
         {loading && <p className="text-secondary">Laddar salonger…</p>}
-        {error && <p className="text-danger">{error}</p>}
+        {error && (
+        <EmptyState
+         variant="error"
+         title="Kunde inte hämta salongerna"
+          description={error}
+         actionLabel="Försök igen"
+          onAction={refetch}
+          /> )}
 
         {data?.map((cinema, i) => {
           const info = SALONG_INFO[i]
@@ -62,8 +69,7 @@ export default function Salonger() {
           return (
             <article
               key={cinema.id}
-              className="fv-salonger__card"
-              style={{ '--tone': info.color } as CSSProperties}
+              className={`fv-salonger__card fv-salonger__card--${info.tone}`}
             >
               <div className="fv-salonger__media">
                 <span className="fv-salonger__pill fv-salonger__pill--dark fv-salonger__media-top">
@@ -149,6 +155,6 @@ export default function Salonger() {
           </div>
         </section>
       )}
-    </main>
+    </div>
   )
 }
