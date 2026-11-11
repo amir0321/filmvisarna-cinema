@@ -52,8 +52,8 @@ function removeDots(value: string): string {
   return value.replace(/\./g, '')
 }
 
-export function todayIsoDate(): string {
-  return isoDateFormatter.format(new Date())
+export function todayIsoDate(now = Date.now()): string {
+  return isoDateFormatter.format(now)
 }
 
 export function toCinemaIsoDate(isoDateTime: string): string {

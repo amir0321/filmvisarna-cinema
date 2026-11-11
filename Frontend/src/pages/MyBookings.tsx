@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { getAuthToken } from "../api/client";
 import type { Booking } from "../types/booking";
 import { Tabs } from "../components/Tabs";
 import { EmptyState } from "../components/EmptyState";
@@ -14,8 +13,7 @@ import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
 
 export default function MyBookings() {
-  const token = getAuthToken();
-  const { user, loading } = useAuth();
+  const { user, isAuthenticated, roleLabel, loading } = useAuth();
   const { data: movies } = useMovies();
 
   const [activeTab, setActiveTab] = useState<string>("active");
@@ -93,7 +91,7 @@ export default function MyBookings() {
 
       <p role="status" className="text-secondary">{feedback}</p>
 
-      {!token ? (
+      {!isAuthenticated ? (
         <EmptyState
           icon="bi-person-lock"
           title="Logga in för att se dina bokningar"
@@ -132,7 +130,7 @@ export default function MyBookings() {
                 <span
                   className="fv-my-bookings__role badge rounded-pill"
                 >
-                  {user.role === "admin" ? "Administratör" : "Gästmedlem"}
+                  {roleLabel}
                 </span>
               </div>
             </div>

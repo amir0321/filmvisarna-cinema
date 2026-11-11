@@ -2,6 +2,8 @@ $kind: http-request
 name: Cancel booking by token (Guest)
 url: http://localhost:3000/api/bookings/cancel-by-token
 method: POST
+headers:
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |

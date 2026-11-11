@@ -1,5 +1,5 @@
 import apiClient from "./client";
-import type { Booking } from "../types/booking";
+import type { Booking, BookingCreatedResult, BookingRequestPayload, GuestBookingPreview } from "../types/booking";
 
 interface BookingApiResponse {
   id: number;
@@ -85,4 +85,28 @@ export async function cancelMyBooking(
   bookingId: number,
 ): Promise<CancelMyBookingResponse> {
   return apiClient.delete<CancelMyBookingResponse>(`/bookings/${bookingId}`);
+}
+
+interface CreatedBookingApiResponse { bookingRef: string; cancelToken?: string; booking: BookingApiResponse }
+
+function mapCreatedBooking(response: CreatedBookingApiResponse): BookingCreatedResult {
+  return { ...response, booking: mapBooking(response.booking) };
+}
+
+export async function createBooking(payload: BookingRequestPayload, requestKey: string, signal?: AbortSignal): Promise<BookingCreatedResult> {
+  return mapCreatedBooking(await apiClient.post<CreatedBookingApiResponse>('/bookings', payload, {
+    signal, headers: { 'Idempotency-Key': requestKey },
+  }));
+}
+
+export function requestGuestBooking(payload: BookingRequestPayload, requestKey: string, signal?: AbortSignal): Promise<{ message: string }> {
+  return apiClient.post('/bookings/guest/request', payload, { signal, credentials: 'omit', headers: { 'Idempotency-Key': requestKey } });
+}
+
+export function previewGuestBooking(token: string, signal?: AbortSignal): Promise<GuestBookingPreview> {
+  return apiClient.post('/bookings/guest/preview', { token }, { signal, credentials: 'omit' });
+}
+
+export async function confirmGuestBooking(token: string, seatIds?: number[], signal?: AbortSignal): Promise<BookingCreatedResult> {
+  return mapCreatedBooking(await apiClient.post<CreatedBookingApiResponse>('/bookings/guest/confirm', { token, seatIds }, { signal, credentials: 'omit' }));
 }

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { cancelMyBooking, getMyBookings } from '../api/bookings'
-import { getAuthToken } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { BookingsContext } from '../hooks/useBookings'
 import type { Booking } from '../types/booking'
@@ -13,9 +12,8 @@ interface BookingSnapshot {
 }
 
 export function BookingsProvider({ children }: { children: ReactNode }) {
-  const { user, loading: authLoading } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
   const userId = user?.id
-  const token = getAuthToken()
   const [snapshot, setSnapshot] = useState<BookingSnapshot | null>(null)
   const [revision, setRevision] = useState(0)
   const [currentTime, setCurrentTime] = useState(() => Date.now())
@@ -32,7 +30,7 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
   }, [userId])
 
   useEffect(() => {
-    if (authLoading || userId === undefined || !token) return
+    if (authLoading || userId === undefined || !isAuthenticated) return
     const controller = new AbortController()
 
     getMyBookings(controller.signal).then(
@@ -47,7 +45,7 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
     )
 
     return () => controller.abort()
-  }, [authLoading, userId, token, revision])
+  }, [authLoading, userId, isAuthenticated, revision])
 
   const refresh = useCallback(() => setRevision((value) => value + 1), [])
   const cancelBooking = useCallback(async (id: number) => {
@@ -62,10 +60,10 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
     refresh()
   }, [userId, refresh])
 
-  const ownedSnapshot = user && token && snapshot?.userId === user.id ? snapshot : null
+  const ownedSnapshot = user && isAuthenticated && snapshot?.userId === user.id ? snapshot : null
   const bookings = ownedSnapshot?.bookings ?? []
   const error = ownedSnapshot?.error ?? null
-  const loading = authLoading || Boolean(user && token && !ownedSnapshot)
+  const loading = authLoading || Boolean(user && isAuthenticated && !ownedSnapshot)
   const upcomingCount = bookings.filter((booking) => getBookingState(booking, currentTime) === 'upcoming').length
 
   return (

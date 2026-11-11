@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
 import { Link, Navigate } from 'react-router'
 import { useAuth } from '../../hooks/useAuth'
+import { getPostLoginPath } from '../../utils/routeAccess'
 
 export default function AuthCard({ registering, redirect, children }: { registering: boolean; redirect: string; children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { isAuthenticated, role, loading } = useAuth()
   const query = redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`
-  if (!loading && user) return <Navigate to={redirect} replace />
+  if (!loading && isAuthenticated) return <Navigate to={getPostLoginPath(redirect, role)} replace />
   return <section className="fv-auth-page" aria-labelledby="auth-title">
     <div className="fv-auth-card">
       <nav className="fv-tabs-segmented segmented-primary" aria-label="Inloggning och registrering">

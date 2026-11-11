@@ -1,8 +1,9 @@
 import type { ApiResponse } from '../types'
 
 const API_BASE_URL = '/api'
-const TOKEN_KEY = 'token'
 export const AUTH_UNAUTHORIZED_EVENT = 'fv:auth-unauthorized'
+let sessionRevision = 0
+export function advanceSessionRevision() { sessionRevision += 1 }
 
 export class ApiError extends Error {
   status: number
@@ -16,37 +17,15 @@ export class ApiError extends Error {
   }
 }
 
-export function getAuthToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY)
-  } catch {
-    return null
-  }
-}
-
-export function setAuthToken(token: string): void {
-  try {
-    localStorage.setItem(TOKEN_KEY, token)
-  } catch {
-    // Ignore localStorage write error if disabled
-  }
-}
-
-export function clearAuthToken(): void {
-  try {
-    localStorage.removeItem(TOKEN_KEY)
-  } catch {
-    // Ignore localStorage errors
-  }
-}
-
 export interface RequestConfig extends Omit<RequestInit, 'body'> {
   params?: Record<string, string | number | boolean | undefined | null>
   body?: unknown
+  ignoreUnauthorized?: boolean
 }
 
 async function request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-  const { params, headers: customHeaders, body, ...restConfig } = config
+  const { params, headers: customHeaders, body, ignoreUnauthorized, ...restConfig } = config
+  const revision = sessionRevision
 
   // Build full URL with query parameters if provided
   let url = endpoint.startsWith('http')
@@ -68,10 +47,8 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
 
   const headers = new Headers(customHeaders)
 
-  // Attach JWT Bearer token if available
-  const token = getAuthToken()
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`)
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(restConfig.method ?? 'GET')) {
+    headers.set('X-CSRF-Protection', '1')
   }
 
   // Set default JSON Content-Type unless payload is FormData
@@ -91,6 +68,7 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
 
   const response = await fetch(url, {
     ...restConfig,
+    credentials: restConfig.credentials ?? 'same-origin',
     headers,
     body: finalBody,
   })
@@ -98,11 +76,10 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
   // Ignore late failures from requests made with an older session.
   const requestUrl = new URL(url, window.location.origin)
   const path = requestUrl.pathname.replace(/\/$/, '')
-  if (!restConfig.signal?.aborted && response.status === 401 && token && getAuthToken() === token &&
-      headers.get('Authorization') === `Bearer ${token}` &&
+  if (!ignoreUnauthorized && !restConfig.signal?.aborted && response.status === 401 && sessionRevision === revision &&
+      restConfig.credentials !== 'omit' &&
       requestUrl.origin === window.location.origin &&
       !['/api/auth/login', '/api/auth/change-password'].includes(path)) {
-    clearAuthToken()
     window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
   }
 

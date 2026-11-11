@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import type { ScreeningProgramme } from '../hooks/useScreeningProgramme'
+import { getAvailableCalendarDate } from '../utils/screeningDates'
 import {
   addDaysToIsoDate,
   addMonthsToIsoDate,
@@ -7,11 +9,11 @@ import {
   formatDateLong,
   formatMonthYear,
   startOfMonthIsoDate,
-  todayIsoDate,
   weekdayIndex,
 } from '../utils/date'
 
 interface DatePickerPopoverProps {
+  programme: ScreeningProgramme
   id: string
   anchorRef: RefObject<HTMLElement | null>
   selectedDate: string | null
@@ -43,6 +45,7 @@ function getWeeks(monthStart: string): (string | null)[][] {
 }
 
 export default function DatePickerPopover({
+  programme,
   id,
   anchorRef,
   selectedDate,
@@ -53,10 +56,13 @@ export default function DatePickerPopover({
 }: DatePickerPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null)
   const shouldFocusDay = useRef(true)
-  const today = todayIsoDate()
+  const { today, dates: availableDates, availableDates: availableDateSet, loading, error, refetch } = programme
   const [focusedDate, setFocusedDate] = useState(() => clampDate(selectedDate ?? today, minDate, maxDate))
+  const activeDate = getAvailableCalendarDate(availableDates, focusedDate) ?? availableDates.at(-1)
 
-  const monthStart = startOfMonthIsoDate(focusedDate)
+  const monthStart = startOfMonthIsoDate(activeDate ?? focusedDate)
+  const previousMonthDate = getAvailableCalendarDate(availableDates, addDaysToIsoDate(monthStart, -1), -1)
+  const nextMonthDate = getAvailableCalendarDate(availableDates, addMonthsToIsoDate(monthStart, 1))
 
   // Follow the button when the page scrolls
   useLayoutEffect(() => {
@@ -67,7 +73,12 @@ export default function DatePickerPopover({
 
       const rect = anchor.getBoundingClientRect()
       const maxLeft = window.innerWidth - popover.offsetWidth - GAP
-      popover.style.top = `${rect.bottom + GAP}px`
+      const below = rect.bottom + GAP
+      const above = rect.top - popover.offsetHeight - GAP
+      const top = below + popover.offsetHeight <= window.innerHeight - GAP
+        ? below
+        : above >= GAP ? above : Math.max(GAP, window.innerHeight - popover.offsetHeight - GAP)
+      popover.style.top = `${top}px`
       popover.style.left = `${Math.max(GAP, Math.min(rect.left, maxLeft))}px`
     }
 
@@ -78,7 +89,7 @@ export default function DatePickerPopover({
       window.removeEventListener('scroll', updatePosition, { capture: true })
       window.removeEventListener('resize', updatePosition)
     }
-  }, [anchorRef])
+  }, [anchorRef, loading, error, monthStart])
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -93,17 +104,23 @@ export default function DatePickerPopover({
 
   useEffect(() => {
     if (!shouldFocusDay.current) return
+    if (loading || error || !activeDate) {
+      popoverRef.current?.focus()
+      return
+    }
     shouldFocusDay.current = false
-    popoverRef.current?.querySelector<HTMLButtonElement>(`[data-date="${focusedDate}"]`)?.focus()
-  }, [focusedDate])
+    popoverRef.current?.querySelector<HTMLButtonElement>(`[data-date="${activeDate}"]`)?.focus()
+  }, [activeDate, loading, error])
 
   function closeAndReturnFocus() {
     onClose()
     anchorRef.current?.focus()
   }
 
-  function changeMonth(months: number) {
-    setFocusedDate(clampDate(addMonthsToIsoDate(focusedDate, months), minDate, maxDate))
+  function focusDate(date: string | undefined) {
+    if (!date) return
+    shouldFocusDay.current = true
+    setFocusedDate(date)
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTableElement>) {
@@ -115,8 +132,8 @@ export default function DatePickerPopover({
     else return
 
     event.preventDefault()
-    shouldFocusDay.current = true
-    setFocusedDate(clampDate(addDaysToIsoDate(focusedDate, days), minDate, maxDate))
+    if (!activeDate) return
+    focusDate(getAvailableCalendarDate(availableDates, addDaysToIsoDate(activeDate, days), days > 0 ? 1 : -1))
   }
 
   return (
@@ -125,6 +142,9 @@ export default function DatePickerPopover({
       id={id}
       role="dialog"
       aria-label="Välj datum"
+      aria-describedby={`${id}-availability`}
+      aria-busy={loading}
+      tabIndex={-1}
       className="date-picker-popover"
       onKeyDown={(event) => {
         if (event.key === 'Escape') closeAndReturnFocus()
@@ -141,8 +161,8 @@ export default function DatePickerPopover({
           type="button"
           className="date-picker-popover__nav"
           aria-label="Föregående månad"
-          disabled={monthStart <= startOfMonthIsoDate(minDate)}
-          onClick={() => changeMonth(-1)}
+          disabled={loading || Boolean(error) || !previousMonthDate}
+          onClick={() => focusDate(previousMonthDate)}
         >
           <i className="bi bi-chevron-left" aria-hidden="true"></i>
         </button>
@@ -153,11 +173,21 @@ export default function DatePickerPopover({
           type="button"
           className="date-picker-popover__nav"
           aria-label="Nästa månad"
-          disabled={monthStart >= startOfMonthIsoDate(maxDate)}
-          onClick={() => changeMonth(1)}
+          disabled={loading || Boolean(error) || !nextMonthDate}
+          onClick={() => focusDate(nextMonthDate)}
         >
           <i className="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
+      </div>
+
+      <div id={`${id}-availability`} className="date-picker-popover__availability">
+        {loading ? <p role="status">Hämtar visningsdatum...</p>
+          : error ? <div role="alert">
+            <p>Kunde inte hämta visningsdatum.</p>
+            <button type="button" className="btn btn-outline-light btn-sm" onClick={() => void refetch()}>Försök igen</button>
+          </div>
+            : availableDates.length === 0 ? <p role="status">Inga planerade visningar under perioden.</p>
+              : <p className="date-picker-popover__legend">Markerade datum har visningar. Grå datum kan inte väljas.</p>}
       </div>
 
       <table className="date-picker-popover__grid" onKeyDown={handleKeyDown}>
@@ -178,9 +208,12 @@ export default function DatePickerPopover({
 
                 const isSelected = date === selectedDate
                 const isToday = date === today
+                const hasScreenings = availableDateSet.has(date)
+                const disabled = loading || Boolean(error) || !hasScreenings
                 let className = 'date-picker-popover__day'
                 if (isSelected) className += ' date-picker-popover__day--selected'
                 if (isToday) className += ' date-picker-popover__day--today'
+                if (hasScreenings && !loading && !error) className += ' date-picker-popover__day--available'
 
                 return (
                   <td key={date}>
@@ -188,12 +221,13 @@ export default function DatePickerPopover({
                       type="button"
                       data-date={date}
                       className={className}
-                      tabIndex={date === focusedDate ? 0 : -1}
-                      disabled={date < minDate || date > maxDate}
+                      tabIndex={!disabled && date === activeDate ? 0 : -1}
+                      disabled={disabled}
                       aria-pressed={isSelected}
                       aria-current={isToday ? 'date' : undefined}
-                      aria-label={capitalize(formatDateLong(date))}
+                      aria-label={`${capitalize(formatDateLong(date))}${!loading && !error ? hasScreenings ? ', visningar finns' : ', inga visningar' : ''}`}
                       onClick={() => {
+                        if (disabled) return
                         onSelect(date)
                         closeAndReturnFocus()
                       }}

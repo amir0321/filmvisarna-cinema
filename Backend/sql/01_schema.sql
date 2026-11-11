@@ -27,6 +27,14 @@ CREATE TABLE auth_rate_limit (
 );
 CREATE INDEX auth_rate_limit_window_idx ON auth_rate_limit(window_start);
 
+CREATE TABLE auth_session (
+  token_hash text PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX auth_session_expires_idx ON auth_session(expires_at);
+CREATE INDEX auth_session_user_idx ON auth_session(user_id);
+
 -- ---------- MOVIE, GENRE, PERSON -------------------------------------
 CREATE TABLE movie (
   id                  int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -114,10 +122,33 @@ CREATE TABLE booking (
   is_checked_in     boolean NOT NULL DEFAULT false,
   checked_in_at     timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
+  identity_email    text,
+  request_key       uuid,
+  request_hash      text,
   CONSTRAINT booking_has_owner CHECK (user_id IS NOT NULL OR guest_email IS NOT NULL),
   UNIQUE (id, screening_id)
 );
 CREATE INDEX booking_user_idx ON booking (user_id);
+CREATE INDEX booking_identity_idx ON booking(identity_email);
+CREATE UNIQUE INDEX booking_request_idx ON booking(identity_email, request_key);
+
+CREATE TABLE booking_rate_limit (
+  key_hash text PRIMARY KEY,
+  attempts timestamptz[] NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX booking_rate_expiry_idx ON booking_rate_limit(expires_at);
+
+CREATE TABLE guest_booking_intent (
+  email text PRIMARY KEY,
+  token_hash text NOT NULL UNIQUE,
+  request_key uuid NOT NULL,
+  payload jsonb NOT NULL,
+  expires_at timestamptz NOT NULL,
+  sent_at timestamptz,
+  booking_id integer REFERENCES booking(id) ON DELETE CASCADE
+);
+CREATE INDEX guest_booking_expiry_idx ON guest_booking_intent(expires_at);
 
 CREATE TABLE ticket (
   screening_id   int NOT NULL REFERENCES screening (id),

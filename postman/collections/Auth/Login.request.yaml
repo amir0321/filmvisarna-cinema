@@ -2,6 +2,8 @@ $kind: http-request
 name: Login
 url: http://localhost:3000/api/auth/login
 method: POST
+headers:
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |-
@@ -10,17 +12,3 @@ body:
       "password": "Password123!"
     }
 order: 542768022570850
-scripts:
-  - type: afterResponse
-    code: |-
-      const res = pm.response.json();
-      if (res && res.token) {
-        if (res.user && res.user.role === 'admin') {
-          pm.globals.set('admin_token', res.token);
-          console.log('admin_token har sparats automatiskt!');
-        } else {
-          pm.globals.set('user_token', res.token);
-          console.log('user_token har sparats automatiskt!');
-        }
-      }
-    language: text/javascript

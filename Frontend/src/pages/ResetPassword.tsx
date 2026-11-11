@@ -44,7 +44,7 @@ export default function ResetPassword() {
       if (controller.signal.aborted) return
       setPassword('')
       setConfirmation('')
-      if (user?.email === response.email) logout()
+      if (user?.email === response.email) await logout()
       setMessage(response.message)
     } catch (error) {
       if (!controller.signal.aborted) setError(error instanceof ApiError ? error.message : 'Kunde inte nå servern. Försök igen.')

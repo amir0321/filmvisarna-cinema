@@ -1,5 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import type { AuthEmail } from './authActions.service.js';
+import type { GuestBookingEmail } from './guestBookings.service.js';
 import {
   generateBookingConfirmationHtml,
   generateBookingConfirmationText,
@@ -110,4 +111,19 @@ export async function sendAuthEmail(data: AuthEmail): Promise<void> {
     disableUrlAccess: true,
   });
   if (info.rejected?.length) throw new Error('Auth email rejected');
+}
+
+export async function sendGuestBookingEmail(data: GuestBookingEmail): Promise<void> {
+  if (!isAuthEmailConfigured()) throw new Error('Booking verification SMTP is not configured');
+  const transporter = await getTransporter();
+  const escapedUrl = data.url.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+  const description = `Bekräfta din gästbokning hos Filmvisarna inom ${data.expiresInMinutes} minuter. Platserna reserveras först när du har bekräftat bokningen. Du betalar i kassan.`;
+  const info = await transporter.sendMail({
+    from: { name: 'Filmvisarna Cinema', address: process.env.EMAIL_FROM || process.env.EMAIL_USER! },
+    to: { address: data.email, name: '' }, subject: 'Bekräfta din gästbokning – Filmvisarna',
+    text: `${description}\n\nÖppna bokningen: ${data.url}\n\nKlicka på Bekräfta bokning på sidan. Om du inte begärde detta kan du bortse från mejlet.`,
+    html: `<html lang="sv"><body><h1>Bekräfta din gästbokning</h1><p>${description}</p><p><a href="${escapedUrl}">Öppna bokningen</a></p><p>Klicka på Bekräfta bokning på sidan. Om du inte begärde detta kan du bortse från mejlet.</p></body></html>`,
+    disableFileAccess: true, disableUrlAccess: true,
+  });
+  if (info.rejected?.length) throw new Error('Booking verification email rejected');
 }

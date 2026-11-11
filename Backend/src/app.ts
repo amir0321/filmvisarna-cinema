@@ -16,13 +16,17 @@ import { uploadRouter } from "./routes/upload.js";
 import { priceGroupsRouter } from "./routes/priceGroups.js";
 import { adminRouter } from "./routes/admin.js";
 import { contactRouter } from "./routes/contact.js";
+import { csrfProtection } from './middleware/csrf';
 
 export const app = express();
+if (config.trustProxy.length) app.set('trust proxy', config.trustProxy);
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
-app.use(cors({ origin: config.corsOrigin }));
+app.use(cors({ origin: [...new Set([config.frontendUrl, ...config.corsOrigin])], credentials: true,
+  allowedHeaders: ['Content-Type', 'X-CSRF-Protection', 'Idempotency-Key'] }));
+app.use('/api', csrfProtection);
 app.use(express.json({ limit: "100kb" }));
 
 // Static serving for uploaded files
@@ -52,6 +56,7 @@ app.use((_req, res) => {
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof HttpError) {
+    if (err.status === 429) res.setHeader('Retry-After', '900');
     res.status(err.status).json({ success: false, error: err.message });
     return;
   }

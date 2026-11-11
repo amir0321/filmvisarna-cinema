@@ -11,6 +11,9 @@ import {
   updateBookingStatus,
 } from "../services/bookings.service.js";
 import { parseId } from "../utils/httpErorr.js";
+import { guestBookingService } from '../services/guestBookings.service.js';
+import { HttpError } from '../utils/httpErorr.js';
+import { config } from '../config.js';
 
 export const listBookingsQuerySchema = z.object({
   screeningId: z.coerce.number().int().positive().optional(),
@@ -44,7 +47,7 @@ export const updateBookingSchema = z
 
 const createBookingSchema = z.object({
   screeningId: z.number().int().positive("Ogiltigt visnings-id."),
-  email: z.string().trim().email("Ogiltig e-postadress.").optional(),
+  email: z.string().trim().email("Ogiltig e-postadress.").max(200).optional(),
   guestName: z.string().trim().min(1).max(100).optional(),
   tickets: z
     .array(
@@ -67,6 +70,7 @@ const createBookingSchema = z.object({
         quantity: z.number().int().min(1).max(20),
       }),
     )
+    .max(50)
     .refine(
       (items) => new Set(items.map((i) => i.itemId)).size === items.length,
       { message: "Samma produkt kan inte väljas två gånger." },
@@ -99,21 +103,30 @@ export async function lookupBooking(req: Request, res: Response) {
   res.json(booking);
 }
 
-export async function postBooking(req: Request, res: Response) {
-  const body = createBookingSchema.parse(req.body);
-  const email = req.user?.email ?? body.email;
-
-  if (!email) {
-    res.status(400).json({ error: "E-postadress krävs för gästbokning." });
-    return;
-  }
-
-  const result = await createBooking(
-    { ...body, email },
-    req.user?.id,
-  );
-
-  res.status(201).json(result);
+export function createBookingHandlers(book = createBooking, guests = guestBookingService) {
+  const requestKey = (req: Request) => z.uuid('Bokningsförsöket saknar en giltig nyckel. Försök igen.').parse(req.get('Idempotency-Key')).toLowerCase();
+  const tokenBody = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/, 'Bekräftelselänken är ogiltig.') });
+  return {
+    async postBooking(req: Request, res: Response) {
+      const body = createBookingSchema.parse(req.body);
+      if (!req.user) throw new HttpError(403, 'Gästbokningar måste bekräftas via e-post.');
+      const result = await book({ ...body, email: req.user.email }, req.user.id, { requestKey: requestKey(req) });
+      res.status(201).json(result);
+    },
+    async requestGuestBooking(req: Request, res: Response) {
+      const body = createBookingSchema.extend({ email: z.string().trim().email().max(200) }).parse(req.body);
+      await guests.request(body, requestKey(req));
+      res.status(202).json({ message: `Kontrollera din e-post och bekräfta bokningen via länken. Den gäller i högst ${config.bookingLimits.guestLinkMinutes} minuter från första utskicket. Platserna är inte reserverade ännu.` });
+    },
+    async previewGuestBooking(req: Request, res: Response) {
+      const { token } = tokenBody.parse(req.body);
+      res.json(await guests.preview(token));
+    },
+    async confirmGuestBooking(req: Request, res: Response) {
+      const { token, seatIds } = tokenBody.extend({ seatIds: z.array(z.number().int().positive()).min(1).max(10).optional() }).parse(req.body);
+      res.status(201).json(await guests.confirm(token, seatIds));
+    },
+  };
 }
 
 export async function deleteBooking(req: Request, res: Response): Promise<void> {

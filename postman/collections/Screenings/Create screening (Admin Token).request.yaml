@@ -3,7 +3,7 @@ name: Create screening (Admin Token)
 url: http://localhost:3000/api/screenings
 method: POST
 headers:
-  Authorization: Bearer {{admin_token}}
+  X-CSRF-Protection: "1"
 body:
   type: json
   content: |

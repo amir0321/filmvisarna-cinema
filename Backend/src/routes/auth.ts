@@ -2,7 +2,8 @@ import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
 import { query, withTransaction } from "../utils/dbHelpers";
-import { requireAuth, signToken } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
+import { clearSessionCookie, createSession, revokeSession, setSessionCookie } from '../services/sessions.service';
 import { HttpError } from "../utils/httpErorr";
 import { authActionService } from '../services/authActions.service.js';
 import type { AuthUser } from '../interfaces/types.js';
@@ -57,6 +58,7 @@ export function createAuthRouter(actions = authActionService) {
   // Do not trust X-Forwarded-For unless a deployment explicitly configures trusted proxies.
   authRouter.use(async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (req.path === '/logout') return next();
     if (req.method !== 'POST') return next();
     if (!await actions.limit(`auth:ip:${req.ip ?? req.socket.remoteAddress}`, 30)) {
       res.setHeader('Retry-After', '900');
@@ -86,7 +88,10 @@ export function createAuthRouter(actions = authActionService) {
       );
       // The account remains usable if mail delivery fails; the client can offer resend.
       const verificationEmailSent = await actions.sendLink(user.email, 'verify_email').catch(() => false);
-      res.status(201).json({ token: signToken(user.id), user, verificationEmailSent });
+      const session = await createSession(user.id);
+      await revokeSession(req);
+      setSessionCookie(res, session);
+      res.status(201).json({ user, expiresAt: session.expiresAt, verificationEmailSent });
     } catch (error) {
       if ((error as { code?: string }).code === "23505") {
         throw new HttpError(409, "Den angivna e-postadressen är redan registrerad.");
@@ -117,7 +122,17 @@ export function createAuthRouter(actions = authActionService) {
 
     await actions.clearLimit(loginLimitKey);
     const { passwordHash: _omit, authVersion, ...user } = row;
-    res.json({ token: signToken(row.id, authVersion), user });
+    const session = await createSession(row.id, authVersion);
+    await revokeSession(req);
+    setSessionCookie(res, session);
+    res.json({ user, expiresAt: session.expiresAt });
+  });
+
+  // Idempotent even for an expired session; clear the cookie only after revocation succeeds.
+  authRouter.post('/logout', async (req, res) => {
+    await revokeSession(req);
+    clearSessionCookie(res);
+    res.json({ success: true });
   });
 
   authRouter.get("/me", requireAuth, async (req, res) => {
@@ -125,7 +140,7 @@ export function createAuthRouter(actions = authActionService) {
       `SELECT ${user_columns} FROM app_user WHERE id = $1`,
       [req.user!.id],
     );
-    res.json(user);
+    res.json({ user, expiresAt: req.session!.expiresAt });
   });
 
   authRouter.put("/me", requireAuth, async (req, res) => {
@@ -171,6 +186,7 @@ export function createAuthRouter(actions = authActionService) {
       await client.query("DELETE FROM auth_action_token WHERE user_id = $1 AND purpose = 'reset_password'", [req.user!.id]);
     });
 
+    clearSessionCookie(res);
     res.json({ success: true, message: "Lösenordet har ändrats." });
   });
 
@@ -195,7 +211,7 @@ export function createAuthRouter(actions = authActionService) {
     const [user] = await query<{ is_verified: boolean }>('SELECT is_verified FROM app_user WHERE id = $1', [req.user!.id]);
     if (user?.is_verified) return res.json({ success: true, message: 'Din e-postadress är redan verifierad.' });
     const sent = await actions.sendLink(req.user!.email, 'verify_email');
-    if (!sent) throw new HttpError(429, 'Mejlet kunde inte skickas. Vänta 15 minuter innan du försöker igen, eller kontrollera om adressen redan är verifierad.');
+    if (!sent) throw new HttpError(429, 'Vänta minst en minut mellan verifieringsmejl. Efter tre utskick behöver du vänta 15 minuter.');
     res.json({ success: true, message: 'Ett nytt verifieringsmejl har skickats. Kontrollera även skräpposten.' });
   });
 

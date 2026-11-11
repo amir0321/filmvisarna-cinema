@@ -1,4 +1,6 @@
 export type UserRole = 'user' | 'admin'
+export type AuthRole = 'guest' | UserRole
+export type RoleLabel = 'Gäst' | 'Medlem' | 'Admin'
 
 export interface User {
   id: number
@@ -12,7 +14,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string
+  expiresAt: number
   user: User
   verificationEmailSent?: boolean
 }
