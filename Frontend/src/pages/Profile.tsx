@@ -1,6 +1,6 @@
 import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
 import ProfileForm from "../components/ProfileForm";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ChangePasswordForm from "../components/ChangePasswordForm";
 import ProfileBookingCount from "../components/ProfileBookingCount";
 import { Link } from "react-router";
@@ -11,6 +11,10 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<"personal" | "security">(
     "personal",
   );
+
+  useEffect(() => {
+    void refreshUser().catch(() => {});
+  }, [refreshUser]);
 
  if (loading && !user) {
   return <p className="py-5 text-center">Laddar profil...</p>;

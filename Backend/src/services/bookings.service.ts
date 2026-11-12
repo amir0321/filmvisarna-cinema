@@ -161,11 +161,10 @@ export async function updateBookingStatus(
 
     const existing = await client.query(
       `SELECT b.id, b.status, b.is_paid, b.is_checked_in, b.user_id,
-              COALESCE(bt.total_price, 0) AS total_price
+              COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price
        FROM booking b
-       LEFT JOIN booking_totals bt ON bt.booking_id = b.id
        WHERE b.id = $1
-       FOR UPDATE OF b`,
+       FOR UPDATE`,
       [bookingId],
     );
     if (existing.rowCount === 0) {
@@ -173,6 +172,9 @@ export async function updateBookingStatus(
     }
 
     const current = existing.rows[0];
+    if (current.status !== "confirmed") {
+      throw new HttpError(400, "Kan inte uppdatera en avbokad bokning.");
+    }
     let pointsAwarded = 0;
 
     if (isPaid !== undefined) {
