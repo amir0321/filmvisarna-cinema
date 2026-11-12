@@ -4,10 +4,13 @@ import { formatSek } from '../../utils/price'
 
 interface KioskTableProps {
   items: AdminMenuItem[]
+  // Id of the item currently being saved
+  savingId: number | null
   onEdit: (item: AdminMenuItem) => void
+  onToggleAvailable: (item: AdminMenuItem) => void
 }
 
-export default function KioskTable({ items, onEdit }: KioskTableProps) {
+export default function KioskTable({ items, savingId, onEdit, onToggleAvailable }: KioskTableProps) {
   return (
     <div className="admin-table-card">
       <div className="table-responsive">
@@ -43,7 +46,23 @@ export default function KioskTable({ items, onEdit }: KioskTableProps) {
                     <span className={`kiosk-category kiosk-category--${categoryKey}`}>{category.label}</span>
                   </td>
                   <td className="kiosk-table__price">{formatSek(item.price)}</td>
-                  <td>{item.isAvailable ? 'Aktiv' : 'Inaktiv'}</td>
+                  <td>
+                    <div className="form-check form-switch kiosk-switch">
+                      <input
+                        id={`kiosk-available-${item.id}`}
+                        type="checkbox"
+                        role="switch"
+                        className="form-check-input"
+                        checked={item.isAvailable}
+                        disabled={savingId === item.id}
+                        onChange={() => onToggleAvailable(item)}
+                      />
+                      <label htmlFor={`kiosk-available-${item.id}`} className="form-check-label">
+                        {item.isAvailable ? 'Aktiv' : 'Inaktiv'}
+                        <span className="visually-hidden"> – {item.name}</span>
+                      </label>
+                    </div>
+                  </td>
                   <td>
                     <div className="admin-table__actions">
                       <button
