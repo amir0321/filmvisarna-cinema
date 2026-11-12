@@ -1,15 +1,21 @@
 .admin-page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: $space-2;
   margin-bottom: $space-3;
+
+  > div { min-width: 0; }
+
+  @media (min-width: $fv-bp-md) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .admin-page-header__title {
   margin-bottom: 4px;
   font-size: $font-size-22;
+  overflow-wrap: anywhere;
 }
 
 .admin-page-header__subtitle {
@@ -20,6 +26,7 @@
 
 .admin-breadcrumb {
   display: flex;
+  flex-wrap: wrap;
   gap: $space-1;
   margin: $space-1 0 0;
   padding: 0;
@@ -112,8 +119,6 @@
     .admin-toolbar__filters .fv-pill-group .chip { min-width: 0; padding-inline: $space-1; white-space: normal; }
     .admin-toolbar__select, .admin-screenings__date-filter { flex: 1 1 100%; width: 100%; }
     .admin-toolbar__create { width: 100%; }
-    .admin-page-header > div { min-width: 0; }
-    .admin-breadcrumb { flex-wrap: wrap; }
   }
 }
 

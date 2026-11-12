@@ -29,6 +29,10 @@ The parent includes the resulting array as `cast_members` when saving the movie.
 
 ## Admin movie archive and form
 
+The archive and screening schedule share `AdminPageHeader`: `Backoffice` links to `/admin`, followed by the current page. Breadcrumbs sit at the top right from 768 px and below the title on mobile. `Backoffice` is also the first admin desktop navigation link and the overview link in the mobile drawer; its active state matches `/admin` exactly. Admin entry links on public pages use the same label.
+
+Current design documentation: [navigation and breadcrumbs](../design/layout.md), [movie archive](../design/pages/admin-filmer.md), [screening schedule](../design/pages/admin-visningar.md) and [actor profiles on movie details](../design/pages/movie-detail.md).
+
 `/admin/filmer` (alias `/admin/movies`) now uses `AdminMovies`, `MoviesTable` and `MovieFormModal`. The page filters by film title or director, displays the matching film count and paginates ten films per page. Existing admin route protection and `apiClient` cookie/CSRF handling apply to all writes. On closing a form, the archive reloads so shared person-profile edits are reflected too.
 
 The form supports complete manual creation/editing and optional TMDB import. Search waits 350 ms and aborts obsolete requests; suggestions show poster, title and year. Selecting a suggestion fetches the full preview, including actor profiles/characters/TMDB IDs, and replaces the form fields for review. Missing runtime must be completed. TMDB failures leave manual entry available. The form is loaded on demand when opened.

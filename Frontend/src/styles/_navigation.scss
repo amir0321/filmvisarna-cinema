@@ -66,13 +66,15 @@
   gap: 2px;
   min-width: 0;
   flex: 1 1 auto;
-  justify-content: center;
+  justify-content: safe center;
   overflow-x: auto;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
+
+  > li { flex-shrink: 0; }
 }
 
 .public-nav-link {

@@ -2,7 +2,7 @@
 
 ## 11. Täckningslista
 
-Samtliga 28 filer under `docs/figma-make/src/` är inventerade och dokumenterade i detta dokument enligt tabellen nedan:
+Prototypens 28 filer under `docs/figma-make/src/` är inventerade enligt tabellen nedan. Tabellen är en prototypreferens; uppdaterade specifikationer för den implementerade appen använder källfiler i `Frontend/` och `Backend/`. Aktuell koppling för film- och adminarbetet finns efter tabellen.
 
 | # | Källfil i `docs/figma-make/src/` | Dokumenterad i sektion(er) i `DESIGN.md` |
 | :--- | :--- | :--- |
@@ -34,3 +34,15 @@ Samtliga 28 filer under `docs/figma-make/src/` är inventerade och dokumenterade
 | 26 | `docs/figma-make/src/imports/pasted_text/filmvisarna-booking-spec.md` | 1, 2.1, 2.3, 2.4, 2.6, 5.1, 5.3–5.5, 5.8, 8.2, 10.2, 10.3 |
 | 27 | `docs/figma-make/src/assets/spec2.png` | 1, 8.2 (textkopia av `filmvisarna-booking-spec.md`) |
 | 28 | `docs/figma-make/src/assets/upload.png` | 1, 8.2 (textkopia av `cinema-app-screens.md`) |
+
+### Aktuell implementation: filmer, profiler och adminnavigering
+
+| Källfiler i appen | Dokumentation |
+| :--- | :--- |
+| `Frontend/src/components/Navbar.tsx`, `MobileDrawer.tsx`, `BottomNav.tsx` och `styles/_navigation.scss` | [Layout §4.2–4.5](layout.md#42-toppnavigering-navbartsx--brandlogotsx): rollstyrd Backoffice-länk, desktopmeny, mobil sidomeny och bottennavigering. |
+| `Frontend/src/components/admin/AdminPageHeader.tsx` och `styles/components/admin/_admin-screenings.scss` | [Komponenter §3.14](components.md#314-gemensamt-adminsidhuvud-adminpageheadertsx): delat sidhuvud och responsiv brödsmula till `/admin`. |
+| `Frontend/src/pages/admin/AdminMovies.tsx`, `components/admin/MoviesTable.tsx` och `styles/components/admin/_admin-movies.scss` | [Filmarkiv](pages/admin-filmer.md): sökning, 10 filmer per sida, tabell/kort, genrer, visningsantal och skyddad borttagning. |
+| `Frontend/src/components/admin/MovieFormModal.tsx`, `CastMemberEditor.tsx`, `api/movies.ts`, `api/persons.ts`, `utils/movieForm.ts` och `utils/imageValidation.ts` | [Filmarkivets formulär](pages/admin-filmer.md#filmformulär-och-tmdb-import): TMDB-import, filuppladdning, profilredigering och sparningsåterkoppling. |
+| `Frontend/src/pages/admin/AdminScreenings.tsx`, `components/admin/ScreeningsTable.tsx` och `ScreeningFormModal.tsx` | [Visningsschema](pages/admin-visningar.md): filter, 15 visningar per sida, kort under 1200px, två kortkolumner på surfplatta och responsivt formulär. |
+| `Frontend/src/pages/MovieDetails.tsx`, `components/Modal.tsx` och `styles/components/_movie-details.scss` | [Skådespelarprofiler](pages/movie-detail.md#klickbara-skådespelarprofiler): profilbilder, reservikon, rollfigur och biografimodal. |
+| `Backend/src/services/movies.service.ts`, `persons.service.ts`, `tmdb.service.ts`, `routes/upload.ts` och cast-migrationen | [Backend/README.md](../Backend/README.md#cast-profiles-and-image-uploads): API, personregister, transaktioner, validering och seed-berikning som de aktuella vyerna använder. |

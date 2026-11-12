@@ -1,39 +1,36 @@
 > Bygger på: [design/tokens.md](../tokens.md), [design/components.md](../components.md) (3.1 Knappar, 3.2 Filter-chips, 3.3 Salongs- & Statusbadges, 3.5 Tabeller, 3.6 Formulär, 3.7 Modaler & BottomSheets, 3.8 Admin-flikar), [design/layout.md](../layout.md) (4.3 Admin-toppnavigering) och [design/flows.md](../flows.md). Index: [DESIGN.md](../../DESIGN.md).
 
-### 5.11 Admin – Visningsschema (`SchemaTab` i `AdminScreen`)
+### 5.11 Admin – Visningsschema (`AdminScreenings.tsx`)
 
-- **Föreslagen route:** `/admin/visningar` (Föreslagen)
-- **Skärm-ID:** `'admin'` med `activeTab === 'schema'`
-- **Källfiler:** `src/components/AdminScreen.tsx`, `src/components/admin/SchemaTab.tsx`, `src/components/admin/adminData.ts`
+- **Route:** `/admin/visningar`, med alias `/admin/schema` och `/admin/screenings`. Kräver administratör.
+- **Aktuell implementation:** `Frontend/src/pages/admin/AdminScreenings.tsx`, `Frontend/src/components/admin/{AdminPageHeader,ScreeningsTable,ScreeningFormModal}.tsx`, `DatePickerPopover.tsx` och `Frontend/src/styles/components/admin/_admin-screenings.scss`.
+- Beskrivningen gäller den implementerade appen och ersätter prototypens `SchemaTab`.
 
-#### Sidhuvud i `AdminScreen`
-- **Desktop (`>= 768px`):** Rubrik `Visningsschema`, underrubrik `Schemalägg och hantera filmvisningar`, brödsmula `Backoffice` > `Visningsschema`.
-- **Mobil (`< 768px`):** Rubrik `Visningsschema` (`18px`).
+#### Gemensamt sidhuvud
 
-#### Struktur och komponenter i `SchemaTab`
-1. **Verktygsrad / Filter:**
-   - **Datumchips:** `Idag`, `Imorgon`, `Hela veckan`.
-   - **Primär CTA-knapp:**
-     - Desktop (till höger i verktygsraden): `Schemalägg ny visning` (med plusikon).
-     - Mobil (fullbredd ovanför datumchipsen): `+ Ny Visning` (med plusikon).
-2. **Visningslista (Tabell på desktop, kortlista på mobil):**
-   - **Tabellkolumner på desktop:** `Datum` | `Starttid` | `Salong` | `Film` | `Format` | `Sålda platser` | `Sluttid` | `Status` | `Åtgärder`.
-   - **Sålda platser-indikator:** Visar `{soldSeats} / {totalSeats}` (desktop) respektive `Sålda platser` och `{soldSeats}/{totalSeats} ({pct}%)` (mobil), samt en horisontell progressbar (`#F59E0B` om `pct > 80`, `#10B981` om `pct > 50`, annars `#334155`).
-   - **Statusbadge:** `Aktiv` (grön `#10B981`) eller `Inställd` (röd `#ff6b6b`, raden/kortet får `opacity: 0.5`).
-   - **Åtgärdsknappar per rad/kort:**
-     - `Redigera` (sekundär knapp med pennikon; ingen klick-handler i prototypen).
-     - `Ställ in` (röd sekundärknapp med papperskorgsikon; vid klick visas inline-knapparna `Bekräfta` och `Avbryt`. Bekräftelse sätter `status = 'cancelled'`).
-   - **Tomt tillstånd (`filtered.length === 0`):** `Inga visningar {dateFilter.toLowerCase()}.`
-3. **Modal / BottomSheet: `Schemalägg ny visning` (`showModal === true`):**
-   - Visas som centrerad modal på desktop (`max-width: 512px`) och som `BottomSheet` på mobil.
-   - **Rubrik:** `Schemalägg ny visning`.
-   - **Fält:**
-     1. `Välj film`: Scrollbar lista (`max-height: 220px`) med alla filmer i `MOVIES` (visar liten poster `36×52px`, titel, `{runtime} · {Alla åldrar / X år}` och röd bockikon för vald film).
-     2. `Välj salong`: 2 valbara kort i grid (`1fr 1fr`):
-        - `Salong 1 — Stora` / `80 platser, 4K Laser`
-        - `Salong 2 — Lilla` / `40 platser, 2D`
-     3. `Datum` (`<select>`): `Idag`, `Imorgon`, `Lördag`, `Söndag`, `Måndag`.
-     4. `Starttid` (`<input type="time">`, förifyllt `18:00`).
-     5. **Grön informationsruta med klockikon:** `Beräknad sluttid: {autoEndTime} (inkl. 15 min)` (beräknas som `startTime + runtimeMin + 15` minuter).
-   - **Footer-knappar:** `Avbryt` och `Publicera visning` (lägger till visningen sorterad på starttid).
+- `AdminPageHeader` visar `Visningsschema` och `Schemalägg och hantera filmvisningar`.
+- Brödsmulan `Backoffice › Visningsschema` ligger uppe till höger från `768px` och under rubrikblocket på mobil. `Backoffice` går till `/admin`, och aktuell sida har `aria-current="page"`.
+- Filmarkivet använder samma komponent och placering. Se [layout §4.3](../layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
+
+#### Filter och responsiv lista
+
+- **Perioder:** `Alla kommande`, `Idag`, `Imorgon`, `Hela veckan`. `Välj datum` öppnar en kalender med tillgängliga visningsdagar. Ett valt datum ersätter periodfiltret; salongsvalet kan kombineras med båda.
+- **Primär knapp:** `Schemalägg ny visning` med plusikon på alla skärmstorlekar.
+- Filter kan radbrytas. Under `640px` ligger perioderna i två kolumner, medan datumknapp, salongsval och skapa-knapp får full bredd. Datumväljaren hålls inom skärmen.
+- **Från `1200px` (Bootstrap `xl`):** Tabell med kolumnerna `Datum`, `Starttid`, `Salong`, `Film`, `Format`, `Sålda platser`, `Sluttid`, `Status`, `Åtgärder`. Kolumnbredder och radbrytning håller åtgärderna inom tabellen även vid långa filmtitlar.
+- **Under `1200px`:** Kort med datum/status, filmtitel, tid, salong, format, sålda platser och samma åtgärder som tabellen. En kolumn under `768px`, två kolumner på surfplatta (`768–1199px`).
+- **Beläggning:** Verkligt antal bokade platser / salongens totalantal samt progressbar, grön normalt och varningsfärgad från `90 %`. `Fullbokad` visas när inga platser återstår, annars `Aktiv`.
+- **Åtgärder:** `Redigera` öppnar formuläret. `Ställ in` kräver inline-bekräftelse med `Ja, ställ in` / `Avbryt` och anropar API. Vid bokningar är knappen inaktiverad och texten `Visningen har bokningar och kan inte ställas in.` syns under knapparna.
+- **Liststatus:** `1 visning` / `X visningar`, laddningsskelett, fel med återförsök och tomt tillstånd `Inga visningar`. `usePagination` och `Pagination` visar 15 visningar per sida efter filtrering.
+
+#### Skapa och redigera visning
+
+- `ScreeningFormModal` använder gemensam `Modal`, centrerad på desktop (`size="md"`, högst `560px`) och BottomSheet under `768px`. Rubrik `Schemalägg ny visning` eller `Redigera visning`.
+- Välj film i skrollbar lista med affisch, titel, speltid och åldersgräns. Långa titlar får radbrytas.
+- Välj en av backendens två salonger, Stora (80 platser) eller Lilla (40 platser), med verkligt format. Salongskorten staplas på smal mobil.
+- Datum väljs i en lista för de närmaste 30 dagarna; en befintlig visnings datum bevaras även utanför intervallet. Starttid är ett tidsfält, förifyllt med `18:00` för ny visning.
+- Datum och tid staplas på smala skärmar. Den gröna informationsrutan visar `Beräknad sluttid` inklusive **20 min städning** efter filmens speltid.
+- Footer har `Avbryt` och `Publicera visning` / `Spara ändringar`. Knapparna staplas på smal mobil och ligger kvar när innehållet skrollas.
+- Visningar med bokningar visar en informationsruta och låser salong, datum och tid. Filmen kan fortfarande redigeras enligt befintligt API.
+- Serverfel visas på svenska utan att stänga formuläret; lyckad sparning stänger det, uppdaterar listan och visar grön återkoppling.
 

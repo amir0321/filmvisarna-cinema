@@ -1,11 +1,11 @@
 import { lazy, Suspense, useState } from 'react'
-import { Link } from 'react-router'
 import { deleteMovie } from '../../api/movies'
 import { EmptyState } from '../../components/EmptyState'
 import Pagination from '../../components/Pagination'
 import { CardListSkeleton } from '../../components/Skeleton'
 import { InlineFeedback } from '../../components/Toast'
 import MoviesTable from '../../components/admin/MoviesTable'
+import AdminPageHeader from '../../components/admin/AdminPageHeader'
 import { useMovies } from '../../hooks/useMovies'
 import { usePagination } from '../../hooks/usePagination'
 import type { Movie } from '../../types/movie'
@@ -43,13 +43,7 @@ export default function AdminMovies() {
 
   return (
     <div className="admin-movies">
-      <header className="admin-page-header">
-        <div>
-          <h1 className="admin-page-header__title">Filmarkiv</h1>
-          <p className="admin-page-header__subtitle">Lägg till filmer, granska filmuppgifter och hantera rollistor.</p>
-        </div>
-        <nav aria-label="Brödsmulor"><ol className="admin-breadcrumb"><li><Link to="/admin">Backoffice</Link></li><li aria-current="page">Filmarkiv</li></ol></nav>
-      </header>
+      <AdminPageHeader title="Filmarkiv" subtitle="Lägg till filmer, granska filmuppgifter och hantera rollistor." />
 
       <div className="admin-toolbar">
         <div className="admin-movies__search">
