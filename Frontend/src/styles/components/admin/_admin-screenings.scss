@@ -89,6 +89,87 @@
   font-size: $font-size-13;
 }
 
+// Keep the schedule's filters within the page rather than their intrinsic widths.
+.admin-screenings {
+  min-width: 0;
+
+  .admin-toolbar { align-items: flex-end; }
+  .admin-toolbar__filters { flex: 1 1 480px; min-width: 0; }
+  .admin-toolbar__filters .fv-pill-group {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .admin-toolbar .chip { min-height: 44px; justify-content: center; }
+  .admin-toolbar__select { flex: 1 1 180px; min-width: 0; max-width: 100%; min-height: 44px; }
+  .admin-toolbar__create { max-width: 100%; white-space: normal; }
+  .fv-pagination { flex-wrap: wrap; }
+
+  @media (max-width: ($fv-bp-sm - 0.02px)) {
+    .admin-toolbar__filters .fv-pill-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-toolbar__filters .fv-pill-group .chip { min-width: 0; padding-inline: $space-1; white-space: normal; }
+    .admin-toolbar__select, .admin-screenings__date-filter { flex: 1 1 100%; width: 100%; }
+    .admin-toolbar__create { width: 100%; }
+    .admin-page-header > div { min-width: 0; }
+    .admin-breadcrumb { flex-wrap: wrap; }
+  }
+}
+
+.admin-screenings-table {
+  .admin-table { min-width: 0; table-layout: fixed; }
+  .admin-table thead th { white-space: normal; }
+  .admin-table thead th, .admin-table tbody td, .admin-table tbody th { padding: 12px; }
+  &__date { width: 100px; }
+  &__time { width: 72px; }
+  &__cinema { width: 110px; }
+  &__format { width: 72px; }
+  &__seats { width: 100px; }
+  &__status { width: 112px; }
+  &__actions { width: 224px; }
+  &__title { overflow-wrap: anywhere; }
+  .fv-badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+}
+
+.admin-screening-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li { min-width: 0; }
+
+  @media (min-width: $fv-bp-md) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.admin-screening-card {
+  height: 100%;
+  padding: $space-2;
+  border: 1px solid $border-strong;
+  border-radius: $radius-card;
+  background-color: $color-surface;
+
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: $space-1; }
+  h2 { margin: $space-2 0; font-size: $font-size-16; line-height: 1.5; overflow-wrap: anywhere; }
+  &__date { color: $text-secondary; font-size: $font-size-13; }
+  &__details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: $space-2; margin: 0 0 $space-2; }
+  &__details > div { min-width: 0; }
+  dt { margin-bottom: 4px; color: $text-secondary; font-size: $font-size-12; font-weight: 400; }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  .admin-table__sold { min-width: 0; font-variant-numeric: tabular-nums; }
+  .admin-screening-actions__buttons { justify-content: flex-start; }
+}
+
+.admin-screening-actions {
+  &__buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: $space-1; }
+  &__buttons button { min-height: 44px; }
+  &__buttons .fv-inline-confirm { display: flex; flex-wrap: wrap; gap: $space-1; }
+  &__reason { margin: $space-1 0 0; color: $text-secondary; font-size: $font-size-12; line-height: 1.5; }
+}
+
 .admin-table-card {
   overflow: hidden;
   border: 1px solid $border-strong;
@@ -350,6 +431,18 @@
   min-height: 48px;
   border-radius: $radius-lg;
   font-weight: 600;
+}
+
+.screening-form {
+  .form-select, .form-control { min-width: 0; max-width: 100%; }
+  .screening-option__title { white-space: normal; overflow-wrap: anywhere; }
+  .screening-option__meta { overflow-wrap: anywhere; }
+
+  @media (max-width: ($fv-bp-sm - 0.02px)) {
+    .fv-modal-footer { flex-direction: column; align-items: stretch; }
+    .fv-modal-footer > button { flex: none; width: 100%; white-space: normal; }
+    .screening-form__cinemas { grid-template-columns: minmax(0, 1fr); }
+  }
 }
 
 .screening-form__cancel {

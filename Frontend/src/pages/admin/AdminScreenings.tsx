@@ -129,7 +129,7 @@ export default function AdminScreenings() {
           <button
             ref={datePickerButtonRef}
             type="button"
-            className={`chip ${pickedDate ? 'chip-active' : 'chip-inactive'}`}
+            className={`chip admin-screenings__date-filter ${pickedDate ? 'chip-active' : 'chip-inactive'}`}
             aria-pressed={pickedDate !== null}
             aria-haspopup="dialog"
             aria-expanded={isDatePickerOpen}
