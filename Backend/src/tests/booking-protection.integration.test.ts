@@ -306,4 +306,44 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal(Number((await db.query('SELECT count(*) FROM guest_booking_intent')).rows[0].count), 0);
     assert.equal(Number((await db.query('SELECT count(*) FROM booking')).rows[0].count), 0);
   });
+
+  test('marking a confirmed member booking as paid awards loyalty points (1 SEK = 1 point) idempotently', async () => {
+    const { updateBookingStatus } = await import('../services/bookings.service.js');
+    const bookingId = await seedBooking([1, 2], 1, { user: 1, paid: false });
+
+    const initialUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(initialUser.points, 0);
+
+    const result1 = await updateBookingStatus(bookingId, { isPaid: true });
+    assert.equal(result1.pointsAwarded, 280);
+    assert.equal(result1.booking.isPaid, true);
+
+    const updatedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(updatedUser.points, 280);
+
+    // Call again (idempotent: already paid, pointsAwarded = 0, user points remain 280)
+    const result2 = await updateBookingStatus(bookingId, { isPaid: true });
+    assert.equal(result2.pointsAwarded, 0);
+
+    const unchangedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(unchangedUser.points, 280);
+
+    // Reversing payment: deducts points
+    const resultReverse = await updateBookingStatus(bookingId, { isPaid: false });
+    assert.equal(resultReverse.booking.isPaid, false);
+    const reversedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(reversedUser.points, 0);
+  });
+
+  test('marking a guest booking as paid does not change user points', async () => {
+    const { updateBookingStatus } = await import('../services/bookings.service.js');
+    const guestBookingId = await seedBooking([3, 4], 1, { guest: true, paid: false });
+
+    const result = await updateBookingStatus(guestBookingId, { isPaid: true });
+    assert.equal(result.pointsAwarded, 0);
+    assert.equal(result.booking.isPaid, true);
+
+    const user = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(user.points, 0);
+  });
 });

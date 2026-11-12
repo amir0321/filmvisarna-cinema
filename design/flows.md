@@ -142,9 +142,9 @@ Prototypen använder inga externa ikonbibliotek i komponenterna, utan renderar *
      - Länken `Admin` längst ned till höger i sidfoten på `HomeScreen.tsx`.
      - Menyvalet `Admin Backoffice` med badgen `ADMIN` i `MobileDrawer.tsx`.
    - I den riktiga applikationen styrs åtkomst till admin av faktisk autentisering och behörighet.
-2. **Funktioner i prototypen som saknar backend-stöd (endast visuell mock i prototypen):**
-   - **Lojalitetspoäng (`Poäng: 240`)** och badge `VERIFIERAD` i `ProfilScreen.tsx`.
-   - **Bevakning av kommande filmer (`Bli påmind vid biljettsläpp` / `Påminnelse aktiv`)** i `FilmerScreen.tsx`.
+2. **Funktioner i prototypen och backend-stöd:**
+   - **Lojalitetspoäng:** Backend har fullt stöd för lojalitetspoäng. När en medlemsbokning bekräftas som betald av administratör (`PATCH /api/bookings/:id/pay`) tilldelas medlemmen automatiskt 1 poäng per krona (1 SEK = 1 poäng) baserat på totalbeloppet. Poängsaldot returneras i `/api/auth/me` och visas på `/profil`. (Erbjudanden och poänginlösning är ännu inte implementerat och ska inte mockas i UI).
+   - **Bevakning av kommande filmer (`Bli påmind vid biljettsläpp` / `Påminnelse aktiv`)** i `FilmerScreen.tsx` (saknar backend-stöd, visas inte som interaktiv funktion).
    - **Affisch som ren text-URL (`Affisch-bild URL`)** i `FilmarkivTab.tsx` (i vår app hanteras affischuppladdning även via filuppladdning `POST /api/upload`).
 
 ---

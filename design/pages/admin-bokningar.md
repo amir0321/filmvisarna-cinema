@@ -14,6 +14,13 @@
 - Behörig personal ska kunna granska och avboka misstänkta bokningar med uttrycklig bekräftelse och motivering. Platser och status uppdateras i samma transaktion. Hantering av betalda bokningar och återbetalning måste specificeras före implementation.
 - Alla sådana API-anrop kräver `requireAdmin` på servern. Åtgärder loggas med administratör, tid, bokningsreferens, åtgärd och motivering i en skyddad granskningslogg.
 
+#### Bindande krav för kassan och lojalitetspoäng (Backend-integration)
+- **Kassabetalning och poängtilldelning:** Backend har färdigt stöd för registrering av betalning via `PATCH /api/bookings/:id/pay`.
+- **Krav på poängsystem (1 SEK = 1 poäng):** När administratören klickar på `Markera betald` i kassan ska frontend anropa `PATCH /api/bookings/:id/pay`. Backend tilldelar då automatiskt **1 lojalitetspoäng per krona** baserat på bokningens totalsumma (`totalPrice`) till medlemmens konto (`app_user.points`), förutsatt att bokningen gjordes av en inloggad medlem (`user_id IS NOT NULL`).
+- **Idempotens:** Upprepade klick eller anrop för en redan betald bokning ger inga dubbla poäng (`pointsAwarded: 0`). Gästbokningar (`user_id = NULL`) tilldelas 0 poäng.
+- **Svarsstruktur och feedback:** Endpointen returnerar `{ success: true, message: string, booking: Booking, pointsAwarded: number }`. Gränssnittet ska visa att bokningen blivit betald samt, om `pointsAwarded > 0`, bekräfta tilldelade poäng för kunden (t.ex. `+280 poäng`).
+- **Incheckning:** Incheckning sker via `PATCH /api/bookings/:id/checkin` vilket sätter `is_checked_in = true` och `checked_in_at = now()`.
+
 #### Sidhuvud i `AdminScreen`
 - **Desktop (`>= 768px`):**
   - Rubrik (`h1`): `Bokningar & Kassa` (`22px`, `Poppins`, `font-weight: 700`).

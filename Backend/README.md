@@ -446,4 +446,22 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 - **`401 Unauthorized`**: Inte inloggad.
 - **`404 Not Found`**: Bokningen hittades inte eller tillhör en annan användare.
 
+#### `PATCH /api/bookings/:id/pay`
+- **Åtkomst:** Admin (`requireAdmin`)
+- **Beskrivning:** Bekräftar bokningen som betald i kassan (`is_paid = true`, `paid_at = now()`).
+- **Lojalitetspoäng:** Om bokningen tillhör en registrerad medlem (`user_id IS NOT NULL`) tilldelas medlemmen automatiskt 1 lojalitetspoäng per krona (1 SEK = 1 poäng baserat på `totalPrice`). Idempotent: om bokningen redan är betald delas inga dubbla poäng ut (`pointsAwarded: 0`). Gästbokningar ger 0 poäng till användarkonton.
+- **`200 OK`**: `{ success: true, message: "Bokningen har markerats som betald.", booking, pointsAwarded: number }`
+- **`401 Unauthorized`**: Inte inloggad.
+- **`403 Forbidden`**: Inte admin.
+- **`404 Not Found`**: Bokningen hittades inte.
+
+#### `PATCH /api/bookings/:id/checkin`
+- **Åtkomst:** Admin (`requireAdmin`)
+- **Beskrivning:** Checkar in gästen (`is_checked_in = true`, `checked_in_at = now()`).
+- **`200 OK`**: `{ success: true, message: "Bokningen har checkats in.", booking }`
+- **`401 Unauthorized`**: Inte inloggad.
+- **`403 Forbidden`**: Inte admin.
+- **`404 Not Found`**: Bokningen hittades inte.
+
+
 

@@ -228,6 +228,11 @@ export interface UpdateBookingInput {
   isCheckedIn?: boolean;
 }
 
+export interface UpdateBookingStatusResult {
+  booking: any;
+  pointsAwarded: number;
+}
+
 export interface CreateBookingResult {
   bookingRef: string;
   totalPrice: number;

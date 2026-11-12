@@ -158,31 +158,33 @@ export async function postCancelByToken(req: Request, res: Response) {
 export async function patchBooking(req: Request, res: Response) {
   const id = parseId(req.params.id, "boknings-ID");
   const body = updateBookingSchema.parse(req.body);
-  const booking = await updateBookingStatus(id, body);
+  const result = await updateBookingStatus(id, body);
   res.json({
     success: true,
     message: "Bokningen har uppdaterats.",
-    booking,
+    booking: result.booking,
+    pointsAwarded: result.pointsAwarded,
   });
 }
 
 export async function patchBookingPay(req: Request, res: Response) {
   const id = parseId(req.params.id, "boknings-ID");
-  const booking = await updateBookingStatus(id, { isPaid: true });
+  const result = await updateBookingStatus(id, { isPaid: true });
   res.json({
     success: true,
     message: "Bokningen har markerats som betald.",
-    booking,
+    booking: result.booking,
+    pointsAwarded: result.pointsAwarded,
   });
 }
 
 export async function patchBookingCheckin(req: Request, res: Response) {
   const id = parseId(req.params.id, "boknings-ID");
-  const booking = await updateBookingStatus(id, { isCheckedIn: true });
+  const result = await updateBookingStatus(id, { isCheckedIn: true });
   res.json({
     success: true,
     message: "Bokningen har checkats in.",
-    booking,
+    booking: result.booking,
   });
 }
 

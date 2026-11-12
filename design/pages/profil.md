@@ -20,7 +20,7 @@
        - Grön status-pill: grön prick (`6×6px`) + `Aktiv medlem` (`12px`, `#10B981`, bakgrund `rgba(16, 185, 129, 0.1)`).
        - Horisontell avdelare + 2 små statistikrutor (`grid-template-columns: 1fr 1fr`, `gap: 12px`):
          - `Bokningar`: `{upcoming.length + past.length}`
-         - `Poäng`: `240` (Exempeldata)
+         - `Poäng`: `{user.points ?? 0}` (Lojalitetspoäng: tjänas in automatiskt när admin bekräftar medlemmens bokning som betald i kassan, 1 SEK = 1 poäng baserat på totalbelopp)
      - **Vertikal flikmeny på desktop (`hidden lg:flex`, `#161F30`, `border-radius: 16px`, `margin-top: 16px`):**
        1. `Mina uppgifter` (`id: 'uppgifter'`)
        2. `Säkerhet` (`id: 'sakerhet'`)
