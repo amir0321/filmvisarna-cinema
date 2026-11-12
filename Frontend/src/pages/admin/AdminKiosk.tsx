@@ -6,7 +6,8 @@ import type { AdminMenuItem } from '../../types'
 import { EmptyState } from '../../components/EmptyState'
 import { FilterPillGroup } from '../../components/Pills'
 import { CardListSkeleton } from '../../components/Skeleton'
-import { InlineFeedback } from '../../components/Toast'
+import { InlineFeedback, type InlineFeedbackVariant } from '../../components/Toast'
+import KioskItemFormModal from '../../components/admin/KioskItemFormModal'
 import AdminStatCard from '../../components/admin/AdminStatCard'
 import KioskTable from '../../components/admin/KioskTable'
 import { KIOSK_CATEGORIES, getKioskCategory, type KioskCategory } from '../../utils/kiosk'
@@ -23,7 +24,9 @@ export default function AdminKiosk() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<KioskCategory | 'all'>('all')
   const [savingId, setSavingId] = useState<number | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string } | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<AdminMenuItem | null>(null)
 
   const query = search.trim().toLowerCase()
   const filteredItems = items
@@ -32,7 +35,7 @@ export default function AdminKiosk() {
 
   async function toggleAvailable(item: AdminMenuItem) {
     setSavingId(item.id)
-    setSaveError(null)
+    setFeedback(null)
     try {
       const updated = await apiClient.patch<AdminMenuItem>(`/admin/menu-items/${item.id}`, {
         isAvailable: !item.isAvailable,
@@ -40,10 +43,24 @@ export default function AdminKiosk() {
       // Swap in the saved row instead of reloading the whole list
       setData((current) => current?.map((row) => (row.id === updated.id ? updated : row)) ?? null)
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Det gick inte att spara ändringen.')
+      setFeedback({
+        variant: 'danger',
+        message: err instanceof Error ? err.message : 'Det gick inte att spara ändringen.',
+      })
     } finally {
       setSavingId(null)
     }
+  }
+
+  function openForm(item: AdminMenuItem | null) {
+    setEditingItem(item)
+    setIsFormOpen(true)
+  }
+
+  async function handleSaved(message: string) {
+    setIsFormOpen(false)
+    setFeedback({ variant: 'success', message })
+    await refetch()
   }
 
   return (
@@ -84,6 +101,10 @@ export default function AdminKiosk() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
+        <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => openForm(null)}>
+          <i className="bi bi-plus-lg me-2" aria-hidden="true"></i>
+          Lägg till ny produkt
+        </button>
       </div>
 
       <FilterPillGroup
@@ -95,7 +116,7 @@ export default function AdminKiosk() {
         className="mb-4"
       />
 
-      {saveError && <InlineFeedback variant="danger" message={saveError} className="mb-3" />}
+      {feedback && <InlineFeedback variant={feedback.variant} message={feedback.message} className="mb-3" />}
 
       {loading && <CardListSkeleton count={4} />}
 
@@ -117,9 +138,13 @@ export default function AdminKiosk() {
         <KioskTable
           items={filteredItems}
           savingId={savingId}
-          onEdit={() => {} /* TODO: open edit modal */}
+          onEdit={openForm}
           onToggleAvailable={toggleAvailable}
         />
+      )}
+
+      {isFormOpen && (
+        <KioskItemFormModal item={editingItem} onClose={() => setIsFormOpen(false)} onSaved={handleSaved} />
       )}
     </div>
   )

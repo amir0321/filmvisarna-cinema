@@ -88,3 +88,26 @@
     color: $color-success;
   }
 }
+
+.kiosk-form__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-2;
+  padding: 14px 16px;
+  border: 1px solid $border-strong;
+  border-radius: $radius-lg;
+  background-color: $color-surface-2;
+}
+
+.kiosk-form__toggle-title {
+  color: $text-heading;
+  font-size: $font-size-14;
+  font-weight: 600;
+}
+
+.kiosk-form__toggle-text {
+  margin: 2px 0 0;
+  color: $text-secondary;
+  font-size: $font-size-12;
+}
