@@ -5,6 +5,7 @@ import { pool } from '../db.js';
 import { todayIn } from '../utils/dates.js';
 import { getSeedMovies, seedDateOffset } from './movieData.js';
 import { BOOKING_REF_ALPHABET } from '../utils/bookingRef.js';
+import { savePerson } from '../services/persons.service.js';
 
 const DEMO_EMAILS = ['admin@filmvisarna.se', 'medlem@filmvisarna.se', 'testuser1@example.com'];
 const SHOW_TIMES = ['10:00:00', '14:00:00', '18:00:00'];
@@ -12,7 +13,7 @@ const FREE_SEATS = ['D4', 'D5', 'H9'];
 
 interface DemoScreening { id: number; cinemaId: number; date: string; title: string }
 
-async function seedMovies(client: PoolClient, today: string) {
+export async function seedMovies(client: PoolClient, today: string) {
   const result = [];
   for (const movie of getSeedMovies(today)) {
     const existing = await client.query<{ id: number }>('SELECT id FROM movie WHERE title = $1 ORDER BY id LIMIT 1', [movie.title]);
@@ -33,11 +34,18 @@ async function seedMovies(client: PoolClient, today: string) {
         ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, [name]);
       await client.query('INSERT INTO movie_genre VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, genre.rows[0].id]);
     }
-    for (const [name, role] of [[movie.director, 'director'], ...movie.actors.map((name) => [name, 'actor'])]) {
-      const person = await client.query<{ id: number }>(`WITH existing AS (SELECT id FROM person WHERE name=$1 LIMIT 1),
-        added AS (INSERT INTO person (name) SELECT $1 WHERE NOT EXISTS (SELECT 1 FROM existing) RETURNING id)
-        SELECT id FROM existing UNION ALL SELECT id FROM added`, [name]);
-      await client.query('INSERT INTO movie_person VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [id, person.rows[0].id, role]);
+    const director = await savePerson(client, { name: movie.director });
+    await client.query(`INSERT INTO movie_person (movie_id,person_id,role)
+      VALUES ($1,$2,'director') ON CONFLICT DO NOTHING`, [id,director.id]);
+    for (const member of movie.cast_members) {
+      const person = await savePerson(client, { name: member.name, tmdb_id: member.tmdb_id });
+      // Enrich legacy seed people while preserving profiles already edited by admins.
+      await client.query(`UPDATE person SET photo_url=COALESCE(NULLIF(trim(photo_url),''),$2),
+        bio=COALESCE(NULLIF(trim(bio),''),$3) WHERE id=$1`, [person.id,member.photo_url,member.bio]);
+      await client.query(`INSERT INTO movie_person (movie_id,person_id,role,character_name,billing_order)
+        VALUES ($1,$2,'actor',$3,$4) ON CONFLICT (movie_id,person_id,role)
+        DO UPDATE SET character_name=EXCLUDED.character_name,billing_order=EXCLUDED.billing_order`,
+        [id,person.id,member.character_name,member.billing_order]);
     }
     result.push({ ...movie, id });
   }
@@ -197,7 +205,7 @@ export async function seedDemoData() {
         to_char(s.starts_at AT TIME ZONE 'Europe/Stockholm','YYYY-MM-DD') AS date,m.title
         FROM screening s JOIN movie m ON m.id=s.movie_id WHERE s.cinema_id=$1 AND m.title=$2
         AND (s.starts_at AT TIME ZONE 'Europe/Stockholm')::date >= $3::date
-        ORDER BY EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.guest_email='seed-crowd@example.test') DESC,s.starts_at LIMIT 1`, [cinemas[0],title,tomorrow]);
+        AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.status='confirmed' AND COALESCE(b.guest_email,'') NOT LIKE '%crowd%@example.test') ORDER BY EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.guest_email LIKE '%crowd%@example.test') DESC,s.starts_at LIMIT 1`, [cinemas[0],title,tomorrow]);
       if (!rows[0]) throw new Error(`Missing scenario: ${title}`);
       return rows[0];
     };
