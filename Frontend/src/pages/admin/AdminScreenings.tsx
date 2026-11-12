@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { Link } from 'react-router'
 import apiClient from '../../api/client'
 import { useCinemas, useMovies, usePagination, useScreenings } from '../../hooks'
 import { useScreeningProgramme } from '../../hooks/useScreeningProgramme'
@@ -12,6 +11,7 @@ import { CardListSkeleton } from '../../components/Skeleton'
 import { InlineFeedback, type InlineFeedbackVariant } from '../../components/Toast'
 import ScreeningFormModal from '../../components/admin/ScreeningFormModal'
 import ScreeningsTable from '../../components/admin/ScreeningsTable'
+import AdminPageHeader from '../../components/admin/AdminPageHeader'
 import { addDaysToIsoDate, formatDateShort, toCinemaIsoDate, todayIsoDate } from '../../utils/date'
 
 type Period = 'upcoming' | 'today' | 'tomorrow' | 'week'
@@ -102,20 +102,7 @@ export default function AdminScreenings() {
 
   return (
     <div className="admin-screenings">
-      <header className="admin-page-header">
-        <div>
-          <h1 className="admin-page-header__title">Visningsschema</h1>
-          <p className="admin-page-header__subtitle">Schemalägg och hantera filmvisningar</p>
-        </div>
-        <nav aria-label="Brödsmulor">
-          <ol className="admin-breadcrumb">
-            <li>
-              <Link to="/admin">Backoffice</Link>
-            </li>
-            <li aria-current="page">Visningsschema</li>
-          </ol>
-        </nav>
-      </header>
+      <AdminPageHeader title="Visningsschema" subtitle="Schemalägg och hantera filmvisningar" />
 
       <div className="admin-toolbar">
         <div className="admin-toolbar__filters">
@@ -129,7 +116,7 @@ export default function AdminScreenings() {
           <button
             ref={datePickerButtonRef}
             type="button"
-            className={`chip ${pickedDate ? 'chip-active' : 'chip-inactive'}`}
+            className={`chip admin-screenings__date-filter ${pickedDate ? 'chip-active' : 'chip-inactive'}`}
             aria-pressed={pickedDate !== null}
             aria-haspopup="dialog"
             aria-expanded={isDatePickerOpen}

@@ -6,11 +6,15 @@ import {
   getMovies,
   postMovie,
   putMovie,
+  searchExternalMovies,
+  getExternalMovie,
 } from "../controllers/movies.controller.js";
 
 export const moviesRouter = Router();
 
 moviesRouter.get("/", getMovies);
+moviesRouter.get("/external/search", requireAdmin, searchExternalMovies);
+moviesRouter.get("/external/:tmdbId", requireAdmin, getExternalMovie);
 moviesRouter.get("/:id", getMovie);
 moviesRouter.post("/", requireAdmin, postMovie);
 moviesRouter.put("/:id", requireAdmin, putMovie);

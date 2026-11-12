@@ -17,7 +17,7 @@ const AUTH_DRAWER_LINKS = [
 ] as const
 
 const ADMIN_DRAWER_LINKS = [
-  { name: 'Översikt', path: '/admin', icon: 'bi-layers', end: true },
+  { name: 'Backoffice', path: '/admin', icon: 'bi-layers', end: true },
   { name: 'Bokningar & Kassa', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
   { name: 'Visningsschema', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
   { name: 'Filmarkiv', path: '/admin/filmer', icon: 'bi-film', end: false },
@@ -203,7 +203,7 @@ export default function MobileDrawer() {
                   >
                     <span className="d-inline-flex align-items-center gap-3">
                       <i className="bi bi-layers drawer-nav-icon" aria-hidden="true"></i>
-                      <span>Administration</span>
+                      <span>Backoffice</span>
                     </span>
                     <span className="nav-admin-badge">ADMIN</span>
                   </NavLink>
