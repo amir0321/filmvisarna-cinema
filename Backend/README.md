@@ -38,6 +38,8 @@ cp .env.example .env
 | `EMAIL_FROM` | Sender address allowed by your SMTP provider | defaults to `EMAIL_USER` |
 | `FRONTEND_URL` | Trusted public frontend origin used in auth email links; HTTPS required in production | `http://localhost:5173` |
 | `NODE_ENV` | Environment (`development`, `test`, `production`) | `development` |
+| `TMDB_API_KEY` | Optional server-side TMDB v3 API key for admin movie import | empty (external search returns 503) |
+| `TMDB_API_BASE_URL` | Trusted upstream API base URL; HTTP(S), no credentials/query/fragment | `https://api.themoviedb.org/3` |
 
 ---
 
@@ -85,6 +87,7 @@ The cinema has exactly **two auditoriums**: **Stora Salongen** (8 rows A–H × 
 - **Sold out:** A seeded **Interstellar** screening in **Stora Salongen** has all 80 seats booked. Direct navigation to it must show a clear sold-out state and an alternative-showtimes link, without ticket, seat, kiosk or checkout controls.
 - **My bookings:** `admin@filmvisarna.se`, `medlem@filmvisarna.se` and `testuser1@example.com` have at least 6 upcoming and 6 historical bookings (including cancellations), exercising 5-card pagination in both tabs. Upcoming entries mix paid/unpaid bookings; confirmed personal bookings include popcorn. Existing passwords are retained. New accounts use `SEED_USER_PASSWORD`, defaulting to `Password123!`.
 - **Media:** Seed movies have trailers, posters and landscape images. `npm run seed:images` checks all distinct public image URLs. Film cards try the alternate artwork on loading failure, then show a title fallback.
+- **Cast:** All 46 seed actors have static portrait links, TMDB person IDs, short Swedish biographies and per-film characters/billing order. `src/seeds/actorProfiles.ts` records the Wikipedia/Wikidata person sources and a TMDB portrait for Kensington Tallman. Wikimedia file pages linked from those person pages provide photo credits and licenses. Seeding requires no TMDB key or network requests, reuses existing people and fills missing photos/biographies without replacing profiles already edited by admins.
 
 The additive seed can be repeated without duplicating movies, cinemas or matching screenings/bookings. It preserves interactions on existing bookings and sends no emails. Bookings use `FV-XXXXX` references and at most 10 tickets each. `seed:check` verifies the two cinema capacities, 12 movies across the upcoming programme, the exact three free seats, the sold-out screening, booking pagination, no overlapping screenings and correct seat-to-cinema mapping. Add `-- --api` to verify the running local API too. Booking one of the three free seats intentionally changes the exact-seat check.
 
@@ -104,6 +107,71 @@ All SQL migrations and initialization scripts are located in `Backend/sql/`:
 - `04_seed.sql`: Initial seed data for cinemas, movies, and kiosk menu items.
 
 ---
+
+## Cast profiles and image uploads
+
+Before starting this API against an existing database, run from `Backend/`:
+
+```bash
+npm run migrate:cast
+```
+
+The additive migration adds profile fields to `person` and credit fields to `movie_person`, preserves all existing rows and can be repeated. New databases receive these fields through `01_schema.sql`.
+
+`GET /api/persons?search=...` is public and returns `{ success: true, data: [{ id, name, photo_url, bio, tmdb_id }] }`, limited to 50 people ordered by name and ID. Search matches names without case sensitivity. Admins can use `POST /api/persons` with `{ name, photo_url?, bio?, tmdb_id? }` and `PUT /api/persons/:id` with any subset of these fields. Creation reuses profiles by TMDB ID or `lower(trim(name))` and updates supplied profile fields. Editing a profile to collide with a different existing person returns 409; it does not merge records or move credits between people. Omitted profile fields are preserved; nullable fields can be cleared with `null`.
+
+Movie creation and updates accept `cast_members` alongside `genres`:
+
+```json
+{
+  "cast_members": [
+    { "person_id": 12, "character_name": "Lead", "billing_order": 0 },
+    { "name": "New Actor", "photo_url": "/uploads/actor.webp", "bio": "Biography", "tmdb_id": 123, "billing_order": 1 }
+  ]
+}
+```
+
+Reference an existing person by `person_id`, or supply a name to create/reuse a profile. Supplied profile fields also update that shared person. If `billing_order` is omitted, the array index is used. Film metadata, genres, profiles and credits are saved in one transaction. Omitted `genres`/`cast_members` on update are preserved; an empty array clears those links. Removing an actor preserves the person record and any director credits or credits for other movies. Duplicate references to the same person in one cast return 400.
+
+Every movie response includes `actors: string[]` for existing clients and `cast_members: [{ person_id, name, photo_url, bio, character_name, tmdb_id, billing_order }]`, both ordered by billing order and name. `active_screenings_count` counts future screenings (`starts_at > now()`); `total_screenings_count` includes past screenings too.
+
+`photo_url`, `poster_url` and `landscape_image_url` accept HTTP(S) URLs without credentials or filenames under `/uploads/` without `..`. `trailer_url` requires an HTTP(S) URL without credentials. All these URL fields are limited to 2048 characters.
+
+Admin-only `POST /api/upload` accepts one file in the multipart field `image`: JPEG (`.jpg`/`.jpeg`), PNG, WebP or GIF, with matching MIME type, extension and magic-byte signature, up to 5 MB. Invalid image content is deleted from disk before returning 400. Larger files return 400 with `{ success: false, error: "Bildfilen är för stor. Maximal filstorlek är 5 MB." }`. Uploaded assets are served with `Content-Security-Policy: default-src 'none'; sandbox` and `X-Content-Type-Options: nosniff`. All writes require the session cookie and CSRF header described below.
+
+Run the cast/movie/upload integration tests against a dedicated test database:
+
+```bash
+CAST_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna_cast_test npm run test:cast
+```
+
+The suite creates and removes an isolated schema and its uploaded test files. It also accepts the existing `AUTH_TEST_DATABASE_URL` used by CI. Without either test database variable, it is skipped.
+
+## TMDB movie import
+
+Set the optional v3 API key in `Backend/.env` and restart the backend:
+
+```dotenv
+TMDB_API_KEY=
+TMDB_API_BASE_URL=https://api.themoviedb.org/3
+```
+
+Use a real key as the value of `TMDB_API_KEY`. It stays on the server. The default base URL is the official API; only override it for a trusted upstream, such as the local fake server used by integration tests. Requests time out after eight seconds, reject redirects and never log or return upstream error bodies, URLs or API credentials. Setup follows [TMDB authentication](https://developer.themoviedb.org/docs/authentication-application) and [append-to-response](https://developer.themoviedb.org/docs/append-to-response).
+
+Both endpoints require an admin session and return `{ success: true, data: ... }`:
+
+| Endpoint | Result |
+| --- | --- |
+| `GET /api/movies/external/search?query=...` | Query must contain 2–120 trimmed characters. Up to eight suggestions with `tmdbId`, `title`, `originalTitle`, numeric/null `releaseYear`, `posterUrl` and `overview`. |
+| `GET /api/movies/external/:tmdbId` | Import preview with `tmdbId`, `title`, `originalTitle`, `description`, `duration_minutes`, `age_rating`, `release_date`, `imdb_rating`, `director`, `genres`, `poster_url`, `landscape_image_url`, `trailer_url` and `cast_members`. |
+
+The detail preview prioritizes Swedish descriptions, with an English overview fallback. Certifications prefer Swedish theatrical releases, then other Swedish releases, then US certification; US labels are retained for admin review. The legacy `imdb_rating` field receives TMDB's `vote_average`, not a separate IMDb score. Missing runtime is returned as `null` and must be filled before saving. Only YouTube trailers with valid eleven-character video IDs are linked.
+
+Up to eight unique actors are returned in billing order with `tmdb_id`, `name`, `character_name`, `photo_url`, `billing_order` and `bio`. A nonempty local biography is reused; other biographies are fetched concurrently, preferring Swedish translation, then English translation, then the primary English biography. An unavailable/invalid individual biography becomes `null`; a person-level rate limit still returns 429. All consumed upstream fields are validated with Zod. Text is trimmed and stripped of controls, HTML tags and script bodies; external image URLs are constructed only from validated filenames on `image.tmdb.org`.
+
+These GET requests only preview data. After review, send the movie fields and `cast_members` to the existing `POST /api/movies` or `PUT /api/movies/:id` endpoint to save atomically. No preview request creates movies or people. Missing configuration returns 503; upstream rate limits return 429; other movie/search upstream failures, invalid JSON/schema and timeouts return 502 with generic Swedish messages.
+
+The cast integration suite tests these endpoints with a local fake TMDB server and a dummy key, including authorization, validation, sanitization, language fallback, local biography reuse, parallel requests, redirect/timeout handling and safe error responses. It makes no live TMDB API requests and needs no real API key.
 
 ## Cookie sessions and CSRF protection
 

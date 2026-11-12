@@ -1,11 +1,13 @@
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
 import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
+import { personsRouter } from "./routes/persons.js";
 import { HttpError } from "./utils/httpErorr";
 import path from "node:path";
 import { bookingsRouter } from "./routes/bookings.js";
@@ -30,7 +32,12 @@ app.use('/api', csrfProtection);
 app.use(express.json({ limit: "100kb" }));
 
 // Static serving for uploaded files
-app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads"), {
+  setHeaders: (res) => {
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  },
+}));
 
 const api = express.Router();
 api.get("/health", (_req, res) => {
@@ -39,6 +46,7 @@ api.get("/health", (_req, res) => {
 api.use("/auth", authRouter);
 api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
+api.use("/persons", personsRouter);
 api.use("/bookings", bookingsRouter);
 api.use("/menu", menuRouter);
 api.use("/kiosk", kioskRouter);
@@ -55,6 +63,14 @@ app.use((_req, res) => {
 });
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof MulterError) {
+    const error = err.code === "LIMIT_FILE_SIZE"
+      ? "Bildfilen är för stor. Maximal filstorlek är 5 MB."
+      : "Ogiltig bilduppladdning. Skicka en bild i fältet 'image'.";
+    res.status(400).json({ success: false, error });
+    return;
+  }
+
   if (err instanceof HttpError) {
     if (err.status === 429) res.setHeader('Retry-After', '900');
     res.status(err.status).json({ success: false, error: err.message });

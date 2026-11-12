@@ -63,13 +63,18 @@ CREATE TABLE movie_genre (
 
 CREATE TABLE person (
   id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name text NOT NULL
+  name text NOT NULL,
+  photo_url text,
+  bio text,
+  tmdb_id int UNIQUE
 );
 
 CREATE TABLE movie_person (
   movie_id  int  NOT NULL REFERENCES movie (id)  ON DELETE CASCADE,
   person_id int  NOT NULL REFERENCES person (id) ON DELETE CASCADE,
   role      text NOT NULL CHECK (role IN ('director', 'actor')),
+  character_name text,
+  billing_order int NOT NULL DEFAULT 0,
   PRIMARY KEY (movie_id, person_id, role)
 );
 
