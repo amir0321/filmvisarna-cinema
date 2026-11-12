@@ -1,0 +1,54 @@
+.kiosk-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background-color: $color-surface-2;
+  font-size: 1.2rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.kiosk-table__description {
+  color: $text-secondary;
+  font-size: $font-size-12;
+  font-weight: 400;
+}
+
+.kiosk-table__price {
+  color: $text-heading !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.kiosk-category {
+  display: inline-block;
+  min-width: 140px;
+  padding: 3px 8px;
+  border-radius: $radius-sm;
+  font-size: $font-size-11;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--combo {
+    background-color: rgba($color-primary, 0.12);
+    color: $color-danger-soft;
+  }
+
+  &--food {
+    background-color: rgba($color-warning, 0.12);
+    color: $color-warning;
+  }
+
+  &--drink {
+    background-color: rgba($color-info, 0.12);
+    color: $color-info-light;
+  }
+}

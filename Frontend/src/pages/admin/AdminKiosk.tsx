@@ -2,9 +2,13 @@ import { Link } from 'react-router'
 import { useAdminMenuItems } from '../../hooks'
 import { EmptyState } from '../../components/EmptyState'
 import { CardListSkeleton } from '../../components/Skeleton'
+import AdminStatCard from '../../components/admin/AdminStatCard'
+import KioskTable from '../../components/admin/KioskTable'
 
 export default function AdminKiosk() {
-  const { data: items, loading, error, refetch } = useAdminMenuItems()
+  const { data, loading, error, refetch } = useAdminMenuItems()
+  const items = data ?? []
+  const activeCount = items.filter((item) => item.isAvailable).length
 
   return (
     <div className="admin-kiosk">
@@ -23,6 +27,12 @@ export default function AdminKiosk() {
         </nav>
       </header>
 
+      <div className="admin-stats">
+        <AdminStatCard label="Totalt sortiment" value={`${items.length} st`} color="info" />
+        <AdminStatCard label="Aktiva produkter" value={`${activeCount} st`} color="success" />
+        <AdminStatCard label="Inaktiva produkter" value={`${items.length - activeCount} st`} color="warning" />
+      </div>
+
       {loading && <CardListSkeleton count={4} />}
 
       {error && (
@@ -35,7 +45,7 @@ export default function AdminKiosk() {
         />
       )}
 
-      {!loading && !error && <p className="text-secondary">{items?.length ?? 0} produkter</p>}
+      {!loading && !error && <KioskTable items={items} onEdit={() => {} /* TODO: open edit modal */} />}
     </div>
   )
 }
