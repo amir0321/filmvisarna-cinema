@@ -14,6 +14,7 @@ import {
   ItemInput,
   TicketInput,
   UpdateBookingInput,
+  UpdateBookingStatusResult,
 } from "../interfaces/types.js";
 
 // Re-export cancellation services and types for backward compatibility
@@ -33,6 +34,7 @@ export type {
   CreateBookingInput,
   CreateBookingResult,
   UpdateBookingInput,
+  UpdateBookingStatusResult,
 };
 
 // SQL för att hämta kompletta bokningsdetaljer med film, salong, biljetter och kioskvaror
@@ -147,50 +149,102 @@ export async function listAllBookings(filters: BookingFilters = {}) {
 export async function updateBookingStatus(
   bookingId: number,
   input: UpdateBookingInput,
-) {
+): Promise<UpdateBookingStatusResult> {
   const { isPaid, isCheckedIn } = input;
   if (isPaid === undefined && isCheckedIn === undefined) {
     throw new HttpError(400, "Minst ett fält (isPaid eller isCheckedIn) måste anges.");
   }
 
-  const existing = await pool.query(
-    "SELECT id, status, is_paid, is_checked_in FROM booking WHERE id = $1",
-    [bookingId],
-  );
-  if (existing.rowCount === 0) {
-    throw new HttpError(404, "Bokningen hittades inte.");
-  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  const updates: string[] = [];
-  const params: unknown[] = [bookingId];
-
-  if (isPaid !== undefined) {
-    params.push(isPaid);
-    updates.push(`is_paid = $${params.length}`);
-    if (isPaid) {
-      updates.push(`paid_at = now()`);
-    } else {
-      updates.push(`paid_at = null`);
+    const existing = await client.query(
+      `SELECT b.id, b.status, b.is_paid, b.is_checked_in, b.user_id,
+              COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price
+       FROM booking b
+       WHERE b.id = $1
+       FOR UPDATE`,
+      [bookingId],
+    );
+    if (existing.rowCount === 0) {
+      throw new HttpError(404, "Bokningen hittades inte.");
     }
-  }
 
-  if (isCheckedIn !== undefined) {
-    params.push(isCheckedIn);
-    updates.push(`is_checked_in = $${params.length}`);
-    if (isCheckedIn) {
-      updates.push(`checked_in_at = now()`);
-    } else {
-      updates.push(`checked_in_at = null`);
+    const current = existing.rows[0];
+    if (current.status !== "confirmed") {
+      throw new HttpError(400, "Kan inte uppdatera en avbokad bokning.");
     }
+    let pointsAwarded = 0;
+
+    if (isPaid !== undefined) {
+      if (isPaid && !current.is_paid) {
+        // Transitioning from unpaid to paid
+        if (current.user_id) {
+          // 1 SEK = 1 point based on total booking price
+          pointsAwarded = Math.round(Number(current.total_price) || 0);
+          if (pointsAwarded > 0) {
+            await client.query(
+              "UPDATE app_user SET points = points + $1 WHERE id = $2",
+              [pointsAwarded, current.user_id],
+            );
+          }
+        }
+      } else if (!isPaid && current.is_paid) {
+        // Reversing payment: deduct previously awarded points
+        if (current.user_id) {
+          const pointsToDeduct = Math.round(Number(current.total_price) || 0);
+          if (pointsToDeduct > 0) {
+            await client.query(
+              "UPDATE app_user SET points = GREATEST(0, points - $1) WHERE id = $2",
+              [pointsToDeduct, current.user_id],
+            );
+          }
+        }
+      }
+    }
+
+    const updates: string[] = [];
+    const params: unknown[] = [bookingId];
+
+    if (isPaid !== undefined) {
+      params.push(isPaid);
+      updates.push(`is_paid = $${params.length}`);
+      if (isPaid) {
+        updates.push(`paid_at = now()`);
+      } else {
+        updates.push(`paid_at = null`);
+      }
+    }
+
+    if (isCheckedIn !== undefined) {
+      params.push(isCheckedIn);
+      updates.push(`is_checked_in = $${params.length}`);
+      if (isCheckedIn) {
+        updates.push(`checked_in_at = now()`);
+      } else {
+        updates.push(`checked_in_at = null`);
+      }
+    }
+
+    await client.query(
+      `UPDATE booking SET ${updates.join(", ")} WHERE id = $1`,
+      params,
+    );
+
+    await client.query("COMMIT");
+
+    const updatedRows = await fetchBookings("b.id = $1", [bookingId]);
+    return {
+      booking: updatedRows[0],
+      pointsAwarded,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
-
-  await pool.query(
-    `UPDATE booking SET ${updates.join(", ")} WHERE id = $1`,
-    params,
-  );
-
-  const updatedRows = await fetchBookings("b.id = $1", [bookingId]);
-  return updatedRows[0];
 }
 
 export async function getUserBookings(userId: number) {

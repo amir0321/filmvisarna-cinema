@@ -66,7 +66,9 @@ export async function cancelBooking(
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT b.id, b.booking_reference AS "reference", b.status, s.starts_at
+      `SELECT b.id, b.booking_reference AS "reference", b.status, b.is_paid, b.user_id,
+              COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price,
+              s.starts_at
        FROM booking b
        JOIN screening s ON s.id = b.screening_id
        WHERE b.id = $1 AND b.user_id = $2
@@ -86,12 +88,22 @@ export async function cancelBooking(
 
     validateCancellationDeadline(booking.starts_at);
 
+    if (booking.is_paid && booking.user_id) {
+      const pointsToDeduct = Math.round(Number(booking.total_price) || 0);
+      if (pointsToDeduct > 0) {
+        await client.query(
+          "UPDATE app_user SET points = GREATEST(0, points - $1) WHERE id = $2",
+          [pointsToDeduct, booking.user_id],
+        );
+      }
+    }
+
     // Free seats
     await client.query("DELETE FROM ticket WHERE booking_id = $1", [bookingId]);
 
     const updated = await client.query(
       `UPDATE booking
-       SET status = 'cancelled'
+       SET status = 'cancelled', is_paid = false, paid_at = null
        WHERE id = $1
        RETURNING id, booking_reference AS "reference", status`,
       [bookingId],
@@ -174,8 +186,9 @@ export async function cancelBookingByToken(
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT b.id, b.booking_reference AS "reference", b.status, b.guest_email,
-              u.email AS user_email, s.starts_at
+      `SELECT b.id, b.booking_reference AS "reference", b.status, b.is_paid, b.user_id,
+              COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price,
+              b.guest_email, u.email AS user_email, s.starts_at
        FROM booking b
        JOIN screening s ON s.id = b.screening_id
        LEFT JOIN app_user u ON u.id = b.user_id
@@ -200,12 +213,22 @@ export async function cancelBookingByToken(
 
     validateCancellationDeadline(booking.starts_at);
 
+    if (booking.is_paid && booking.user_id) {
+      const pointsToDeduct = Math.round(Number(booking.total_price) || 0);
+      if (pointsToDeduct > 0) {
+        await client.query(
+          "UPDATE app_user SET points = GREATEST(0, points - $1) WHERE id = $2",
+          [pointsToDeduct, booking.user_id],
+        );
+      }
+    }
+
     // Free seats
     await client.query("DELETE FROM ticket WHERE booking_id = $1", [booking.id]);
 
     const updated = await client.query(
       `UPDATE booking
-       SET status = 'cancelled'
+       SET status = 'cancelled', is_paid = false, paid_at = null
        WHERE id = $1
        RETURNING id, booking_reference AS "reference", status`,
       [booking.id],

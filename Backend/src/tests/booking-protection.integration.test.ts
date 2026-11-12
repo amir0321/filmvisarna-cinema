@@ -56,10 +56,12 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     hashValue = hashBookingValue;
     cleanup = () => cleanupBookingProtection(db);
     const book = createBookingService({ db, notify: async id => { notifications.push(id); } });
-    const guests = createGuestBookingService({ db, book, canSendEmail: () => mailConfigured, sendEmail: async message => {
-      if (mailFails) throw new Error('Simulated mail failure');
-      messages.push(message);
-    } });
+    const guests = createGuestBookingService({
+      db, book, canSendEmail: () => mailConfigured, sendEmail: async message => {
+        if (mailFails) throw new Error('Simulated mail failure');
+        messages.push(message);
+      }
+    });
     app = express();
     app.set('trust proxy', 'loopback');
     app.use(express.json({ limit: '100kb' }));
@@ -104,10 +106,14 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     return { screeningId, email, guestName: 'Anna', tickets: seatIds.map(seatId => ({ seatId, priceGroupId: 1 })), items: [] };
   }
   async function request(path: string, body: unknown, options: { user?: number; key?: string; ip?: string; method?: string } = {}) {
-    const response = await fetch(baseUrl + path, { method: options.method ?? 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': options.key ?? randomUUID(),
-        'X-Forwarded-For': options.ip ?? '192.0.2.1', ...(options.user ? { Cookie: `filmvisarna_session=${(await createSession(options.user)).token}` } : {}) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(15_000) });
+    const response = await fetch(baseUrl + path, {
+      method: options.method ?? 'POST',
+      headers: {
+        'Content-Type': 'application/json', 'Idempotency-Key': options.key ?? randomUUID(),
+        'X-Forwarded-For': options.ip ?? '192.0.2.1', ...(options.user ? { Cookie: `filmvisarna_session=${(await createSession(options.user)).token}` } : {})
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(15_000)
+    });
     return { status: response.status, body: await response.json() as ResponseBody, headers: response.headers };
   }
   function latestToken(): string {
@@ -305,5 +311,55 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await request('/guest/request', payload())).status, 503);
     assert.equal(Number((await db.query('SELECT count(*) FROM guest_booking_intent')).rows[0].count), 0);
     assert.equal(Number((await db.query('SELECT count(*) FROM booking')).rows[0].count), 0);
+  });
+
+  test('marking a confirmed member booking as paid awards loyalty points (1 SEK = 1 point) idempotently', async () => {
+    const { updateBookingStatus, cancelBooking } = await import('../services/bookings.service.js');
+    const bookingId = await seedBooking([1, 2], 1, { user: 1, paid: false });
+    await db.query('INSERT INTO booking_item(booking_id, menu_item_id, quantity) VALUES ($1, 1, 1)', [bookingId]);
+
+    const initialUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(initialUser.points, 0);
+
+    // 2 adult tickets (280) + 1 Popcorn (40) = 320
+    const result1 = await updateBookingStatus(bookingId, { isPaid: true });
+    assert.equal(result1.pointsAwarded, 320);
+    assert.equal(result1.booking.isPaid, true);
+
+    const updatedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(updatedUser.points, 320);
+
+    // Call again (idempotent: already paid, pointsAwarded = 0, user points remain 320)
+    const result2 = await updateBookingStatus(bookingId, { isPaid: true });
+    assert.equal(result2.pointsAwarded, 0);
+
+    const unchangedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(unchangedUser.points, 320);
+
+    // Reversing payment: deducts points
+    const resultReverse = await updateBookingStatus(bookingId, { isPaid: false });
+    assert.equal(resultReverse.booking.isPaid, false);
+    const reversedUser = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(reversedUser.points, 0);
+
+    // Pay again, then cancel the booking -> points are deducted and cancelled booking cannot be paid again
+    await updateBookingStatus(bookingId, { isPaid: true });
+    assert.equal((await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 320);
+
+    await cancelBooking(bookingId, 1);
+    assert.equal((await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 0);
+    await assert.rejects(() => updateBookingStatus(bookingId, { isPaid: true }), { status: 400 });
+  });
+
+  test('marking a guest booking as paid does not change user points', async () => {
+    const { updateBookingStatus } = await import('../services/bookings.service.js');
+    const guestBookingId = await seedBooking([3, 4], 1, { guest: true, paid: false });
+
+    const result = await updateBookingStatus(guestBookingId, { isPaid: true });
+    assert.equal(result.pointsAwarded, 0);
+    assert.equal(result.booking.isPaid, true);
+
+    const user = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
+    assert.equal(user.points, 0);
   });
 });
