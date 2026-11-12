@@ -21,6 +21,7 @@ import AdminBookings from './pages/admin/AdminBookings'
 import AdminScreenings from './pages/admin/AdminScreenings'
 import AdminMovies from './pages/admin/AdminMovies'
 import AdminCinemas from './pages/admin/AdminCinemas'
+import AdminKiosk from './pages/admin/AdminKiosk'
 import ScreeningDetail from './pages/ScreeningDetail'
 import BookingConfirmation from './pages/BookingConfirmation'
 import ConfirmGuestBooking from './pages/ConfirmGuestBooking'
@@ -95,6 +96,8 @@ export const router = createBrowserRouter([
       // Salonger
       { path: 'salonger', element: <AdminCinemas /> },
       { path: 'cinemas', element: <AdminCinemas /> },
+      // Kiosk
+      { path: 'kiosk', element: <AdminKiosk /> },
     ],
   },
   // Catch-all 404 Not Found route

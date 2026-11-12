@@ -7,6 +7,7 @@ export * from './seat'
 export * from './booking'
 export * from './user'
 export * from './api'
+export * from './kiosk'
 
 export interface NavItem {
   name: string
