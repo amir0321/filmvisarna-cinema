@@ -262,19 +262,75 @@
 .movie-details-cast__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: $fv-space-1;
 }
 
-.movie-details-cast__pill {
-  display: inline-flex;
+.movie-details-cast__card {
+  display: flex;
+  flex: 1 1 180px;
   align-items: center;
-  padding: 6px 14px;
-  border-radius: $radius-full;
-  background-color: rgba($fv-white, 0.06);
+  gap: $fv-space-1;
+  min-width: 0;
+  max-width: 100%;
+  padding: $fv-space-1;
+  border-radius: $fv-radius-md;
+  background-color: $fv-card-bg;
   border: 1px solid $fv-border;
   color: $fv-fg;
+  font-family: $fv-font-sans;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: rgba($fv-primary, 0.6);
+    background-color: $fv-secondary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $fv-primary;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { transition: none; }
+}
+
+.movie-details-cast__avatar,
+.actor-bio-modal__avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid $fv-border;
+  border-radius: 50%;
+  background-color: $fv-muted-bg;
+  color: $fv-muted-fg;
+
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.movie-details-cast__avatar { width: 48px; height: 48px; font-size: 1.5rem; }
+
+.movie-details-cast__info { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+
+.movie-details-cast__name {
+  color: $fv-fg;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.movie-details-cast__character { color: $fv-muted-fg; font-size: 0.75rem; }
+
+.actor-bio-modal {
+  color: $fv-fg;
+
+  &__header { display: flex; align-items: center; gap: $fv-space-2; margin-bottom: $fv-space-3; }
+  &__avatar { width: 96px; height: 96px; font-size: 2.5rem; }
+  &__meta { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  &__role-label { margin: 0 0 $fv-space-1; color: $fv-muted-fg; font-size: 0.8125rem; }
+  &__role-value { margin: 0; color: $fv-fg; font-weight: 600; }
+  &__bio { margin: 0; color: $fv-fg; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
 }
 
 .screening-section {

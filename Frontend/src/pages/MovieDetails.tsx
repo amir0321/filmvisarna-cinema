@@ -3,12 +3,15 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { StarRatingBadge } from '../components/Badge'
 import { EmptyState } from '../components/EmptyState'
 import { FilterPill, LOW_SEATS_DETAIL_THRESHOLD } from '../components/Pills'
+import { Modal } from '../components/Modal'
 import { Poster } from '../components/Poster'
 import { CardListSkeleton, Skeleton } from '../components/Skeleton'
 import TrailerModal from '../components/TrailerModal'
 import { useMovie } from '../hooks/useMovies'
 import { useScreenings } from '../hooks/useScreenings'
 import type { Screening } from '../types/screening'
+import type { MovieCastMember } from '../types/movie'
+import { isSafeImageUrl } from '../utils/imageValidation'
 import {
   formatShowtimeDayLabel,
   formatTime,
@@ -43,6 +46,9 @@ export default function MovieDetails() {
   const isTrailerOpen = searchParams.get('trailer') === '1'
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [failedHeroSources, setFailedHeroSources] = useState<string[]>([])
+  const [selectedActor, setSelectedActor] = useState<MovieCastMember | null>(null)
+  const [failedCastPhotos, setFailedCastPhotos] = useState<string[]>([])
+  const [castMovieId, setCastMovieId] = useState(id)
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -50,6 +56,25 @@ export default function MovieDetails() {
     error: screeningsError,
     refetch: refetchScreenings,
   } = useScreenings({ movieId: Number(id) })
+
+  // Route changes must not retain an open profile from the previous movie.
+  if (castMovieId !== id) {
+    setCastMovieId(id)
+    setSelectedActor(null)
+    setFailedCastPhotos([])
+  }
+
+  const castList = useMemo<MovieCastMember[]>(() => {
+    if (movie?.cast_members?.length) return movie.cast_members
+    return movie?.actors?.map((name, index) => ({
+      person_id: -(index + 1), name, photo_url: null, bio: null,
+      character_name: null, tmdb_id: null, billing_order: index,
+    })) ?? []
+  }, [movie])
+
+  function handleCastPhotoError(url: string) {
+    setFailedCastPhotos(current => current.includes(url) ? current : [...current, url])
+  }
 
   const screeningsByDate = useMemo(() => {
     const groups = new Map<string, Screening[]>()
@@ -254,14 +279,29 @@ export default function MovieDetails() {
               {movie.description || 'Synopsis saknas.'}
             </p>
 
-            {movie.actors && movie.actors.length > 0 && (
+            {castList.length > 0 && (
               <section className='movie-details-cast' aria-label='Medverkande'>
                 <h2 className='movie-details-cast__heading'>Medverkande</h2>
                 <div className='movie-details-cast__list'>
-                  {movie.actors.map((actor) => (
-                    <span key={actor} className='movie-details-cast__pill'>
-                      {actor}
-                    </span>
+                  {castList.map((member) => (
+                    <button
+                      key={member.person_id}
+                      type='button'
+                      className='movie-details-cast__card'
+                      onClick={() => setSelectedActor(member)}
+                      aria-label={`Läs mer om ${member.name}${member.character_name ? `, som spelar ${member.character_name}` : ''}`}
+                      aria-haspopup='dialog'
+                    >
+                      <span className='movie-details-cast__avatar'>
+                        {isSafeImageUrl(member.photo_url) && !failedCastPhotos.includes(member.photo_url) ? (
+                          <img src={member.photo_url} alt='' loading='lazy' onError={() => handleCastPhotoError(member.photo_url!)} />
+                        ) : <i className='bi bi-person-fill' aria-hidden='true' />}
+                      </span>
+                      <span className='movie-details-cast__info'>
+                        <span className='movie-details-cast__name'>{member.name}</span>
+                        {member.character_name ? <span className='movie-details-cast__character'>{member.character_name}</span> : null}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -388,6 +428,43 @@ export default function MovieDetails() {
           movieTitle={movie.title}
         />
       )}
+
+      <Modal
+        isOpen={selectedActor !== null}
+        onClose={() => setSelectedActor(null)}
+        title={selectedActor?.name ?? 'Skådespelare'}
+        className='actor-bio-modal'
+      >
+        <Modal.Body>
+          {selectedActor ? (
+            <>
+              <div className='actor-bio-modal__header'>
+                <div className='actor-bio-modal__avatar'>
+                  {isSafeImageUrl(selectedActor.photo_url) && !failedCastPhotos.includes(selectedActor.photo_url) ? (
+                    <img
+                      src={selectedActor.photo_url}
+                      alt={`Profilbild av ${selectedActor.name}`}
+                      loading='lazy'
+                      onError={() => handleCastPhotoError(selectedActor.photo_url!)}
+                    />
+                  ) : <i className='bi bi-person-fill' aria-hidden='true' />}
+                </div>
+                <div className='actor-bio-modal__meta'>
+                  {selectedActor.character_name ? (
+                    <>
+                      <p className='actor-bio-modal__role-label'>Roll i {movie.title}:</p>
+                      <p className='actor-bio-modal__role-value'>{selectedActor.character_name}</p>
+                    </>
+                  ) : <p className='actor-bio-modal__role-value'>{selectedActor.name}</p>}
+                </div>
+              </div>
+              <p className='actor-bio-modal__bio'>
+                {selectedActor.bio || 'Ingen biografi tillgänglig för denna skådespelare.'}
+              </p>
+            </>
+          ) : null}
+        </Modal.Body>
+      </Modal>
     </div>
   )
 }
