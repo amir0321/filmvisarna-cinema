@@ -259,3 +259,25 @@
   font-size: $font-size-22;
   font-weight: 700;
 }
+
+.admin-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+
+  i {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    color: $text-muted;
+    pointer-events: none;
+  }
+
+  .form-control {
+    min-height: 44px;
+    padding-left: 40px;
+    border-color: $border-strong;
+    background-color: $color-surface;
+  }
+}

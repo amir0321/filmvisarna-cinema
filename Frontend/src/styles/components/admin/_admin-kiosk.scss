@@ -52,3 +52,10 @@
     color: $color-info-light;
   }
 }
+
+.admin-kiosk__search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-1;
+  margin-bottom: $space-2;
+}
