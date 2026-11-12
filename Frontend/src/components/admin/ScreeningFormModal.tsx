@@ -114,7 +114,7 @@ export default function ScreeningFormModal({
 
   return (
     <Modal isOpen onClose={onClose} title={isEditing ? 'Redigera visning' : 'Schemalägg ny visning'} size="md">
-      <form className="screening-form" onSubmit={handleSubmit}>
+      <form className="admin-form" onSubmit={handleSubmit}>
         <Modal.Body>
           {error && <InlineFeedback variant="danger" message={error} className="mb-3" />}
           {isLocked && (
@@ -125,8 +125,8 @@ export default function ScreeningFormModal({
             />
           )}
 
-          <fieldset className="screening-form__group">
-            <legend className="screening-form__label">Välj film</legend>
+          <fieldset className="admin-form__group">
+            <legend className="admin-form__label">Välj film</legend>
             <div className="screening-form__movies">
               {movies.map((movie) => {
                 const isSelected = movie.id === values.movieId
@@ -157,8 +157,8 @@ export default function ScreeningFormModal({
             </div>
           </fieldset>
 
-          <fieldset className="screening-form__group" disabled={isLocked}>
-            <legend className="screening-form__label">Välj salong</legend>
+          <fieldset className="admin-form__group" disabled={isLocked}>
+            <legend className="admin-form__label">Välj salong</legend>
             <div className="screening-form__cinemas">
               {cinemas.map((cinema) => {
                 const isSelected = cinema.id === values.cinemaId
@@ -185,12 +185,12 @@ export default function ScreeningFormModal({
 
           <div className="row g-3">
             <div className="col-6">
-              <label htmlFor="screening-date" className="screening-form__label">
+              <label htmlFor="screening-date" className="admin-form__label">
                 Datum
               </label>
               <select
                 id="screening-date"
-                className="form-select screening-form__input"
+                className="form-select admin-form__input"
                 disabled={isLocked}
                 value={values.date}
                 onChange={(event) => update('date', event.target.value)}
@@ -203,13 +203,13 @@ export default function ScreeningFormModal({
               </select>
             </div>
             <div className="col-6">
-              <label htmlFor="screening-time" className="screening-form__label">
+              <label htmlFor="screening-time" className="admin-form__label">
                 Starttid
               </label>
               <input
                 id="screening-time"
                 type="time"
-                className="form-control screening-form__input screening-form__time"
+                className="form-control admin-form__input screening-form__time"
                 required
                 disabled={isLocked}
                 step={300}
@@ -232,10 +232,10 @@ export default function ScreeningFormModal({
         </Modal.Body>
 
         <Modal.Footer>
-          <button type="button" className="btn screening-form__cancel" onClick={onClose} disabled={isSaving}>
+          <button type="button" className="btn admin-form__cancel" onClick={onClose} disabled={isSaving}>
             Avbryt
           </button>
-          <button type="submit" className="btn btn-danger screening-form__submit" disabled={isSaving || !isComplete}>
+          <button type="submit" className="btn btn-danger admin-form__submit" disabled={isSaving || !isComplete}>
             {isSaving ? (
               <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
             ) : (
