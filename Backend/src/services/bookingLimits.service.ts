@@ -34,4 +34,7 @@ export async function consumeBookingLimit(db: pg.Pool, key: string, maximum: num
 export async function cleanupBookingProtection(db: pg.Pool = pool): Promise<void> {
   await db.query('DELETE FROM guest_booking_intent WHERE expires_at <= clock_timestamp()');
   await db.query('DELETE FROM booking_rate_limit WHERE expires_at <= clock_timestamp()');
+  await db.query('DELETE FROM auth_action_token WHERE expires_at <= clock_timestamp()');
+  await db.query('DELETE FROM auth_session WHERE expires_at <= clock_timestamp()');
+  await db.query("DELETE FROM auth_rate_limit WHERE window_start <= clock_timestamp() - interval '15 minutes'");
 }

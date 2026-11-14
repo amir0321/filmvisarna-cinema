@@ -7,12 +7,12 @@ import { cleanupBookingProtection } from './services/bookingLimits.service.js';
 dotenv.config();
 
 const PORT = config.port;
+const cleanup = () => void cleanupBookingProtection().catch(() => console.error('[Booking] Cleanup failed'));
+setInterval(cleanup, 60_000).unref();
 
 initDb()
   .then(() => {
-    const cleanup = () => void cleanupBookingProtection().catch(() => console.error('[Booking] Cleanup failed'));
     cleanup();
-    setInterval(cleanup, 60_000).unref();
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

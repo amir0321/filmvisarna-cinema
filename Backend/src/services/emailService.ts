@@ -41,6 +41,9 @@ async function getTransporter(): Promise<Transporter> {
       },
     });
   } else {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SMTP settings are required in production");
+    }
     console.log("No SMTP settings found. Creating Ethereal test account...");
     const testAccount = await nodemailer.createTestAccount();
     cachedTransporter = nodemailer.createTransport({
@@ -77,11 +80,6 @@ export async function sendBookingConfirmation(bookingData: EmailPayload) {
   const info = await transporter.sendMail(mailOptions);
 
   console.log("Email sent: %s", info.messageId);
-
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log("Preview email: %s", previewUrl);
-  }
 
   return info;
 }
