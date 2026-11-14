@@ -12,21 +12,27 @@ export function generateCancellationJwt(bookingRef: string, email: string): stri
   return jwt.sign(
     { bookingRef, email, action: "cancel_booking" },
     config.jwtSecret,
-    { expiresIn: "14d" },
+    { algorithm: "HS256", expiresIn: "14d" },
   );
 }
 
 export function verifyCancellationJwt(token: string): CancellationJwtPayload {
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as CancellationJwtPayload;
+    const decoded = jwt.verify(token, config.jwtSecret, {
+      algorithms: ["HS256"],
+    }) as Partial<CancellationJwtPayload> | string;
     if (
+      typeof decoded !== "object" ||
+      decoded === null ||
       decoded.action !== "cancel_booking" ||
+      typeof decoded.bookingRef !== "string" ||
       !decoded.bookingRef ||
+      typeof decoded.email !== "string" ||
       !decoded.email
     ) {
       throw new HttpError(400, "Ogiltig avbokningslänk.");
     }
-    return decoded;
+    return decoded as CancellationJwtPayload;
   } catch (err) {
     if (err instanceof HttpError) throw err;
     throw new HttpError(400, "Ogiltig eller utgången avbokningslänk.");

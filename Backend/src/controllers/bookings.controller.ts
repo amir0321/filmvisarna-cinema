@@ -140,7 +140,9 @@ export async function deleteBooking(req: Request, res: Response): Promise<void> 
 }
 
 export async function getCancelPreview(req: Request, res: Response) {
-  const { token } = cancelTokenSchema.parse(req.query);
+  const { token } = cancelTokenSchema.parse(
+    req.method === "POST" ? req.body : req.query,
+  );
   const preview = await getBookingCancelPreview(token);
   res.json(preview);
 }

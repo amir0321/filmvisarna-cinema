@@ -49,6 +49,8 @@ export default function BookingTicket({
             type="button"
             className={`fv-ticket__copy ${copied ? 'fv-ticket__copy--done' : ''}`}
             onClick={copy}
+            aria-label="Kopiera bokningskod"
+            aria-live="polite"
           >
             <i className={`bi ${copied ? 'bi-check-lg' : 'bi-copy'}`} aria-hidden="true" />
             {copied ? 'Kopierat' : 'Kopiera'}
@@ -116,7 +118,7 @@ export default function BookingTicket({
             {data.cancelToken && (
               <Link
                 className="fv-ticket__cancel"
-                to={`/avboka?token=${encodeURIComponent(data.cancelToken)}`}
+                to={`/avboka#token=${encodeURIComponent(data.cancelToken)}`}
               >
                 Avboka biljett
               </Link>

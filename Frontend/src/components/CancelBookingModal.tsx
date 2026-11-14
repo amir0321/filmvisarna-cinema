@@ -88,8 +88,7 @@ export function CancelBookingModal({
           <div className="d-flex gap-3 align-items-start mt-2">
             {booking.posterUrl ? (
               <div
-                className="flex-shrink-0 rounded overflow-hidden"
-                style={{ width: '56px', height: '84px' }}
+                className="fv-cancel-modal-poster flex-shrink-0 rounded overflow-hidden"
               >
                 <Poster
                   src={booking.posterUrl}
@@ -100,7 +99,7 @@ export function CancelBookingModal({
               </div>
             ) : null}
 
-            <div className="flex-grow-1 min-w-0">
+            <div className="fv-cancel-booking-card__details flex-grow-1">
               <h3 className="h6 fw-bold text-light mb-1 text-truncate">
                 {booking.movieTitle}
               </h3>

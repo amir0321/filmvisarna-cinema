@@ -1,8 +1,8 @@
-import apiClient, { ApiError } from './client'
+import apiClient, { ApiError } from './client.ts'
 import type {
   CancelBookingResponse,
   CancelPreviewResult,
-} from '../types/booking'
+} from '../types/booking.ts'
 
 export type CancelPageState =
   | 'loading'
@@ -44,15 +44,19 @@ export function mapCancelErrorToState(err: unknown): CancelPageState {
 }
 
 export async function getCancelPreview(token: string): Promise<CancelPreviewResult> {
-  return apiClient.get<CancelPreviewResult>('/bookings/cancel-preview', {
-    params: { token },
-  })
+  return apiClient.post<CancelPreviewResult>(
+    '/bookings/cancel-preview',
+    { token },
+    { credentials: 'omit' },
+  )
 }
 
 export async function cancelByToken(token: string): Promise<CancelBookingResponse> {
-  return apiClient.post<CancelBookingResponse>('/bookings/cancel-by-token', {
-    token,
-  })
+  return apiClient.post<CancelBookingResponse>(
+    '/bookings/cancel-by-token',
+    { token },
+    { credentials: 'omit' },
+  )
 }
 
 export const cancellationService = {

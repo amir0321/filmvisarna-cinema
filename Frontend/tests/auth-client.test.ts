@@ -1,20 +1,24 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
+import { cancelByToken, getCancelPreview } from '../src/api/cancellations.ts'
 import { advanceSessionRevision, ApiError, apiClient, AUTH_UNAUTHORIZED_EVENT } from '../src/api/client.ts'
 
 const originalFetch = globalThis.fetch
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
 let unauthorizedEvents = 0
+let lastUrl = ''
 let lastRequest: RequestInit | undefined
 
 beforeEach(() => {
   unauthorizedEvents = 0
+  lastUrl = ''
   lastRequest = undefined
   Object.defineProperty(globalThis, 'window', { configurable: true, value: {
     location: { origin: 'https://cinema.example' },
     dispatchEvent: (event: Event) => { if (event.type === AUTH_UNAUTHORIZED_EVENT) unauthorizedEvents++ },
   } })
-  globalThis.fetch = async (_url, options) => {
+  globalThis.fetch = async (url, options) => {
+    lastUrl = String(url)
     lastRequest = options
     return Response.json({ success: true })
   }
@@ -45,6 +49,21 @@ test('guest writes can explicitly omit the shared session cookie', async () => {
   await apiClient.post('/bookings/guest/confirm', { token: 'link' }, { credentials: 'omit' })
   assert.equal(lastRequest?.credentials, 'omit')
   assert.equal(new Headers(lastRequest?.headers).get('X-CSRF-Protection'), '1')
+})
+
+test('cancellation preview and confirmation send tokens in POST bodies without URL query parameters or cookies', async () => {
+  const secretToken = 'secret-cancel-jwt-token'
+  await getCancelPreview(secretToken)
+  assert.equal(lastUrl, '/api/bookings/cancel-preview')
+  assert.equal(lastRequest?.method, 'POST')
+  assert.equal(lastRequest?.credentials, 'omit')
+  assert.equal(lastRequest?.body, JSON.stringify({ token: secretToken }))
+
+  await cancelByToken(secretToken)
+  assert.equal(lastUrl, '/api/bookings/cancel-by-token')
+  assert.equal(lastRequest?.method, 'POST')
+  assert.equal(lastRequest?.credentials, 'omit')
+  assert.equal(lastRequest?.body, JSON.stringify({ token: secretToken }))
 })
 
 test('protected failures expire the UI but initial restoration and password validation do not', async () => {

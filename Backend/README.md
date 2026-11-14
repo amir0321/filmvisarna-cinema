@@ -25,6 +25,9 @@ cp .env.example .env
 | :--- | :--- | :--- |
 | `PORT` | HTTP port for Express server | `3000` |
 | `DATABASE_URL` | Full PostgreSQL connection string | `postgresql://user:pass@host:5432/filmvisarna` |
+| `DB_SSL` | Enable TLS for PostgreSQL connections (`true`/`false`) | auto-enabled for non-localhost `DATABASE_URL` |
+| `DB_SSL_REJECT_UNAUTHORIZED` | Verify PostgreSQL TLS certificate chain (`true`/`false`) | `true` in `production`, `false` in dev/test |
+| `DB_SSL_CA` | Optional custom CA certificate (PEM) for PostgreSQL TLS verification | *(optional)* |
 | `JWT_SECRET` | Secret key used to sign JWTs (min 32 chars) | `your_jwt_secret_key_that_is_at_least_32_characters_long` |
 | `JWT_EXPIRES_IN` | Session expiration time | `8h` |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:5173` |
@@ -493,8 +496,8 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningsreferensen hittades inte.
 
-#### `GET /api/bookings/cancel-preview?token=...`
-- **Åtkomst:** Publik (via länk i bekräftelsemejl)
+#### `POST /api/bookings/cancel-preview` (även `GET /api/bookings/cancel-preview?token=...`)
+- **Åtkomst:** Publik (via länk i bekräftelsemejl, `token` skickas i JSON-body `{ "token": "..." }` för att undvika tokens i URL-loggar; `GET` med query-parameter stöds för bakåtkompatibilitet)
 - **`200 OK`**: Hämtar film, salong, stolar och bokningsnr till bekräftelsemodalen.
 - **`400 Bad Request`**: Ogiltig/utgången länk, redan avbokad, eller mindre än 2 timmar kvar till start.
 - **`403 Forbidden`**: E-postadressen matchar inte bokningen.
