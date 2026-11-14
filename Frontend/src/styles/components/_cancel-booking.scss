@@ -24,6 +24,29 @@
   justify-content: center;
 }
 
+.fv-cancel-form {
+  color: $fv-fg;
+
+  .form-control {
+    background: $fv-card-bg;
+    border: 1px solid $fv-border;
+    color: inherit;
+    padding: 0.75rem;
+
+    &::placeholder { color: $fv-muted-fg; }
+
+    &:focus {
+      border-color: $fv-primary;
+      box-shadow: 0 0 0 3px rgba($fv-primary, 0.3);
+    }
+  }
+
+  &__reference {
+    font-family: $fv-font-mono;
+    letter-spacing: 0.05em;
+  }
+}
+
 .fv-cancel-booking-card {
   background: rgba($fv-secondary, 0.4);
   border-color: $fv-border !important;

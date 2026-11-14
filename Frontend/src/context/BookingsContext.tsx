@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { BookingsContext } from '../hooks/useBookings'
 import type { Booking } from '../types/booking'
 import { getBookingState } from '../utils/bookings'
+import { subscribeToBookingChanges } from '../utils/bookingUpdates'
 
 interface BookingSnapshot {
   userId: number
@@ -48,6 +49,11 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
   }, [authLoading, userId, isAuthenticated, revision])
 
   const refresh = useCallback(() => setRevision((value) => value + 1), [])
+  useEffect(() => {
+    if (userId === undefined || !isAuthenticated) return
+    return subscribeToBookingChanges(refresh)
+  }, [userId, isAuthenticated, refresh])
+
   const cancelBooking = useCallback(async (id: number) => {
     await cancelMyBooking(id)
     setSnapshot((previous) => {

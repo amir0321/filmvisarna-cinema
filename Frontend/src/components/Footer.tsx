@@ -55,6 +55,7 @@ export default function Footer({ onOpenCookieSettings }: FooterProps) {
                 Betalning sker alltid på plats i kassan vid ankomst.
               </p>
               <nav className="footer-links" aria-label="Sidfotslänkar">
+                <Link to="/avboka" className="footer-link">Avboka bokning</Link>
                 <button type="button" className="footer-link" onClick={() => setOpenInfo('privacy')}>
                   Integritetspolicy
                 </button>

@@ -1,6 +1,5 @@
 import { pool } from "../db.js";
 import { config } from "../config.js";
-import { generateCancellationJwt } from "./cancellations.service.js";
 import { sendBookingConfirmation } from "./emailService.js";
 
 /**
@@ -47,10 +46,9 @@ export async function sendConfirmationForBooking(
   const startsAt = new Date(row.starts_at);
   const timeZone = config.timezone || "Europe/Stockholm";
 
-  const cancelToken = generateCancellationJwt(bookingRef, email);
   const frontendUrl =
     process.env.FRONTEND_URL || config.corsOrigin[0] || "http://localhost:5173";
-  const cancelUrl = `${frontendUrl}/avboka#token=${encodeURIComponent(cancelToken)}`;
+  const cancelUrl = `${frontendUrl}/avboka`;
 
   await sendBookingConfirmation({
     email,

@@ -44,10 +44,9 @@ bookingsRouter.get("/me", requireAuth, getMyBookings);
 
 bookingsRouter.get("/lookup", requireAdmin, lookupBooking);
 
-bookingsRouter.get("/cancel-preview", getCancelPreview);
-bookingsRouter.post("/cancel-preview", getCancelPreview);
+bookingsRouter.post("/cancel-preview", limitPublicBookingRequest, getCancelPreview);
 
-bookingsRouter.post("/cancel-by-token", postCancelByToken);
+bookingsRouter.post("/cancel-by-token", limitPublicBookingRequest, postCancelByToken);
 
 bookingsRouter.post('/guest/request', limitPublicBookingRequest, handlers.requestGuestBooking);
 bookingsRouter.post('/guest/preview', limitPublicBookingRequest, handlers.previewGuestBooking);

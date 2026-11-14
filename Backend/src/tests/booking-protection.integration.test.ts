@@ -17,6 +17,8 @@ interface ResponseBody {
   email?: string;
   booking?: { id: number; status: string; email: string };
   tickets?: { seatId: number; priceGroupId: number }[];
+  seats?: string[];
+  canCancel?: boolean;
 }
 
 describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
@@ -65,6 +67,8 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     app = express();
     app.set('trust proxy', 'loopback');
     app.use(express.json({ limit: '100kb' }));
+    const { csrfProtection } = await import('../middleware/csrf.js');
+    app.use('/api', csrfProtection);
     app.use('/api/bookings', createBookingsRouter(book, guests));
     app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
       const status = error instanceof ZodError ? 400 : Number((error as { status?: number }).status) || 500;
@@ -109,7 +113,7 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     const response = await fetch(baseUrl + path, {
       method: options.method ?? 'POST',
       headers: {
-        'Content-Type': 'application/json', 'Idempotency-Key': options.key ?? randomUUID(),
+        'Content-Type': 'application/json', 'X-CSRF-Protection': '1', 'Idempotency-Key': options.key ?? randomUUID(),
         'X-Forwarded-For': options.ip ?? '192.0.2.1', ...(options.user ? { Cookie: `filmvisarna_session=${(await createSession(options.user)).token}` } : {})
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(15_000)
@@ -128,6 +132,133 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     if (!options.cancelled) for (const seat of seatIds) await db.query('INSERT INTO ticket VALUES ($1,$2,$3,1)', [screeningId, seat, booking.id]);
     return booking.id;
   }
+
+  async function seedCancellation(options: Parameters<typeof seedBooking>[2] = {}, seat = 1, screening = 1) {
+    const id = await seedBooking([seat], screening, options);
+    const bookingRef = `FV-${String(id).padStart(5, '0')}`;
+    await db.query('UPDATE booking SET booking_reference = $1 WHERE id = $2', [bookingRef, id]);
+    return { id, bookingRef, email: 'anna@example.test' };
+  }
+
+  test('public cancellation requires POST and CSRF protection on both routes', async () => {
+    const input = await seedCancellation();
+    assert.equal((await fetch(`${baseUrl}/cancel-preview?bookingRef=${input.bookingRef}&email=${input.email}`)).status, 404);
+    for (const path of ['/cancel-preview', '/cancel-by-token']) {
+      const rejectedHeaders: Record<string, string>[] = [{}, { 'X-CSRF-Protection': '1', Origin: 'https://evil.example' }];
+      for (const headers of rejectedHeaders) {
+        const result = await fetch(baseUrl + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(input) });
+        assert.equal(result.status, 403);
+      }
+      for (const body of [{ token: 'old-link' }, { bookingRef: 'FV-BAD', email: input.email }, { bookingRef: input.bookingRef, email: 'invalid' }]) {
+        assert.equal((await request(path, body)).status, 400);
+      }
+    }
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), 1);
+  });
+
+  test('public preview normalizes reference/email and supports legacy guest and member emails', async () => {
+    for (const guest of [false, true]) {
+      const input = await seedCancellation({ guest }, guest ? 2 : 1);
+      const preview = await request('/cancel-preview', { bookingRef: ` ${input.bookingRef.toLowerCase()} `, email: ' ANNA@EXAMPLE.TEST ' });
+      assert.equal(preview.status, 200);
+      assert.equal(preview.body.bookingRef, input.bookingRef);
+      assert.equal(preview.body.canCancel, true);
+      assert.equal(preview.body.seats?.length, 1);
+    }
+  });
+
+  test('stored booking identity takes precedence over a subsequently changed member email', async () => {
+    const input = await seedCancellation();
+    await db.query('UPDATE booking SET identity_email = $1 WHERE id = $2', [input.email, input.id]);
+    await db.query("UPDATE app_user SET email = 'new@example.test' WHERE id = 1");
+    for (const path of ['/cancel-preview', '/cancel-by-token']) {
+      assert.equal((await request(path, { ...input, email: 'new@example.test' })).status, 404);
+      assert.equal((await request(path, input)).status, 200);
+    }
+  });
+
+  for (const status of ['confirmed', 'cancelled', 'too_late', 'started']) {
+    test(`public cancellation does not reveal existence or ${status} status with the wrong email`, async () => {
+      const input = await seedCancellation({ cancelled: status === 'cancelled' });
+      if (status === 'too_late' || status === 'started') {
+        await db.query(`UPDATE screening SET starts_at = now() + ($1 * interval '1 hour') WHERE id = 1`, [status === 'too_late' ? 1 : -1]);
+      }
+      for (const path of ['/cancel-preview', '/cancel-by-token']) {
+        const missing = await request(path, { bookingRef: 'FV-ZZZZZ', email: 'wrong@example.test' });
+        const mismatch = await request(path, { ...input, email: 'wrong@example.test' });
+        assert.equal(missing.status, 404);
+        assert.equal(mismatch.status, 404);
+        assert.deepEqual(missing.body, mismatch.body);
+        assert.equal(missing.body.error, 'Vi hittade ingen bokning som matchar angivet bokningsnummer och e-postadress.');
+      }
+      assert.equal((await db.query('SELECT status FROM booking WHERE id = $1', [input.id])).rows[0].status, status === 'cancelled' ? 'cancelled' : 'confirmed');
+    });
+  }
+
+  for (const [status, hours, message] of [['cancelled', 4, /redan avbokad/], ['too_late', 1, /mindre än 2 timmar/], ['started', -1, /redan har startat/]] as const) {
+    test(`matched public cancellation rejects ${status} without deleting tickets or deducting points`, async () => {
+      const input = await seedCancellation({ cancelled: status === 'cancelled', paid: true });
+      await db.query('UPDATE app_user SET points = 500 WHERE id = 1');
+      await db.query(`UPDATE screening SET starts_at = now() + ($1 * interval '1 hour') WHERE id = 1`, [hours]);
+      for (const path of ['/cancel-preview', '/cancel-by-token']) {
+        const result = await request(path, input);
+        assert.equal(result.status, 400);
+        assert.match(result.body.error!, message);
+      }
+      assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), status === 'cancelled' ? 0 : 1);
+      assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 500);
+    });
+  }
+
+  test('reference limit is normalized, shared across both routes and survives IP/email rotation', async () => {
+    const input = await seedCancellation();
+    for (let i = 0; i < 5; i++) {
+      assert.equal((await request(i % 2 ? '/cancel-by-token' : '/cancel-preview', { bookingRef: ` ${input.bookingRef.toLowerCase()} `, email: `wrong${i}@example.test` }, { ip: `192.0.2.${i + 1}` })).status, 404);
+    }
+    const blocked = await request('/cancel-by-token', input, { ip: '198.51.100.9' });
+    assert.equal(blocked.status, 429);
+    assert.equal(blocked.headers.get('Retry-After'), '900');
+    // Only attempts inside the rolling window count.
+    await db.query(`UPDATE booking_rate_limit SET attempts = ARRAY(SELECT value - interval '16 minutes' FROM unnest(attempts) value)`);
+    assert.equal((await request('/cancel-preview', input)).status, 200);
+  });
+
+  test('email limit is normalized and survives reference and IP rotation', async () => {
+    for (let i = 0; i < 5; i++) {
+      assert.equal((await request(i % 2 ? '/cancel-by-token' : '/cancel-preview', { bookingRef: `FV-0000${i}`, email: ' ANNA@EXAMPLE.TEST ' }, { ip: `192.0.2.${i + 1}` })).status, 404);
+    }
+    assert.equal((await request('/cancel-preview', { bookingRef: 'FV-AAAAA', email: 'anna@example.test' }, { ip: '198.51.100.9' })).status, 429);
+  });
+
+  test('public cancellation routes enforce global and IP limits including path variants', async () => {
+    const paths = ['/Cancel-Preview/', '/CANCEL-BY-TOKEN'];
+    for (const [key, maximum] of [['requests:global', 300], ['ip:192.0.2.1', 30]] as const) {
+      await db.query('TRUNCATE booking_rate_limit');
+      await db.query(`INSERT INTO booking_rate_limit(key_hash, attempts, expires_at)
+        VALUES ($1, array_fill(clock_timestamp(), ARRAY[$2::int]), now() + interval '15 minutes')`, [hashValue(key), maximum]);
+      for (const path of paths) assert.equal((await request(path, { bookingRef: 'FV-AAAAA', email: 'anna@example.test' })).status, 429);
+    }
+  });
+
+  test('concurrent public cancellation locks the booking and deducts loyalty points only once', async () => {
+    const input = await seedCancellation({ paid: true });
+    await db.query('UPDATE app_user SET points = 500 WHERE id = 1');
+    await db.query('INSERT INTO booking_item(booking_id, menu_item_id, quantity) VALUES ($1, 1, 1)', [input.id]);
+    const results = await Promise.all([request('/cancel-by-token', input), request('/cancel-by-token', input)]);
+    assert.deepEqual(results.map(result => result.status).sort(), [200, 400]);
+    assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 320);
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), 0);
+    assert.deepEqual((await db.query('SELECT status, is_paid, paid_at FROM booking WHERE id = $1', [input.id])).rows[0], { status: 'cancelled', is_paid: false, paid_at: null });
+  });
+
+  test('a guest can confirm public cancellation without changing member points', async () => {
+    const input = await seedCancellation({ guest: true, paid: true });
+    await db.query('UPDATE app_user SET points = 500 WHERE id = 1');
+    assert.equal((await request('/cancel-preview', input)).status, 200);
+    assert.equal((await request('/cancel-by-token', input)).status, 200);
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), 0);
+    assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 500);
+  });
 
   test('migration is additive, repeatable and backfills existing guest/member identities', async () => {
     const member = await seedBooking([1]);
