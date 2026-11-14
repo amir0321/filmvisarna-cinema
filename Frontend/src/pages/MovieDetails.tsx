@@ -402,6 +402,7 @@ export default function MovieDetails() {
                                   <Link
                                     to={getBookingUrl(screening.id)}
                                     className='screening-row__cta'
+                                    aria-label={`Välj platser för ${movie.title}, kl. ${formatTime(screening.startsAt)}, ${screening.cinema}`}
                                   >
                                     Välj platser
                                   </Link>
