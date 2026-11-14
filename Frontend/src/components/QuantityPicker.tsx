@@ -19,7 +19,7 @@ export default function QuantityPicker({ label, value, max = 10, onChange }: Pro
         >
           −
         </button>
-        <span className="fv-quantity__value">{value}</span>
+        <span className="fv-quantity__value" aria-live="polite" aria-atomic="true">{value}</span>
         <button
           type="button"
           className="fv-quantity__btn"
