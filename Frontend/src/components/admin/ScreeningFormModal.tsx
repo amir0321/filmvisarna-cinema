@@ -184,7 +184,7 @@ export default function ScreeningFormModal({
           </fieldset>
 
           <div className="row g-3">
-            <div className="col-6">
+            <div className="col-12 col-sm-6">
               <label htmlFor="screening-date" className="screening-form__label">
                 Datum
               </label>
@@ -202,7 +202,7 @@ export default function ScreeningFormModal({
                 ))}
               </select>
             </div>
-            <div className="col-6">
+            <div className="col-12 col-sm-6">
               <label htmlFor="screening-time" className="screening-form__label">
                 Starttid
               </label>

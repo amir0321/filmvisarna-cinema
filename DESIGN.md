@@ -1,4 +1,4 @@
-# DESIGN.md — Filmvisarna (Figma Make-prototyp)
+# DESIGN.md — Filmvisarnas aktuella gränssnittsdesign
 
 Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**. Figma Make-prototypen är utgångspunkt; dokumenterade projektbeslut och den aktuella implementationen i `Frontend/` och `Backend/` har företräde framför prototypens exempeldata.
 
@@ -8,7 +8,10 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 
 - Bokningssäkerhet följer [design/booking-security.md](design/booking-security.md): verifierad e-post, gemensamma gäst-/medlemskvoter och begränsad bokningstakt. Gästförfrågningar reserverar inga platser och lagras separat från bekräftade bokningar. Dokumentet anger också kraven för framtida adminhantering av missbruk; den adminfunktionen byggs inte i denna ändring.
 - Biografen har endast **Stora Salongen**, 80 platser (A–H, 1–10), och **Lilla Salongen**, 40 platser (A–E, 1–8). Seed-data använder samma två salonger. Filmer sprids över flera dagar utan överlappning och med 20 minuters städtid.
-- Sidnumrering: 8 filmer på startsidan, 10 på `/filmer`, 5 bokningar per flik. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
+- Sidnumrering: 8 filmer på startsidan, 10 på `/filmer` och i adminens Filmarkiv, 15 visningar i adminens Visningsschema och 5 bokningar per flik i Mina bokningar. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
+- Admin använder samma mörka toppnavigering som publika sidor. `Backoffice` öppnar `/admin` från både desktopmeny och mobil sidomeny. Filmarkiv och Visningsschema delar `AdminPageHeader`: brödsmulan ligger uppe till höger från `768px` och under rubrikblocket på mobil. Se [layout §4.3](design/layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
+- Filmarkiv har sökning på titel/regissör, tabell från `768px`, mobilkort och ett gemensamt filmformulär med manuell inmatning, TMDB-import för granskning, affischuppladdning och personregister för rollistan. Visningsschema har kort under `1200px` (två kolumner på surfplatta), tabell från `1200px` och radbrytande filter. Se [Filmarkiv](design/pages/admin-filmer.md) och [Visningsschema](design/pages/admin-visningar.md).
+- Medverkande på filmens detaljsida är klickbara profilkort med rund bild, namn och rollfigur. Profilmodalen återanvänder sidfotens `Modal`, visar biografi som ren text och har reservikon vid saknad eller trasig bild. Se [filmdetaljer](design/pages/movie-detail.md#klickbara-skådespelarprofiler).
 - Toppnavigeringens sökknapp öppnar `/filmer?sok=1`, fokuserar sökfältet och tar bort fokusparametern. Datum och åldersfilter sparas i URL:en och bevaras vid omladdning och bakåt/framåt.
 - Hero-trailern använder YouTubes IFrame API och visas först efter tre sekunders sammanhängande faktisk uppspelning, därefter intoning under 0,8 sekunder med `scale(1.2)`. Paus, buffring, loop/seek och uppspelningsfel döljer videon direkt; blockerad autoplay eller API-fel lämnar bakgrundsbilden kvar. Spelare och intervall städas vid filmbyte/paus/avmontering. Bildfel hanteras med alternativ bild eller reservyta.
 - Fullbokade visningar visar `Visningen är fullbokad` och `Se andra visningstider`. Biljettval och checkout visas inte. När platser finns begränsas totalantalet till `min(10, lediga platser)`.
@@ -58,7 +61,7 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 | [design/coverage.md](design/coverage.md) | Sektion 11: Fullständig täckningslista som mappar samtliga 28 källfiler i `docs/figma-make/src/` mot sektionerna i designspecifikationen. |
 | [design/pages/home.md](design/pages/home.md) | Sektion 5.1: Startsida (`HomeScreen`, föreslagen route `/`) med hero-sektion, klibbig filterrad, repertoargrid och interaktioner. |
 | [design/pages/filmer.md](design/pages/filmer.md) | Sektion 5.2: Filmer & Repertoar (`FilmerScreen`, föreslagen route `/filmer`) med flikarna På bio nu, Kommande premiärer och trailer-modal. |
-| [design/pages/movie-detail.md](design/pages/movie-detail.md) | Sektion 5.3: Filmdetaljer (`MovieDetailScreen`, föreslagen route `/filmer/:id`) med backdrop-hero, faktaruta, medverkande och visningsschema. |
+| [design/pages/movie-detail.md](design/pages/movie-detail.md) | Sektion 5.3: Aktuell `MovieDetails` på `/filmer/:id`, med backdrop-hero, faktaruta, klickbara skådespelarprofiler och visningsschema. |
 | [design/pages/seat-selection.md](design/pages/seat-selection.md) | Sektion 5.4: Stolsväljaren & Bokning (`SeatSelectionScreen`, föreslagen route `/boka/:visningId`) med biljetträknare, interaktiv platskarta, checkout-panel och platsvalsalgoritm. |
 | [design/pages/booking-confirm.md](design/pages/booking-confirm.md) | Sektion 5.5: Bokningsbekräftelse (`BookingConfirmScreen`, föreslagen route `/bekraftelse/:kod`) med bokningskod, biljettsammanfattning, QR-kod och åtgärdsknappar. |
 | [design/pages/salonger.md](design/pages/salonger.md) | Sektion 5.6: Våra Salonger (`SalongerScreen`, föreslagen route `/salonger`) med salongskort, minikartor samt tillgänglighets- och dukinformation. |
@@ -66,11 +69,10 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 | [design/pages/mina-bokningar.md](design/pages/mina-bokningar.md) | Sektion 5.8: Mina Sidor / Mina Bokningar (`MyBookingsScreen`, föreslagen route `/mina-bokningar`) med profilöversikt, aktuella bokningar, historik och avbokningsmodal. |
 | [design/pages/profil.md](design/pages/profil.md) | Sektion 5.9: Min Profil (`ProfilScreen`, föreslagen route `/profil`) med användarkort samt flikarna Mina uppgifter, Säkerhet och Bokningshistorik. |
 | [design/pages/admin-bokningar.md](design/pages/admin-bokningar.md) | Sektion 5.10: Admin – Bokningar & Kassa (`BokningarTab`, föreslagen route `/admin/bokningar`) med snabb incheckning, KPI-kort, bokningslista, live-salongskarta och kassaöversikt. |
-| [design/pages/admin-visningar.md](design/pages/admin-visningar.md) | Sektion 5.11: Admin – Visningsschema (`SchemaTab`, föreslagen route `/admin/visningar`) med datumfilter, visningstabell och modal/BottomSheet för ny visning. |
-| [design/pages/admin-filmer.md](design/pages/admin-filmer.md) | Sektion 5.12: Admin – Filmarkiv (`FilmarkivTab`, föreslagen route `/admin/filmer`) med sökfunktion, filmtabell och modal/BottomSheet för att lägga till eller redigera film. |
+| [design/pages/admin-visningar.md](design/pages/admin-visningar.md) | Sektion 5.11: Aktuell `AdminScreenings` på `/admin/visningar`, med Backoffice-brödsmula, filter, responsiva kort/tabell, sidnumrering och visningsformulär. |
+| [design/pages/admin-filmer.md](design/pages/admin-filmer.md) | Sektion 5.12: Aktuell `AdminMovies` på `/admin/filmer`, med Backoffice-brödsmula, sökning, sidnumrering, TMDB-import, bilduppladdning och rollista/personprofiler. |
 | [design/pages/admin-salonger.md](design/pages/admin-salonger.md) | Sektion 5.13: Admin – Salonger (`SalongerAdminTab`, föreslagen route `/admin/salonger`) med salongskort, förhandsgranskningskarta och konfigurationsmodal. |
 | [design/pages/admin-kiosk.md](design/pages/admin-kiosk.md) | Sektion 5.14: Admin – Kiosk (föreslagen route `/admin/kiosk`, saknas i prototypen). |
-| [design/DESIGN.original.md](design/DESIGN.original.md) | Oförändrad originalkopia av hela `DESIGN.md` före uppdelningen. |
 
 ---
 

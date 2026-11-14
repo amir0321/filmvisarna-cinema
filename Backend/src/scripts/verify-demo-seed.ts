@@ -44,7 +44,8 @@ async function verify() {
         ORDER BY s.row_label,s.seat_number) AS free
       FROM screening_times st JOIN movie m ON m.id=st.movie_id JOIN cinema c ON c.id=st.cinema_id
       WHERE st.starts_at>now() AND m.title IN ('Dune: Part Two','Interstellar')
-        AND EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=st.id AND b.guest_email='seed-crowd@example.test')
+        AND EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=st.id AND b.guest_email LIKE '%crowd%@example.test')
+        AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=st.id AND b.status='confirmed' AND COALESCE(b.guest_email,'') NOT LIKE '%crowd%@example.test')
       ORDER BY m.title,st.starts_at`);
     assert.deepEqual(scenarios.rows.find((row) => row.title === 'Dune: Part Two')?.free, ['D4', 'D5', 'H9']);
     assert.deepEqual(scenarios.rows.find((row) => row.title === 'Interstellar')?.free, []);

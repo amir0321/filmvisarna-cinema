@@ -28,6 +28,11 @@ const schema = z.object({
   BOOKING_GLOBAL_EMAILS_PER_15_MIN: z.coerce.number().int().positive().default(60),
   BOOKING_GUEST_LINK_MINUTES: z.coerce.number().int().min(1).max(10).default(10),
   TRUST_PROXY: z.string().default(''),
+  TMDB_API_KEY: z.string().trim().optional().default(''),
+  TMDB_API_BASE_URL: z.string().url().optional().default('https://api.themoviedb.org/3').refine(value => {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash;
+  }, 'must be an HTTP(S) URL without credentials, query or fragment'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -63,6 +68,8 @@ export const config = {
     guestLinkMinutes: env.BOOKING_GUEST_LINK_MINUTES,
   },
   trustProxy: env.TRUST_PROXY.split(',').map(value => value.trim()).filter(Boolean),
+  tmdbApiKey: env.TMDB_API_KEY,
+  tmdbApiBaseUrl: env.TMDB_API_BASE_URL,
 };
 
 if (env.NODE_ENV === 'production' && !env.FRONTEND_URL.startsWith('https://')) {

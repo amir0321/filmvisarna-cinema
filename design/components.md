@@ -117,15 +117,13 @@ Här dokumenteras samtliga återanvända UI-delar i prototypen med utseende, må
 
 ### 3.5 Tabeller / Datarader (Admin Desktop)
 
-- **Utseende:** Container med bakgrund `#161F30`, kantlinje `1px solid var(--border)`, `border-radius: 16px`, `overflow: hidden`.
-- **Tabellhuvud:** CSS Grid-rad med `padding: 12px 20px`, `background: rgba(255, 255, 255, 0.02)`, `border-bottom: 1px solid var(--border)`, `font-size: 12px`, `font-weight: 600`, `uppercase`, `letter-spacing: 0.05em`, text `#94A3B8`.
-- **Datarader:** CSS Grid-rader med `padding: 16px 20px`, `border-bottom: 1px solid var(--border)` (utom sista raden), hover-bakgrund `rgba(255, 255, 255, 0.015)`.
-- **Kolumnmallar:**
-  - `BokningarTab.tsx`: `110px 1fr 120px 80px 1fr 100px 110px`
-  - `SchemaTab.tsx`: `80px 80px 110px 1fr 60px 90px 80px 80px 140px`
-  - `FilmarkivTab.tsx`: `52px 1fr 80px 80px 1fr 80px 160px`
-- **Responsivt beteende:** Vid `< 768px` (`useIsMobile`) ersätts tabellerna helt av staplade kort (`BookingCard`, visningskort, filmkort).
-- **Källfiler:** `src/components/admin/BokningarTab.tsx`, `src/components/admin/SchemaTab.tsx`, `src/components/admin/FilmarkivTab.tsx`.
+- **Aktuella komponenter:** `Frontend/src/components/admin/MoviesTable.tsx` och `ScreeningsTable.tsx`, med motsvarande SCSS i `Frontend/src/styles/components/admin/`.
+- **Gemensam yta:** Mörk kortbakgrund, diskret kant, rundade hörn, dämpade versala kolumnrubriker och lätt ljusare rad vid hover. Befintliga tokens styr färg, text, avstånd och radie.
+- **Semantik:** Riktiga `<table>`, `<caption>`, kolumnrubriker och radrubriker med `scope`; kortvyer använder listor och artiklar med samma information och åtgärder.
+- **Filmarkiv:** Tabell från `768px`, med `Film`, `Ålder`, `Speltid`, `Regissör`, `Visningar`, `Åtgärder`. Affisch, filmtitel och genre-pills delar första kolumnen. Under `768px` visas staplade filmkort. Bred tabell skrollas i sin egen behållare.
+- **Visningsschema:** Tabell från `1200px`, med datum, start/slut, salong, film, format, sålda platser, status och åtgärder. Under `1200px` används kort: en kolumn på mobil och två från `768px`. Långa titlar radbryts och åtgärdsknappar har minst `44px` höjd.
+- **Återkoppling:** Destruktiva åtgärder använder `InlineConfirmAction`. Hinder som bokningar eller registrerade filmvisningar förklaras med synlig text vid knapparna. Fel återges inline efter API-svar.
+- För övriga adminmoduler, se respektive [sidspecifikation](../DESIGN.md#filindex-för-designspecifikationen).
 
 ### 3.6 Formulär och Inmatningsfält
 
@@ -145,16 +143,11 @@ Här dokumenteras samtliga återanvända UI-delar i prototypen med utseende, må
 
 ### 3.7 Modaler och BottomSheets
 
-1. **Centrerad modal (Desktop & Mobil)**
-   - **Backdrop:** `position: fixed`, `inset: 0`, mörk övertoning (`rgba(0, 0, 0, 0.7)` i `MyBookingsScreen.tsx`, `rgba(0, 0, 0, 0.75)` med `backdrop-filter: blur(4px)` i admin, `rgba(0, 0, 0, 0.85)` med `backdrop-filter: blur(8px)` i `TrailerModal`). Klick på backdrop stänger modalen.
-   - **Modal-kort:** Bakgrund `#161F30`, kantlinje `1px solid var(--border)` (eller `rgba(255, 255, 255, 0.1)`), `border-radius: 16px` (`20px` för `TrailerModal`).
-   - **Källfiler:** `src/components/FilmerScreen.tsx`, `src/components/MyBookingsScreen.tsx`, `src/components/admin/SchemaTab.tsx`, `src/components/admin/FilmarkivTab.tsx`, `src/components/admin/SalongerAdminTab.tsx`.
-
-2. **Mobilt BottomSheet (`SchemaTab.tsx` och `FilmarkivTab.tsx` vid `< 768px`)**
-   - **Backdrop:** `position: fixed`, `inset: 0`, `z-index: 200`, `background: rgba(0, 0, 0, 0.7)`, `backdrop-filter: blur(4px)`.
-   - **Panel:** `position: fixed`, `bottom: 0`, `left: 0`, `right: 0`, `z-index: 201`, bakgrund `#161F30`, `border-radius: 20px 20px 0 0`, `border: 1px solid rgba(148, 163, 184, 0.15)` (utan nederkant), `max-height: 92vh` (`SchemaTab`) / `94vh` (`FilmarkivTab`), `overflow-y: auto`.
-   - **Animation och handtag:** Glider in nedifrån med `transform: translateY(0)` / `translateY(100%)` (`transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)`). Överst finns ett centrerat draghandtag (`36×4px`, `border-radius: 2px`, `background: rgba(148, 163, 184, 0.3)`).
-   - **Källfiler:** `src/components/admin/SchemaTab.tsx`, `src/components/admin/FilmarkivTab.tsx`.
+- `Frontend/src/components/Modal.tsx` och `_modals.scss` är gemensam implementation för filmformulär, visningsformulär, skådespelarbiografier och sidfotens informationsdialoger. Innehåll placeras i `Modal.Body` och åtgärder i `Modal.Footer`.
+- **Desktop:** Centrerad dialog på en mörk, suddig backdrop. Tokenstyrd kortyta, kant och hörnradie. Storlekar `sm` högst `420px`, `md` `560px` och `lg` `780px`; dialogen begränsas av skärmens bredd/höjd.
+- **Mobil under `768px`:** BottomSheet är standard, med handtag, rundade överhörn och skrollbar innehållsdel. Dialoghuvud och footer ligger kvar. Filmformulärets fält blir en kolumn; visningsformulärets datum, tid och åtgärder anpassas för smala skärmar.
+- **Tillgänglighet och beteende:** `role="dialog"`, `aria-modal`, kopplad rubrik, initialt fokus, fokusfälla, Escape-stängning och fokus tillbaka till öppningskontrollen. Bakgrundssidan skrollåsas. Kryss och klick direkt på backdrop stänger via samma `onClose`.
+- `TrailerModal` har en egen anpassad videoyta och återanvänder filmens trailer-URL. Filmformuläret hindrar stängning under pågående sparning.
 
 ### 3.8 Tabbar (flikkomponenter)
 
@@ -169,7 +162,7 @@ Applikationen innehåller fyra varianter av tabb-navigering på sidorna (medan t
 Prototypen använder inga flytande toast-komponenter, utan ger direkt återkoppling inline vid knappen:
 - **Kopiera bokningskod (`BookingConfirmScreen.tsx`):** Knappen `Kopiera` växlar under 2 sekunder till grön bakgrund `rgba(16, 185, 129, 0.15)`, text `#10B981`, bockikon och texten `Kopierat`.
 - **Spara profiluppgifter (`ProfilScreen.tsx`):** Till höger om knappen `Spara ändringar` visas under 2,5 sekunder en grön bockikon (`16×16px`) och texten `Sparat!` i `#10B981`.
-- **Spara film i admin (`FilmarkivTab.tsx`):** Knappen `Spara film` ändrar bakgrund till `#10B981` och text till `Sparad!` med bockikon under 2 sekunder innan modalen stängs.
+- **Spara film i admin (`MovieFormModal.tsx`):** Efter lyckat API-svar visas grön `Sparad!` i dialogens knapp och inline i listan. Dialogen förblir öppen och kan stängas med `Stäng`. Nya ändringar aktiverar sparning mot samma film-ID; fel visas på svenska utan att radera utkastet.
 
 ### 3.10 Platskarta (Seat Map)
 
@@ -213,7 +206,7 @@ Det finns fyra varianter av salongskarta i prototypen:
 ### 3.12 Integritet och lokal lagring (`Footer.tsx`)
 
 - Sidfoten har knapparna `Integritetspolicy` och `Cookie-inställningar`, som öppnar projektets tillgängliga `Modal` med svensk information och fungerande stängning/fokusåterställning.
-- Inloggningens token lagras i `localStorage`; bokningsbekräftelsen lagras per flik i `sessionStorage`. Informationsdialogen hittar inte på valbara analyscookies eller en samtyckesbanner som appen saknar.
+- Sessionen använder serverns `HttpOnly`-cookie; inloggningstoken lagras inte i `localStorage` eller annan webbläsarlagring. Bokningsbekräftelsen lagras per flik i `sessionStorage`. Informationsdialogen hittar inte på valbara analyscookies eller en samtyckesbanner som appen saknar.
 - `Footer` kan ta emot `onOpenCookieSettings` för en framtida inställningsfunktion. Utan callback visas informationsdialogen.
 
 ### 3.13 Sidnumrering (`Pagination.tsx`)
@@ -227,6 +220,19 @@ Det finns fyra varianter av salongskarta i prototypen:
 - **Mobil (`< 640px`):** Kompakt rad med `‹ Föregående`, `Sida {page} av {totalPages}` i mitten och `Nästa ›`. Sidnummerknapparna döljs även från tangentbords- och skärmläsarnavigering.
 - **Automatisk döljning:** Komponenten renderar ingenting när `totalPages <= 1`, inklusive tomma listor.
 - **Gemensam hook:** `usePagination<T>(items: readonly T[], pageSize)` returnerar `page`, `totalPages`, `totalItems`, `startIndex` (inklusive), `endIndex` (exklusive), `pageItems` och `setPage`. Sidstorleken måste vara ett positivt heltal. Både visad och lagrad sida begränsas till giltigt intervall när listan krymper, så ett borttaget sidläge inte återkommer om listan sedan växer. Tom lista ger sida 1, totalt 1 sida och båda index 0. Filtrering och sortering görs före sidindelning.
-- **Sidstorlekar:** Startsidan 8 filmer (2 rader × 4 kolumner på bred desktop), `/filmer` 10 filmer (2 rader × 5 kolumner på bred desktop), `/mina-bokningar` 5 bokningskort per flik med separata sidlägen. Admin-tabeller och motsvarande mobilkort (`/admin/*`) ska återanvända samma hook och komponent med 10 poster per sida när de integreras.
+- **Sidstorlekar:** Startsidan 8 filmer (2 rader × 4 kolumner på bred desktop), `/filmer` 10 filmer (2 rader × 5 kolumner på bred desktop), `/mina-bokningar` 5 bokningskort per flik med separata sidlägen. Adminens Filmarkiv visar 10 filmer och Visningsschema 15 visningar per sida, med samma hook och komponent i tabell- och kortvyerna.
 - **Stilar:** `.fv-pagination`, `.fv-pagination__btn`, `.fv-pagination__btn.is-active`, `.fv-pagination__ellipsis` och `.fv-pagination__mobile-status` i `src/styles/components/_pagination.scss`, importerad av `_components.scss`.
+
+### 3.14 Gemensamt adminsidhuvud (`AdminPageHeader.tsx`)
+
+- Tar `title` och `subtitle` och används av `AdminMovies` och `AdminScreenings`.
+- Visar ett `h1`, dämpad underrubrik och brödsmulan `Backoffice › {title}`. `Backoffice` är en riktig länk till `/admin`; sista ledet har `aria-current="page"`.
+- Från `768px` ligger brödsmulan uppe till höger i en egen gridkolumn. Rubrikblocket har `min-width: 0` och får radbrytas. På mobil staplas blocken.
+- Återanvänder `.admin-page-header` och `.admin-breadcrumb` i `Frontend/src/styles/components/admin/_admin-screenings.scss`. Se [layout §4.3](layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
+
+### 3.15 Rollista och profilkort
+
+- `CastMemberEditor` är ett kontrollerat fält i filmformuläret, med sökning bland registrerade personer, profilredigering, fil/bild-URL och förhandsvisning, biografi och rollfigur. Det använder knappar och fieldsets så att det kan ligga i filmens formulär utan nästlade formulär.
+- Person-ID, TMDB-ID och normaliserade namn används för att återanvända profiler. Profiländringar är gemensamma mellan filmer, medan borttagning ur en rollista bara påverkar filmkopplingen.
+- På filmens detaljsida visas profiler som knappar med rund bild, namn och rollfigur. Bilder som saknas eller inte går att läsa ersätts av `bi-person-fill`. Ett klick öppnar biografin i gemensam `Modal` som ren text. Se [Filmarkiv](pages/admin-filmer.md#rollista-och-gemensamma-personprofiler) och [filmdetaljer](pages/movie-detail.md#klickbara-skådespelarprofiler).
 

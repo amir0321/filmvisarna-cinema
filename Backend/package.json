@@ -8,6 +8,7 @@
     "build": "tsc",
     "test": "node --import tsx --test src/tests/*.test.ts",
     "test:auth": "node --import tsx --test src/tests/auth.integration.test.ts",
+    "test:cast": "node --import tsx --test src/tests/cast-profiles.integration.test.ts",
     "start": "node dist/server.js",
     "create-admin": "tsx src/scripts/createAdmin.ts",
     "seed": "tsx src/seed.ts",
@@ -16,6 +17,7 @@
     "seed:check": "tsx src/scripts/verify-demo-seed.ts",
     "migrate:auth": "tsx src/scripts/migrate-auth.ts",
     "migrate:bookings": "tsx src/scripts/migrate-bookings.ts",
+    "migrate:cast": "tsx src/scripts/migrate-cast.ts",
     "cleanup:bookings": "tsx src/scripts/cleanup-bookings.ts"
   },
   "keywords": [],

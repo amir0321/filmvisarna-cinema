@@ -11,6 +11,7 @@ const BASE_NAV_LINKS = [
 ] as const
 
 const ADMIN_NAV_LINKS = [
+  { name: 'Backoffice', path: '/admin', icon: 'bi-layers', end: true },
   { name: 'Bokningar', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
   { name: 'Schema', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
   { name: 'Filmer', path: '/admin/filmer', icon: 'bi-film', end: false },
@@ -114,7 +115,7 @@ export default function Navbar() {
                       `public-nav-link d-inline-flex align-items-center gap-2 ${isActive ? 'active' : ''}`
                     }
                   >
-                    <span>Admin</span>
+                    <span>Backoffice</span>
                     <span className="nav-admin-badge d-none d-lg-inline-block">ADMIN</span>
                   </NavLink>
                 </li>
@@ -180,7 +181,7 @@ export default function Navbar() {
                             className={`bi ${isAdminRoute ? 'bi-box-arrow-left' : 'bi-layers'}`}
                             aria-hidden="true"
                           ></i>
-                          <span>{isAdminRoute ? 'Till biografen' : 'Administration'}</span>
+                          <span>{isAdminRoute ? 'Till biografen' : 'Backoffice'}</span>
                         </span>
                         {!isAdminRoute ? <span className="nav-admin-badge">ADMIN</span> : null}
                       </NavLink>

@@ -28,14 +28,16 @@
     3. `Salonger` (`/salonger`)
     4. `Om oss` (`/om-oss`)
     5. `Mina Bokningar` (`/mina-bokningar`, visas endast när användaren är inloggad)
-    6. `Admin` + badge `ADMIN` (`/admin`, visas endast när `user.role === 'admin'`)
+    6. `Backoffice` + badge `ADMIN` (`/admin`, visas endast när `user.role === 'admin'`)
   - **Inne i Admin (`/admin/*`):**
     - Använder exakt samma `.public-nav-link`-design med konsekventa etiketter på alla skärmstorlekar (och ikoner på `>= 1200px`):
-    1. `Bokningar` (`/admin/bokningar`, ikon `bi-ticket-perforated`)
-    2. `Schema` (`/admin/visningar`, ikon `bi-calendar3`)
-    3. `Filmer` (`/admin/filmer`, ikon `bi-film`)
-    4. `Salonger` (`/admin/salonger`, ikon `bi-display`)
-    5. `Till biografen` (`/`, ikon `bi-box-arrow-left`, för att växla tillbaka till den publika hemsidan)
+    1. `Backoffice` (`/admin`, ikon `bi-layers`, `end: true` så att bara översikten markeras aktiv)
+    2. `Bokningar` (`/admin/bokningar`, ikon `bi-ticket-perforated`)
+    3. `Schema` (`/admin/visningar`, ikon `bi-calendar3`)
+    4. `Filmer` (`/admin/filmer`, ikon `bi-film`)
+    5. `Salonger` (`/admin/salonger`, ikon `bi-display`)
+    6. `Till biografen` (`/`, ikon `bi-box-arrow-left`, för att växla tillbaka till den publika hemsidan)
+  - Länklistan använder `justify-content: safe center` och listobjekt med `flex-shrink: 0`: länkarna centreras när de ryms och börjar vid vänsterkanten vid överflöde, så att första länken fortfarande går att nå.
   - **Utseende och tillstånd (`.public-nav-link`):** `white-space: nowrap`, `flex-shrink: 0`, `border-radius: 8px`, `font-weight: 500`, `padding: 6px 8px` och `font-size: 13px` (`0.8125rem`) vid `768px–1023px`, samt `padding: 8px 12px` (`8px 16px` vid `>= 1280px`) och `font-size: 14px` (`0.875rem`) vid `>= 1024px`.
     - **Aktiv (`.active`):** Text `#F8FAFC` (`$fv-fg`), bakgrund `rgba(248, 250, 252, 0.07)`.
     - **Inaktiv:** Text `#94A3B8` (`$fv-muted-fg`), bakgrund `transparent`. Vid hover: text `#F8FAFC`.
@@ -47,7 +49,7 @@
       2. **`Bli Medlem`-länk (`.nav-register-btn`):** Navigerar till `/skapa-konto`. `padding: 8px 16px`, `border-radius: 10px` (`$fv-radius-md`), `font-size: 14px`, `font-weight: 600`, bakgrund `#E50914` (`$fv-primary`), vit text.
     - **Inloggad (Medlem & Admin):**
       - **Avatar-dropdown (`.nav-avatar-btn`):** Rundad knapp (`border-radius: $fv-radius-pill`, `border: 1px solid $fv-border`, bakgrund `rgba(255, 255, 255, 0.04)`) med cirkelavatar (`.nav-avatar-circle`, `30×30px`, `linear-gradient(135deg, #E50914 0%, #7C3AED 100%)`, initialer i `Poppins` `12px` `font-weight: 700`).
-      - **Dropdown-meny (`.nav-user-dropdown`):** Bakgrund `#161F30` (`$fv-card-bg`), `border: 1px solid $fv-border`, `border-radius: 12px` (`$fv-radius-xl`), `min-width: 210px`. Visar visningsnamn + e-post i huvudet, länkar till `Min Profil` (`/profil`), `Mina Bokningar` (`/mina-bokningar`), (samt `Admin Backoffice` `/admin` eller `Till biografen` `/` för admin), avdelare och `Logga ut` (`.nav-dropdown-logout` i `#ff6b6b`).
+      - **Dropdown-meny (`.nav-user-dropdown`):** Bakgrund `#161F30` (`$fv-card-bg`), `border: 1px solid $fv-border`, `border-radius: 12px` (`$fv-radius-xl`), `min-width: 210px`. Visar visningsnamn + e-post i huvudet, länkar till `Min Profil` (`/profil`), `Mina Bokningar` (`/mina-bokningar`), samt `Backoffice` (`/admin`) i publik vy eller `Till biografen` (`/`) i admin, avdelare och `Logga ut` (`.nav-dropdown-logout` i `#ff6b6b`). Adminvalen visas bara för administratörer.
   - **Mobil (`< 768px`, `d-flex d-md-none`):**
     - **Hamburgermeny-knapp (`.nav-hamburger-btn`):** `padding: 8px`, `border-radius: 8px`, färg `#94A3B8`, `aria-label="Öppna meny"`, ikon `bi-list` (`20px`). Öppnar `#mobileDrawer` via Bootstrap Offcanvas.
 - **Källfiler:** `Frontend/src/components/Navbar.tsx`, `Frontend/src/components/BrandLogo.tsx`, `Frontend/src/styles/_navigation.scss`.
@@ -56,8 +58,16 @@
 
 - Admin har **ingen separat admin-topbar** från Figma-prototypen. I stället använder `/admin` samma `Navbar`, `MobileDrawer` och `BottomNav` som den vanliga hemsidan:
   - **Header (`Navbar.tsx`):** Samma höjd (`64px`), bakgrund (`.app-navbar`), container (`1280px`), logotyp (`BrandLogo` + `ADMIN`-badge), `.public-nav-link`-knappar och högerställda kontroller (sökknapp, avatar-dropdown på desktop, hamburgerknapp på mobil).
-  - **Desktop-länkar i `/admin`:** `Bokningar` (`/admin/bokningar`), `Schema` (`/admin/visningar`), `Filmer` (`/admin/filmer`), `Salonger` (`/admin/salonger`) samt `Till biografen` (`/`).
+  - **Desktop-länkar i `/admin`:** `Backoffice` (`/admin`), `Bokningar` (`/admin/bokningar`), `Schema` (`/admin/visningar`), `Filmer` (`/admin/filmer`), `Salonger` (`/admin/salonger`) samt `Till biografen` (`/`).
   - **Mobil i `/admin` (`< 768px`):** Använder samma `MobileDrawer` och `BottomNav` som övriga sidor, där `BottomNav` och `MobileDrawer` visar admin-länkarna när man befinner sig i `/admin`.
+
+#### Sidhuvud och brödsmulor i Filmarkiv och Visningsschema
+
+- Båda sidorna använder `Frontend/src/components/admin/AdminPageHeader.tsx` med rubrik, underrubrik och `<nav aria-label="Brödsmulor">`.
+- Från `768px` används två gridkolumner (`minmax(0, 1fr) auto`). Rubrikblocket till vänster kan krympa och radbrytas; brödsmulan ligger uppe till höger även när underrubriken är lång.
+- På mobil blir det en kolumn med brödsmulan under rubrikblocket. Den kan radbrytas inom sidans bredd.
+- Första länken heter `Backoffice` och öppnar `/admin` (administrationsöversikten). Sista ledet är `Filmarkiv` respektive `Visningsschema`, med `aria-current="page"`.
+- Stilarna `.admin-page-header` och `.admin-breadcrumb` använder befintliga ytor, typografi, avstånd och texttokens i `_admin-screenings.scss`; samma regler gäller båda sidorna.
 
 ### 4.4 Mobil bottennavigering (`BottomNav.tsx`)
 
@@ -95,8 +105,8 @@
      - Undre rad med cirkulär avatar (`.drawer-avatar`, `44×44px`, `.drawer-avatar-guest` i röd gradient för gäst eller `.drawer-avatar-user` i röd-lila gradient för inloggad) med initialer (`18px`, `Poppins`, `font-weight: 700`), visningsnamn (`.drawer-user-name`, `14px`, `font-weight: 600`, `#F8FAFC`) och status/e-post undertill (`.drawer-user-status`, `12px`, `#94A3B8`, visar e-post eller `'Inte inloggad'`).
   2. **Navigationslänkar (`.drawer-nav`, `padding: 12px`):**
      - Länkar (`.drawer-nav-link`, `padding: 14px 12px`, `border-radius: 10px`, `font-size: 15px`, ikon `20px` + etikett):
-       - **På vanliga hemsidan:** `Hem` (`/`), `Filmer & Repertoar` (`/filmer`), `Salonger` (`/salonger`), `Om oss` (`/om-oss`), samt för inloggade `Mina Bokningar` (`/mina-bokningar`) och `Min Profil` (`/profil`). Om `user.role === 'admin'` visas en avdelare (`.drawer-divider`) och länken `Admin Backoffice` (`/admin`) med ikon `bi-layers` och badge `ADMIN`.
-       - **Inne i `/admin`:** Visar admin-länkarna `Översikt` (`/admin`), `Bokningar & Kassa` (`/admin/bokningar`), `Visningsschema` (`/admin/visningar`), `Filmarkiv` (`/admin/filmer`), `Salonger` (`/admin/salonger`), en avdelare (`.drawer-divider`) samt `Till biografen` (`/`), `Mina Bokningar` (`/mina-bokningar`) och `Min Profil` (`/profil`).
+       - **På vanliga hemsidan:** `Hem` (`/`), `Filmer & Repertoar` (`/filmer`), `Salonger` (`/salonger`), `Om oss` (`/om-oss`), samt för inloggade `Mina Bokningar` (`/mina-bokningar`) och `Min Profil` (`/profil`). Om `user.role === 'admin'` visas en avdelare (`.drawer-divider`) och länken `Backoffice` (`/admin`) med ikon `bi-layers` och badge `ADMIN`.
+       - **Inne i `/admin`:** Visar admin-länkarna `Backoffice` (`/admin`, exakt matchning), `Bokningar & Kassa` (`/admin/bokningar`), `Visningsschema` (`/admin/visningar`), `Filmarkiv` (`/admin/filmer`), `Salonger` (`/admin/salonger`), en avdelare (`.drawer-divider`) samt `Till biografen` (`/`), `Mina Bokningar` (`/mina-bokningar`) och `Min Profil` (`/profil`).
      - **Aktivt tillstånd (`.active`):** Bakgrund `rgba(229, 9, 20, 0.1)`, text `#E50914`, `font-weight: 600`, `border-left: 2px solid #E50914`.
      - **Inaktivt tillstånd:** Bakgrund `transparent`, text `#94A3B8`, `font-weight: 400`, `border-left: 2px solid transparent`.
   3. **Footer-knappar (`.drawer-footer`, `padding: 16px 12px 32px`, `border-top: 1px solid rgba(148, 163, 184, 0.1)`, `gap: 8px`):**
@@ -119,8 +129,9 @@
 ### 4.7 Grid och Responsivt beteende
 
 - **Brytpunktslogik:**
-  - Applikationen använder Bootstrap 5-brytpunkter och SCSS-variablerna `$fv-bp-sm` (`640px`), `$fv-bp-md` (`768px`), `$fv-bp-lg` (`1024px`) och `$fv-bp-xl` (`1280px`).
-  - Vid `< 768px` aktiveras mobilvy i både publik vy och admin: `BottomNav` visas i nederkant, `main` och `footer` anpassar sitt bottenavstånd (`64px`), och desktop-länkarna i `Navbar` ersätts av hamburgermenyn som öppnar `MobileDrawer`. I admin-vyerna byts datatabeller mot staplade mobilkort och modaler byts mot `BottomSheet`.
-- **Horisontell scroll på små skärmar:** Filterrader samt den interaktiva salongskartan ligger i horisontellt scrollbara containers (`overflow-x: auto`).
+  - SCSS-tokens är `$fv-bp-sm` (`640px`), `$fv-bp-md` (`768px`), `$fv-bp-lg` (`1024px`) och `$fv-bp-xl` (`1280px`). Bootstrap-klasser har sina egna brytpunkter: exempelvis `d-xl-*` vid `1200px`, inte tokenvärdet `1280px`.
+  - Vid `< 768px` visas `BottomNav`, extra bottenavstånd och hamburgermeny i båda layouterna. Filmarkiv visar filmkort; de gemensamma adminmodalerna visas som BottomSheet.
+  - Visningsschema använder kort ända upp till `1199px`: en kolumn under `768px`, två på surfplatta och tabell från `1200px`. Filmarkiv använder tabell från `768px` med lokal horisontell scroll vid behov.
+- **Överflöde:** Visningsschemats filter radbryts, med två kolumner för periodval och fullbredd för övriga kontroller under `640px`. Långa rubriker och korttexter får radbrytas. Navigationslistor, breda filmtabeller och den interaktiva salongskartan kan skrollas lokalt utan att bredda hela sidan.
 
 

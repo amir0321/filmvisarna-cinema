@@ -1,100 +1,106 @@
-import { Navigate, createBrowserRouter } from 'react-router'
+import type { ComponentType } from 'react'
+import { Navigate, Outlet, createBrowserRouter } from 'react-router'
+import RouteLoading from './components/RouteLoading'
 import RouteRedirect from './components/RouteRedirect'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
-import MovieDetails from './pages/MovieDetails'
-import Salonger from './pages/Salonger'
-import About from './pages/About'
-import MyBookings from './pages/MyBookings'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ResetPassword from './pages/ResetPassword'
-import VerifyEmail from './pages/VerifyEmail'
-import Profile from './pages/Profile'
-import CancelBooking from './pages/CancelBooking'
 import NotFound from './pages/NotFound'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminBookings from './pages/admin/AdminBookings'
-import AdminScreenings from './pages/admin/AdminScreenings'
-import AdminMovies from './pages/admin/AdminMovies'
-import AdminCinemas from './pages/admin/AdminCinemas'
-import ScreeningDetail from './pages/ScreeningDetail'
-import BookingConfirmation from './pages/BookingConfirmation'
-import ConfirmGuestBooking from './pages/ConfirmGuestBooking'
+
+const lazyPage = (load: () => Promise<{ default: ComponentType }>) => async () => ({
+  Component: (await load()).default,
+})
 
 export const router = createBrowserRouter([
   // Public application layout
   {
     path: '/',
     element: <PublicLayout />,
+    HydrateFallback: RouteLoading,
     children: [
       { index: true, element: <Home /> },
 
       // Filmer (Svenska primär, engelska alias/redirect)
       { path: 'filmer', element: <Movies /> },
-      { path: 'filmer/:id', element: <MovieDetails /> },
+      { path: 'filmer/:id', lazy: lazyPage(() => import('./pages/MovieDetails')) },
       { path: 'movies', element: <Navigate to="/filmer" replace /> },
-      { path: 'movies/:id', element: <MovieDetails /> },
+      { path: 'movies/:id', lazy: lazyPage(() => import('./pages/MovieDetails')) },
 
       // Salonger & Om oss
-      { path: 'salonger', element: <Salonger /> },
-      { path: 'om-oss', element: <About /> },
+      { path: 'salonger', lazy: lazyPage(() => import('./pages/Salonger')) },
+      { path: 'om-oss', lazy: lazyPage(() => import('./pages/About')) },
 
       // Mina bokningar (Svenska primär, engelska alias/redirect)
-      { path: 'mina-bokningar', element: <ProtectedRoute><MyBookings /></ProtectedRoute> },
+      {
+        path: 'mina-bokningar',
+        element: (
+          <ProtectedRoute>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [{ index: true, lazy: lazyPage(() => import('./pages/MyBookings')) }],
+      },
       { path: 'my-bookings', element: <RouteRedirect to="/mina-bokningar" /> },
 
       // Auth & Profil (Svenska primär, engelska alias/redirect)
-      { path: 'logga-in', element: <Login /> },
+      { path: 'logga-in', lazy: lazyPage(() => import('./pages/Login')) },
       { path: 'login', element: <RouteRedirect to="/logga-in" /> },
-      { path: 'skapa-konto', element: <Register /> },
+      { path: 'skapa-konto', lazy: lazyPage(() => import('./pages/Register')) },
       { path: 'registrera', element: <RouteRedirect to="/skapa-konto" /> },
       { path: 'register', element: <RouteRedirect to="/skapa-konto" /> },
-      { path: 'reset-password', element: <ResetPassword /> },
-      { path: 'verify-email', element: <VerifyEmail /> },
-      { path: 'profil', element: <ProtectedRoute><Profile /></ProtectedRoute> },
+      { path: 'reset-password', lazy: lazyPage(() => import('./pages/ResetPassword')) },
+      { path: 'verify-email', lazy: lazyPage(() => import('./pages/VerifyEmail')) },
+      {
+        path: 'profil',
+        element: (
+          <ProtectedRoute>
+            <Outlet />
+          </ProtectedRoute>
+        ),
+        children: [{ index: true, lazy: lazyPage(() => import('./pages/Profile')) }],
+      },
       { path: 'profile', element: <RouteRedirect to="/profil" /> },
 
       // Bokning (Svenska primär, engelska/äldre alias)
-      { path: 'boka/:id', element: <ScreeningDetail /> },
-      { path: 'booking/:id', element: <ScreeningDetail /> },
-      { path: 'screeningdetail/:id', element: <ScreeningDetail /> },
+      { path: 'boka/:id', lazy: lazyPage(() => import('./pages/ScreeningDetail')) },
+      { path: 'booking/:id', lazy: lazyPage(() => import('./pages/ScreeningDetail')) },
+      { path: 'screeningdetail/:id', lazy: lazyPage(() => import('./pages/ScreeningDetail')) },
 
       // Avbokning
-      { path: 'avboka/:token', element: <CancelBooking /> },
-      { path: 'avboka', element: <CancelBooking /> },
-      { path: 'cancel/:token', element: <CancelBooking /> },
-      { path: 'cancel', element: <CancelBooking /> },
+      { path: 'avboka/:token', lazy: lazyPage(() => import('./pages/CancelBooking')) },
+      { path: 'avboka', lazy: lazyPage(() => import('./pages/CancelBooking')) },
+      { path: 'cancel/:token', lazy: lazyPage(() => import('./pages/CancelBooking')) },
+      { path: 'cancel', lazy: lazyPage(() => import('./pages/CancelBooking')) },
 
       // Bokningsbekräftelse
-      { path: 'bekrafta-gastbokning', element: <ConfirmGuestBooking /> },
-      { path: 'bekraftelse/:kod', element: <BookingConfirmation /> },
-      { path: 'bekraftelse', element: <BookingConfirmation /> },
-      { path: 'confirmation/:kod', element: <BookingConfirmation /> },
+      { path: 'bekrafta-gastbokning', lazy: lazyPage(() => import('./pages/ConfirmGuestBooking')) },
+      { path: 'bekraftelse/:kod', lazy: lazyPage(() => import('./pages/BookingConfirmation')) },
+      { path: 'bekraftelse', lazy: lazyPage(() => import('./pages/BookingConfirmation')) },
+      { path: 'confirmation/:kod', lazy: lazyPage(() => import('./pages/BookingConfirmation')) },
     ],
   },
   // Backoffice administration layout
   {
     path: '/admin',
+    HydrateFallback: RouteLoading,
     element: <ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <AdminDashboard /> },
+      { index: true, lazy: lazyPage(() => import('./pages/admin/AdminDashboard')) },
       // Bokningar
-      { path: 'bokningar', element: <AdminBookings /> },
-      { path: 'bookings', element: <AdminBookings /> },
+      { path: 'bokningar', lazy: lazyPage(() => import('./pages/admin/AdminBookings')) },
+      { path: 'bookings', lazy: lazyPage(() => import('./pages/admin/AdminBookings')) },
       // Schema / Visningar
-      { path: 'visningar', element: <AdminScreenings /> },
-      { path: 'schema', element: <AdminScreenings /> },
-      { path: 'screenings', element: <AdminScreenings /> },
+      { path: 'visningar', lazy: lazyPage(() => import('./pages/admin/AdminScreenings')) },
+      { path: 'schema', lazy: lazyPage(() => import('./pages/admin/AdminScreenings')) },
+      { path: 'screenings', lazy: lazyPage(() => import('./pages/admin/AdminScreenings')) },
       // Filmer
-      { path: 'filmer', element: <AdminMovies /> },
-      { path: 'movies', element: <AdminMovies /> },
+      { path: 'filmer', lazy: lazyPage(() => import('./pages/admin/AdminMovies')) },
+      { path: 'movies', lazy: lazyPage(() => import('./pages/admin/AdminMovies')) },
       // Salonger
-      { path: 'salonger', element: <AdminCinemas /> },
-      { path: 'cinemas', element: <AdminCinemas /> },
+      { path: 'salonger', lazy: lazyPage(() => import('./pages/admin/AdminCinemas')) },
+      { path: 'cinemas', lazy: lazyPage(() => import('./pages/admin/AdminCinemas')) },
     ],
   },
   // Catch-all 404 Not Found route

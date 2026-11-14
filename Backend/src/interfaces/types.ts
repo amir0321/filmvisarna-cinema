@@ -30,6 +30,40 @@ export interface ChangePasswordInput {
 }
 
 // 3. Filmer (Movies)
+export interface Person {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  bio: string | null;
+  tmdb_id: number | null;
+}
+
+export interface CreatePersonInput {
+  name: string;
+  photo_url?: string | null;
+  bio?: string | null;
+  tmdb_id?: number | null;
+}
+
+export type UpdatePersonInput = Partial<CreatePersonInput>;
+
+export interface CastMember {
+  person_id: number;
+  name: string;
+  photo_url: string | null;
+  bio: string | null;
+  character_name: string | null;
+  tmdb_id: number | null;
+  billing_order: number;
+}
+
+// An existing person can be referenced by ID; new people require a name.
+export interface CastMemberInput extends UpdatePersonInput {
+  person_id?: number;
+  character_name?: string | null;
+  billing_order?: number;
+}
+
 export interface Movie {
   id: number;
   title: string;
@@ -40,7 +74,10 @@ export interface Movie {
   landscape_image_url: string | null;
   trailer_url: string | null;
   director: string | null;
-  actors?: string[];
+  actors: string[];
+  cast_members: CastMember[];
+  active_screenings_count: number;
+  total_screenings_count: number;
   imdb_rating: number | null;
   release_date: string | null;
   genres: string[];
@@ -58,6 +95,7 @@ export interface CreateMovieInput {
   imdb_rating?: number | null;
   release_date?: string | null;
   genres?: string[];
+  cast_members?: CastMemberInput[];
 }
 
 export interface UpdateMovieInput {
@@ -72,6 +110,7 @@ export interface UpdateMovieInput {
   imdb_rating?: number | null;
   release_date?: string | null;
   genres?: string[];
+  cast_members?: CastMemberInput[];
 }
 
 // 4. Salonger & Platser (Cinemas & Seats)
