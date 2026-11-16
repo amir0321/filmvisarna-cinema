@@ -116,7 +116,7 @@ export default function BookingTicket({
             </button>
 
             <Link
-              className="fv-ticket__cancel"
+              className="btn btn-danger fv-ticket__cancel"
               to="/avboka"
               state={{ bookingRef: data.bookingRef, email: data.email }}
             >

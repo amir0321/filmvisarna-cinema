@@ -72,7 +72,7 @@ export default function Profile() {
 
 
               <Link
-                className="btn btn-outline-light text-start"
+                className="btn btn-secondary-outline text-start"
                 to="/mina-bokningar"
               >
                 <i

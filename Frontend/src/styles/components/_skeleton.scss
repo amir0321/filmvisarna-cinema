@@ -13,7 +13,7 @@
 }
 
 .fv-skeleton {
-  background: linear-gradient(90deg, #161F30 0%, #1E2D47 50%, #161F30 100%);
+  background: linear-gradient(90deg, $color-surface-muted 0%, $color-surface-2 50%, $color-surface-muted 100%);
   background-size: 200% 100%;
   animation: fv-shimmer 1.6s infinite ease-in-out;
   border-radius: $radius-sm;
@@ -44,6 +44,6 @@
 @media (prefers-reduced-motion: reduce) {
   .fv-skeleton {
     animation: none;
-    background: #161F30;
+    background: $color-surface-muted;
   }
 }

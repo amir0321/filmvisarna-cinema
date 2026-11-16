@@ -1,64 +1,164 @@
-$color-bg: #0B0F19;
-$color-bg-darkest: #060910;
-$color-surface: #161F30;
-$color-surface-2: #1E2D47;
-$color-surface-muted: #111827;
-$color-surface-chip: #0F172A;
-$color-surface-chip-hover: #1E293B;
-$color-drawer-bg: #0F1729;
-$color-poster-bg: #0D1321;
-$color-video-bg: #050810;
-$color-primary: #E50914;
-$color-primary-dark: #B2070F;
-$color-success: #10B981;
-$color-warning: #F59E0B;
-$color-warning-dark: #D97706;
-$color-danger: #EF4444;
-$color-danger-soft: #FF6B6B;
-$color-info: #3B82F6;
-$color-info-light: #60A5FA;
-$color-purple: #7C3AED;
-$avatar-gradient: linear-gradient(135deg, #E50914 0%, #7C3AED 100%);
-$avatar-guest-gradient: linear-gradient(135deg, #E50914 0%, #B2070F 100%);
+@use 'sass:color';
+@use 'sass:meta';
+@use 'sass:string';
 
-$color-white: #FFFFFF;
-$color-black: #000000;
+// Theme palettes are emitted as RGB channels so alpha colors stay dynamic.
+// White/black remain literal ink colors; surface-overlay changes with the theme.
+$dark-colors: (
+  "color-bg": #0B0F19,
+  "color-bg-darkest": #060910,
+  "color-surface": #161F30,
+  "color-surface-2": #1E2D47,
+  "color-surface-muted": #111827,
+  "color-surface-chip": #0F172A,
+  "color-surface-chip-hover": #1E293B,
+  "color-drawer-bg": #0F1729,
+  "color-poster-bg": #0D1321,
+  "color-video-bg": #050810,
+  "color-primary": #E50914,
+  "color-primary-dark": #B2070F,
+  "color-success": #10B981,
+  "color-warning": #F59E0B,
+  "color-warning-dark": #D97706,
+  "color-danger": #FF6B6B,
+  "color-danger-soft": #FF6B6B,
+  "color-info": #60A5FA,
+  "color-info-light": #60A5FA,
+  "color-purple": #7C3AED,
+  "color-white": #FFFFFF,
+  "color-black": #000000,
+  "image-scrim": #0B0F19,
+  "image-text": #FFFFFF,
+  "image-text-muted": #CBD5E1,
+  "text-primary": #F8FAFC,
+  "text-heading": #FFFFFF,
+  "text-secondary": #CBD5E1,
+  "text-muted": #94A3B8,
+  "seat-available-bg": #334155,
+  "seat-available-border": #94A3B8,
+  "seat-selected-bg": #10B981,
+  "seat-selected-border": #A7F3D0,
+  "seat-occupied-bg": #1E293B,
+  "seat-occupied-border": #64748B,
+  "seat-occupied-strike": #94A3B8,
+  "text-on-success": #0B0F19,
+  "text-on-danger": #0B0F19,
+  "surface-overlay": #FFFFFF,
+  "color-border": #94A3B8,
+);
 
-$text-primary: #F8FAFC;
-$text-heading: #FFFFFF;
-$text-secondary: #CBD5E1;
-$text-muted: #94A3B8;
+$light-colors: (
+  "color-bg": #F8FAFC,
+  "color-bg-darkest": #E2E8F0,
+  "color-surface": #FFFFFF,
+  "color-surface-2": #E2E8F0,
+  "color-surface-muted": #F1F5F9,
+  "color-surface-chip": #F1F5F9,
+  "color-surface-chip-hover": #E2E8F0,
+  "color-drawer-bg": #FFFFFF,
+  "color-poster-bg": #E2E8F0,
+  "color-video-bg": #050810,
+  "color-primary": #C40712,
+  "color-primary-dark": #A3060E,
+  "color-success": #036347,
+  "color-warning": #92400E,
+  "color-warning-dark": #78350F,
+  "color-danger": #B91C1C,
+  "color-danger-soft": #B91C1C,
+  "color-info": #1D4ED8,
+  "color-info-light": #1D4ED8,
+  "color-purple": #6D28D9,
+  "color-white": #FFFFFF,
+  "color-black": #000000,
+  "image-scrim": #0B0F19,
+  "image-text": #FFFFFF,
+  "image-text-muted": #CBD5E1,
+  "text-primary": #0F172A,
+  "text-heading": #0B0F19,
+  "text-secondary": #334155,
+  "text-muted": #475569,
+  "seat-available-bg": #E2E8F0,
+  "seat-available-border": #475569,
+  "seat-selected-bg": #036347,
+  "seat-selected-border": #065F46,
+  "seat-occupied-bg": #CBD5E1,
+  "seat-occupied-border": #64748B,
+  "seat-occupied-strike": #475569,
+  "text-on-success": #FFFFFF,
+  "text-on-danger": #FFFFFF,
+  "surface-overlay": #0F172A,
+  "color-border": #64748B,
+);
 
-$border-default: rgba(148, 163, 184, 0.15);
-$border-strong: rgba(255, 255, 255, 0.18);
-$border-subtle: rgba(255, 255, 255, 0.08);
-$border-faint: rgba(255, 255, 255, 0.06);
+$color-bg: rgb(var(--color-bg-rgb));
+$color-bg-darkest: rgb(var(--color-bg-darkest-rgb));
+$color-surface: rgb(var(--color-surface-rgb));
+$color-surface-2: rgb(var(--color-surface-2-rgb));
+$color-surface-muted: rgb(var(--color-surface-muted-rgb));
+$color-surface-chip: rgb(var(--color-surface-chip-rgb));
+$color-surface-chip-hover: rgb(var(--color-surface-chip-hover-rgb));
+$color-drawer-bg: rgb(var(--color-drawer-bg-rgb));
+$color-poster-bg: rgb(var(--color-poster-bg-rgb));
+$color-video-bg: rgb(var(--color-video-bg-rgb));
+$color-primary: rgb(var(--color-primary-rgb));
+$color-primary-dark: rgb(var(--color-primary-dark-rgb));
+$color-success: rgb(var(--color-success-rgb));
+$color-warning: rgb(var(--color-warning-rgb));
+$color-warning-dark: rgb(var(--color-warning-dark-rgb));
+$color-danger: rgb(var(--color-danger-rgb));
+$color-danger-soft: rgb(var(--color-danger-soft-rgb));
+$color-info: rgb(var(--color-info-rgb));
+$color-info-light: rgb(var(--color-info-light-rgb));
+$color-purple: rgb(var(--color-purple-rgb));
+$avatar-gradient: linear-gradient(135deg, $color-primary 0%, $color-purple 100%);
+$avatar-guest-gradient: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
 
-$policy-notice-bg: rgba(255, 200, 0, 0.06);
-$policy-notice-border: rgba(255, 200, 0, 0.15);
-$cancelled-badge-bg: rgba(153, 27, 27, 0.2);
-$nav-surface-bg: rgba(11, 15, 25, 0.9);
-$admin-nav-surface-bg: rgba(11, 15, 25, 0.95);
+$color-white: rgb(var(--color-white-rgb));
+$color-black: rgb(var(--color-black-rgb));
 
-$white-overlay-03: rgba(255, 255, 255, 0.03);
-$white-overlay-04: rgba(255, 255, 255, 0.04);
-$white-overlay-05: rgba(255, 255, 255, 0.05);
-$white-overlay-06: rgba(255, 255, 255, 0.06);
-$white-overlay-07: rgba(255, 255, 255, 0.07);
-$white-overlay-08: rgba(255, 255, 255, 0.08);
-$white-overlay-10: rgba(255, 255, 255, 0.10);
-$white-overlay-15: rgba(255, 255, 255, 0.15);
-$white-overlay-20: rgba(255, 255, 255, 0.20);
-$white-overlay-25: rgba(255, 255, 255, 0.25);
+// Image captions keep white ink on a dark scrim in both themes.
+$image-scrim: rgb(var(--image-scrim-rgb));
+$image-text: rgb(var(--image-text-rgb));
+$image-text-muted: rgb(var(--image-text-muted-rgb));
 
-$seat-available-bg: #334155;
-$seat-available-border: #94A3B8;
-$seat-selected-bg: #10B981;
-$seat-selected-border: #A7F3D0;
-$seat-selected-glow: 0 0 10px rgba(16, 185, 129, 0.5);
-$seat-occupied-bg: #1E293B;
-$seat-occupied-border: #64748B;
-$seat-occupied-strike: #94A3B8;
+$text-primary: rgb(var(--text-primary-rgb));
+$text-heading: rgb(var(--text-heading-rgb));
+$text-secondary: rgb(var(--text-secondary-rgb));
+$text-muted: rgb(var(--text-muted-rgb));
+
+$border-default: rgba(var(--color-border-rgb), 0.15);
+$border-strong: rgba(var(--surface-overlay-rgb), 0.18);
+$border-subtle: rgba(var(--surface-overlay-rgb), 0.08);
+$border-faint: rgba(var(--surface-overlay-rgb), 0.06);
+
+$policy-notice-bg: rgba(var(--color-warning-rgb), 0.06);
+$policy-notice-border: rgba(var(--color-warning-rgb), 0.3);
+$cancelled-badge-bg: rgba(var(--color-danger-rgb), 0.2);
+$nav-surface-bg: rgba(var(--color-bg-rgb), 0.9);
+$admin-nav-surface-bg: rgba(var(--color-bg-rgb), 0.95);
+
+$white-overlay-02: rgba(var(--surface-overlay-rgb), 0.02);
+$white-overlay-03: rgba(var(--surface-overlay-rgb), 0.03);
+$white-overlay-04: rgba(var(--surface-overlay-rgb), 0.04);
+$white-overlay-05: rgba(var(--surface-overlay-rgb), 0.05);
+$white-overlay-06: rgba(var(--surface-overlay-rgb), 0.06);
+$white-overlay-07: rgba(var(--surface-overlay-rgb), 0.07);
+$white-overlay-08: rgba(var(--surface-overlay-rgb), 0.08);
+$white-overlay-10: rgba(var(--surface-overlay-rgb), 0.10);
+$white-overlay-14: rgba(var(--surface-overlay-rgb), 0.14);
+$white-overlay-15: rgba(var(--surface-overlay-rgb), 0.15);
+$white-overlay-20: rgba(var(--surface-overlay-rgb), 0.20);
+$white-overlay-25: rgba(var(--surface-overlay-rgb), 0.25);
+$white-overlay-50: rgba(var(--surface-overlay-rgb), 0.5);
+
+$seat-available-bg: rgb(var(--seat-available-bg-rgb));
+$seat-available-border: rgb(var(--seat-available-border-rgb));
+$seat-selected-bg: rgb(var(--seat-selected-bg-rgb));
+$seat-selected-border: rgb(var(--seat-selected-border-rgb));
+$seat-selected-glow: 0 0 10px rgba(var(--seat-selected-bg-rgb), 0.5);
+$seat-occupied-bg: rgb(var(--seat-occupied-bg-rgb));
+$seat-occupied-border: rgb(var(--seat-occupied-border-rgb));
+$seat-occupied-strike: rgb(var(--seat-occupied-strike-rgb));
 
 $radius-xs: 4px;
 $radius-sm: 6px;
@@ -124,7 +224,7 @@ $breakpoint-lg: 1024px;
 $breakpoint-xl: 1280px;
 $breakpoint-xxl: 1440px;
 
-$glass-bg: rgba(22, 31, 48, 0.7);
+$glass-bg: rgba(var(--color-surface-rgb), 0.7);
 $glass-border: $border-subtle;
 $glass-blur: blur(12px);
 
@@ -132,7 +232,7 @@ $shadow-card-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
 $shadow-card-md: 0 12px 32px rgba(0, 0, 0, 0.4);
 $shadow-poster: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 $shadow-bottom-nav: 0 -4px 24px rgba(0, 0, 0, 0.4);
-$glow-play: 0 0 40px rgba(229, 9, 20, 0.5);
+$glow-play: 0 0 40px rgba(var(--color-primary-rgb), 0.5);
 
 $z-content: 10;
 $z-sticky: 40;
@@ -230,45 +330,46 @@ $fv-z-bottom-sheet: $z-bottom-sheet;
 $fv-z-drawer: $z-drawer;
 $fv-z-modal-top: $z-modal-top;
 
+// Sass cannot apply rgba($color, $alpha) to a CSS rgb(var(...)) value.
+// Unwrap the RGB channels and leave alpha blending to the browser.
 @function tint($color, $alpha) {
-  @return rgba($color, $alpha);
+  @if meta.type-of($color) == 'color' {
+    @return rgba($color, $alpha);
+  }
+  @if string.index($color, 'rgb(var(') == 1 {
+    @return rgba(#{string.slice($color, 5, -2)}, $alpha);
+  }
+  @error 'tint expects a Sass color or an RGB token, got #{$color}';
 }
 
-:root {
-  --color-bg: #{$color-bg};
-  --color-surface: #{$color-surface};
-  --color-surface-2: #{$color-surface-2};
-  --color-surface-muted: #{$color-surface-muted};
-  --color-surface-chip: #{$color-surface-chip};
-  --color-primary: #{$color-primary};
-  --color-primary-dark: #{$color-primary-dark};
-  --color-success: #{$color-success};
-  --color-warning: #{$color-warning};
-  --color-warning-dark: #{$color-warning-dark};
-  --color-danger: #{$color-danger};
-  --color-danger-soft: #{$color-danger-soft};
-  --color-info: #{$color-info};
-  --color-info-light: #{$color-info-light};
-  --color-purple: #{$color-purple};
+@mixin theme-colors($palette) {
+  @each $name, $value in $palette {
+    --#{$name}-rgb: #{color.channel($value, 'red', $space: rgb)}, #{color.channel($value, 'green', $space: rgb)}, #{color.channel($value, 'blue', $space: rgb)};
+    --#{$name}: rgb(var(--#{$name}-rgb));
+  }
+}
+
+:root,
+[data-theme="dark"] {
+  @include theme-colors($dark-colors);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  @include theme-colors($light-colors);
+  color-scheme: light;
+}
+
+// Semantic aliases resolve against the current theme, including nested scopes.
+:root,
+[data-theme] {
   --avatar-gradient: #{$avatar-gradient};
   --avatar-guest-gradient: #{$avatar-guest-gradient};
-
-  --text-primary: #{$text-primary};
-  --text-heading: #{$text-heading};
-  --text-secondary: #{$text-secondary};
-  --text-muted: #{$text-muted};
 
   --border-default: #{$border-default};
   --border-strong: #{$border-strong};
   --border-subtle: #{$border-subtle};
   --border-faint: #{$border-faint};
-
-  --seat-available-bg: #{$seat-available-bg};
-  --seat-available-border: #{$seat-available-border};
-  --seat-selected-bg: #{$seat-selected-bg};
-  --seat-selected-border: #{$seat-selected-border};
-  --seat-occupied-bg: #{$seat-occupied-bg};
-  --seat-occupied-border: #{$seat-occupied-border};
 
   --background: #{$color-bg};
   --foreground: #{$text-primary};
@@ -283,10 +384,10 @@ $fv-z-modal-top: $z-modal-top;
   --muted: #{$color-surface-muted};
   --muted-foreground: #{$text-muted};
   --accent: #{$color-success};
-  --accent-foreground: #{$color-white};
+  --accent-foreground: rgb(var(--text-on-success-rgb));
   --success: #{$color-success};
   --destructive: #{$color-danger};
-  --destructive-foreground: #{$color-white};
+  --destructive-foreground: rgb(var(--text-on-danger-rgb));
   --border: #{$border-default};
   --input: #{$border-strong};
   --ring: #{$color-primary};

@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
 import BrandLogo from './BrandLogo'
 import { BookingCountBadge } from './BookingCountBadge'
+import ThemeToggle from './ThemeToggle'
 
 const BASE_NAV_LINKS = [
   { name: 'Hem', path: '/', end: true },
@@ -135,6 +136,8 @@ export default function Navbar() {
             <i className="bi bi-search" aria-hidden="true"></i>
           </button>
 
+          <ThemeToggle />
+
           {/* Desktop auth actions (>= 768px) */}
           <div className="d-none d-md-flex align-items-center gap-2">
             {isLoggedIn ? (
@@ -152,8 +155,8 @@ export default function Navbar() {
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end nav-user-dropdown">
                   {logoutError && <li className="px-3 py-2 text-danger small" role="alert">{logoutError}</li>}
-                  <li className="px-3 py-2 border-bottom border-secondary border-opacity-25">
-                    <div className="fw-semibold text-light small text-truncate">{displayName}</div>
+                  <li className="px-3 py-2 border-bottom">
+                    <div className="fw-semibold text-body small text-truncate">{displayName}</div>
                     <div className="text-secondary nav-dropdown-email text-truncate">{user.email}</div>
                   </li>
                   <li>

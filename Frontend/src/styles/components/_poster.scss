@@ -55,13 +55,13 @@
     text-align: center;
     color: $fv-muted-fg;
     background-color: $fv-poster-bg;
-    border: 1px solid rgba(148, 163, 184, 0.1);
+    border: 1px solid tint($fv-muted-fg, 0.1);
     border-radius: inherit;
 
     .fallback-icon {
       font-size: 28px;
       margin-bottom: 6px;
-      color: rgba(148, 163, 184, 0.4);
+      color: tint($fv-muted-fg, 0.4);
     }
 
     .fallback-title {

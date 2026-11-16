@@ -6,10 +6,12 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 
 ## Gällande projektbeslut
 
+- FE-36: mörkt och ljust tema delas av publik vy och admin. Mörkt är standard; valet sparas som `dark` eller `light` i `localStorage` under `fv-theme`. Temaväljare finns vid sökknappen och i mobilmenyn. Se [tematokens](design/tokens.md#21-färger) och [temamotor](design/layout.md#411-temamotor-och-lagring-fe-36).
+
 - Bokningssäkerhet följer [design/booking-security.md](design/booking-security.md): verifierad e-post, gemensamma gäst-/medlemskvoter och begränsad bokningstakt. Gästförfrågningar reserverar inga platser och lagras separat från bekräftade bokningar. Dokumentet anger också kraven för framtida adminhantering av missbruk; den adminfunktionen byggs inte i denna ändring.
 - Biografen har endast **Stora Salongen**, 80 platser (A–H, 1–10), och **Lilla Salongen**, 40 platser (A–E, 1–8). Seed-data använder samma två salonger. Filmer sprids över flera dagar utan överlappning och med 20 minuters städtid.
 - Sidnumrering: 8 filmer på startsidan, 10 på `/filmer` och i adminens Filmarkiv, 15 visningar i adminens Visningsschema och 5 bokningar per flik i Mina bokningar. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
-- Admin använder samma mörka toppnavigering som publika sidor. `Backoffice` öppnar `/admin` från både desktopmeny och mobil sidomeny. Filmarkiv och Visningsschema delar `AdminPageHeader`: brödsmulan ligger uppe till höger från `768px` och under rubrikblocket på mobil. Se [layout §4.3](design/layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
+- Admin använder samma temaanpassade toppnavigering som publika sidor. `Backoffice` öppnar `/admin` från både desktopmeny och mobil sidomeny. Filmarkiv och Visningsschema delar `AdminPageHeader`: brödsmulan ligger uppe till höger från `768px` och under rubrikblocket på mobil. Se [layout §4.3](design/layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
 - Filmarkiv har sökning på titel/regissör, tabell från `768px`, mobilkort och ett gemensamt filmformulär med manuell inmatning, TMDB-import för granskning, affischuppladdning och personregister för rollistan. Visningsschema har kort under `1200px` (två kolumner på surfplatta), tabell från `1200px` och radbrytande filter. Se [Filmarkiv](design/pages/admin-filmer.md) och [Visningsschema](design/pages/admin-visningar.md).
 - Medverkande på filmens detaljsida är klickbara profilkort med rund bild, namn och rollfigur. Profilmodalen återanvänder sidfotens `Modal`, visar biografi som ren text och har reservikon vid saknad eller trasig bild. Se [filmdetaljer](design/pages/movie-detail.md#klickbara-skådespelarprofiler).
 - Toppnavigeringens sökknapp öppnar `/filmer?sok=1`, fokuserar sökfältet och tar bort fokusparametern. Datum och åldersfilter sparas i URL:en och bevaras vid omladdning och bakåt/framåt.
@@ -28,13 +30,13 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
 - `docs/figma-make/src/imports/pasted_text/cinema-app-screens.md` (identisk med `docs/figma-make/src/assets/upload.png`)
 
 ### Visuell identitet
-- **Endast mörkt tema (Dark Theme Only):** Applikationen använder en djup grafitmörk sidbakgrund (`#0B0F19`) kombinerad med upphöjda kortytor i marinblå skiffer (`#161F30`) och mörkblå sekundärytor (`#1E2D47`). Ytor avgränsas med diskreta, semitransparenta kantlinjer (`1px solid rgba(148, 163, 184, 0.15)`).
-- **Biografkänsla och glasmorfism (Glassmorphism):** Navigationsfält, klibbiga filterrader, bildmärkningar och överlägg använder semitransparenta bakgrunder med oskärpa (`backdrop-filter: blur(4px)` till `blur(20px)`). Hero-sektioner och salongsbilder tonas ut mot sidbakgrunden med mörka linjära gradienter (`linear-gradient`).
+- **Mörkt och ljust tema:** Mörkt tema har grafitmörk sidbakgrund (`#0B0F19`), marinblå kort (`#161F30`) och sekundärytor (`#1E2D47`). Ljust tema har en ljus sidbakgrund (`#F8FAFC`), vita kort (`#FFFFFF`), sekundärytor i `#E2E8F0` och mörk text (`#0F172A`). Ytor, text, kantlinjer och statusfärger styrs av gemensamma tokens; aktuella värden finns i [design/tokens.md](design/tokens.md).
+- **Biografkänsla och glasmorfism (Glassmorphism):** Navigationsfält, klibbiga filterrader, bildmärkningar och överlägg använder semitransparenta bakgrunder med oskärpa (`backdrop-filter: blur(4px)` till `blur(20px)`). Startsidan har en mörk gradient bakom vit hero-text utan separat kortruta, medan bildens högra sida lämnas fri. Endast nederkanten tonar mot aktuell `var(--color-bg)`. Vita bildkontroller och salongsbildernas bildtext har egna mörka kontrastplattor som behålls även i ljust tema.
 - **Tydlig färgkodad semantik:**
-  - **Biografröd (`#E50914`):** Primära knappar (CTA), aktiva filterval, fokusringar, 15-årsgräns, Salong 1-identitet och destruktiva åtgärder. Ljusare röd (`#ff6b6b`) används för varningstext vid få platser kvar, sekundära avbokningsknappar och inställda visningar.
-  - **Smaragdgrön (`#10B981`):** Valda platser i salongskartan (med grön glöd), genomförda steg, bokningsbekräftelse, "Alla"-åldersgräns, betalda bokningar och Salong 2-identitet på salongssidan.
-  - **Bärnstensgul/orange (`#F59E0B` / `#D97706`):** IMDb-stjärnor och betyg, premiärbadges, 7- och 11-årsgräns på filmsidan, väntande betalning ("Inväntar") samt beläggningsvarning (> 80 %).
-  - **Blå (`#3B82F6` / `#60A5FA`):** Rullstolsplatser, tillgänglighetsmärkning, Salong 2-badge i admin-schemat samt KPI-indikator för dagens bokningar.
+  - **Biografröd (`#E50914` mörkt / `#C40712` ljust):** Primära knappar (CTA), aktiva filterval, fokusringar, 15-årsgräns, Salong 1-identitet och destruktiva åtgärder. Kontraströd (`#FF6B6B` mörkt / `#B91C1C` ljust) används för varningstext vid få platser kvar, sekundära avbokningsknappar och inställda visningar.
+  - **Smaragdgrön (`#10B981` mörkt / `#036347` ljust):** Valda platser i salongskartan (med grön glöd), genomförda steg, bokningsbekräftelse, "Alla"-åldersgräns, betalda bokningar och Salong 2-identitet på salongssidan.
+  - **Bärnstensgul/orange (`#F59E0B` mörkt / `#92400E` ljust):** IMDb-stjärnor och betyg, premiärbadges, 7- och 11-årsgräns på filmsidan, väntande betalning ("Inväntar") samt beläggningsvarning (> 80 %).
+  - **Blå (`#60A5FA` mörkt / `#1D4ED8` ljust):** Rullstolsplatser, tillgänglighetsmärkning, Salong 2-badge i admin-schemat samt KPI-indikator för dagens bokningar.
 - **Typografisk hierarki:**
   - **Poppins** (`--font-display`) används för rubriker (`h1`–`h3`), logotyp, filmtitlar, belopp och statistiska nyckeltal.
   - **Inter** (`--font-sans`) används för brödtext, knappar, formulärfält, etiketter och tabeller.
@@ -43,8 +45,8 @@ Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**.
   - Bygger på ett 8px-baserat avståndssystem (`8px`, `16px`, `24px`, `32px`, `48px`, `64px`) och rundade hörn (`16px` för kort, `10px` för knappar/fält, `6px` för stolar, `20px`/`9999px` för chips och badges).
   - Interaktiva element har mjuka övergångar (`0.1s`–`0.35s`): filmkort lyfter vid hover (`translateY(-4px)`) med förstärkt skugga, affischer zoomar in (`scale(1.05)`), och lediga/valda stolar förstoras vid hover (`scale(1.15)`).
 - **Tillgänglighet (WCAG AA):**
-  - Hög kontrast mellan primär text (`#F8FAFC`) och bakgrund (`#0B0F19`).
-  - Synlig fokusindikator (`outline: 2px solid #E50914`, `outline-offset: 2px`) för `input:focus` och `button:focus-visible`.
+  - Enhetstester kontrollerar minst `4,5:1` för texttokens på grundytor i båda teman, vit text på primärknappar och text på valda stolar. Vit bildtext och dämpad bildtext testas även mot en mörk platta över en helt vit bild. Detta är tokenkontroller; komponenternas sammansatta tillstånd granskas också visuellt.
+  - Synlig fokusindikator (`outline: 2px solid var(--color-primary)`, `outline-offset: 2px`) för `input:focus` och `button:focus-visible`.
 
 ---
 

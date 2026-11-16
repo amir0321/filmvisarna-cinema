@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
 import BrandLogo from './BrandLogo'
 import { BookingCountBadge } from './BookingCountBadge'
+import ThemeToggle from './ThemeToggle'
 
 const PUBLIC_DRAWER_LINKS = [
   { name: 'Hem', path: '/', icon: 'bi-house-door', end: true },
@@ -214,6 +215,7 @@ export default function MobileDrawer() {
         </nav>
 
         <div className="drawer-footer d-flex flex-column gap-2">
+          <ThemeToggle variant="menu" />
           {logoutError && <p className="text-danger small" role="alert">{logoutError}</p>}
           {isLoggedIn ? (
             <button

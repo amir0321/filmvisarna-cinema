@@ -350,7 +350,7 @@
 
   &.is-selected {
     border-color: $color-primary;
-    background-color: rgba($color-primary, 0.12);
+    background-color: tint($color-primary, 0.12);
   }
 
   fieldset:disabled & {
@@ -405,7 +405,7 @@
 .screening-form__time {
   font-family: $font-mono;
   font-weight: 600;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .screening-form__summary {
@@ -415,9 +415,9 @@
   gap: 6px;
   margin: $space-3 0 0;
   padding: 12px 14px;
-  border: 1px solid rgba($color-success, 0.3);
+  border: 1px solid tint($color-success, 0.3);
   border-radius: $radius-lg;
-  background-color: rgba($color-success, 0.08);
+  background-color: tint($color-success, 0.08);
   color: $color-success;
   font-size: $font-size-13;
 

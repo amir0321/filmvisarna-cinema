@@ -3,7 +3,7 @@
   place-items: center;
   min-height: calc(100svh - #{$fv-nav-height} - #{$fv-space-6});
   padding: $fv-space-4 0 $fv-space-5;
-  background: radial-gradient(ellipse at center, rgba($fv-primary, 0.08), transparent 70%);
+  background: radial-gradient(ellipse at center, tint($fv-primary, 0.08), transparent 70%);
 
   @media (max-width: ($fv-bp-md - 1px)) {
     padding: $fv-space-2 0 $fv-space-4;
@@ -38,7 +38,7 @@
   width: 48px;
   height: 48px;
   margin: $fv-space-3 0 $fv-space-2;
-  background: rgba($fv-primary, 0.12);
+  background: tint($fv-primary, 0.12);
   color: $fv-danger-light;
   border-radius: $fv-radius-md;
   font-size: 24px;
@@ -58,7 +58,7 @@
     min-width: 0;
     min-height: 48px;
     padding: 12px;
-    background: rgba($fv-white, 0.05);
+    background: $white-overlay-05;
     border: 1px solid $fv-border;
     border-radius: $fv-radius-md;
     color: $fv-fg;
@@ -80,18 +80,18 @@
 }
 .fv-password-toggle { position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; border: 0; background: transparent; color: $fv-muted-fg; font-size: 18px; border-radius: $fv-radius-md; }
 .fv-auth-field-error { color: $fv-danger-light; font-size: 13px; margin: $fv-space-1 0 0; }
-.fv-auth-error { background: rgba($fv-danger-light, 0.08); border: 1px solid $fv-danger-light; border-radius: $fv-radius-md; padding: $fv-space-2; margin-bottom: $fv-space-2; color: $fv-danger-light; overflow-wrap: anywhere; }
+.fv-auth-error { background: tint($fv-danger-light, 0.08); border: 1px solid $fv-danger-light; border-radius: $fv-radius-md; padding: $fv-space-2; margin-bottom: $fv-space-2; color: $fv-danger-light; overflow-wrap: anywhere; }
 .fv-auth-error p { margin: 0; }
 .fv-auth-error a { display: inline-block; margin-top: $fv-space-1; }
 .fv-auth-submit { width: 100%; min-height: 48px; padding: 12px $fv-space-2; border: 0; border-radius: $fv-radius-md; background: $fv-primary; color: $fv-white; font-weight: 600; }
 .fv-auth-submit:hover:not(:disabled) { background: $fv-primary-dark; }
 .fv-auth-submit:disabled { opacity: 0.65; cursor: not-allowed; }
 .fv-auth-cooldown { color: $fv-muted-fg; margin: $fv-space-2 0 0; font-size: 14px; }
-.fv-auth-success { background: rgba($fv-success, 0.08); border: 1px solid $fv-success; border-radius: $fv-radius-md; color: $fv-fg; padding: $fv-space-2; }
+.fv-auth-success { background: tint($fv-success, 0.08); border: 1px solid $fv-success; border-radius: $fv-radius-md; color: $fv-fg; padding: $fv-space-2; }
 .fv-verification-notice {
   padding: $fv-space-2 $fv-space-3;
-  background: rgba($fv-warning, 0.08);
-  border-bottom: 1px solid rgba($fv-warning, 0.3);
+  background: tint($fv-warning, 0.08);
+  border-bottom: 1px solid tint($fv-warning, 0.3);
   color: $fv-fg;
   font-size: 14px;
   p { margin: 0; }
@@ -102,7 +102,7 @@
 .fv-password-strength {
   margin-top: $fv-space-1;
   .fv-strength-segments { display: flex; gap: 4px; }
-  .fv-strength-segments span { flex: 1; height: 3px; border-radius: 2px; background: rgba($fv-muted-fg, 0.2); }
+  .fv-strength-segments span { flex: 1; height: 3px; border-radius: 2px; background: tint($fv-muted-fg, 0.2); }
   &.strength-1 .filled { background: $fv-danger-weak; }
   &.strength-2 .filled { background: $fv-warning; }
   &.strength-3 .filled, &.strength-4 .filled { background: $fv-success; }

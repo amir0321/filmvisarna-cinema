@@ -67,7 +67,7 @@ export function CancelBookingModal({
             <i className="bi bi-exclamation-triangle-fill text-danger fs-4" />
           </div>
           <div>
-            <h2 id="cancel-booking-modal-title" className="h5 fw-bold mb-1 text-light">
+            <h2 id="cancel-booking-modal-title" className="h5 fw-bold mb-1 text-body">
               Är du säker på att du vill avboka?
             </h2>
             <p className="text-secondary small mb-0">
@@ -78,9 +78,9 @@ export function CancelBookingModal({
 
         {/* Booking Details Card */}
         <div className="fv-cancel-booking-card p-3 rounded-3 mb-3 border">
-          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
             <span className="text-secondary small">Bokningsnummer</span>
-            <span className="font-monospace fw-bold text-light letter-spacing-1">
+            <span className="font-monospace fw-bold text-body letter-spacing-1">
               {booking.bookingRef}
             </span>
           </div>
@@ -100,7 +100,7 @@ export function CancelBookingModal({
             ) : null}
 
             <div className="fv-cancel-booking-card__details flex-grow-1">
-              <h3 className="h6 fw-bold text-light mb-1 text-truncate">
+              <h3 className="h6 fw-bold text-body mb-1 text-truncate">
                 {booking.movieTitle}
               </h3>
 
@@ -123,7 +123,7 @@ export function CancelBookingModal({
                     {booking.seats.map((seat, index) => (
                       <span
                         key={index}
-                        className="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 fw-normal px-2 py-1"
+                        className="badge bg-surface-2 text-body border fw-normal px-2 py-1"
                       >
                         {seat}
                       </span>
@@ -155,7 +155,7 @@ export function CancelBookingModal({
         <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 pt-2">
           <button
             type="button"
-            className="btn btn-outline-secondary px-4 py-2"
+            className="btn btn-secondary-outline px-4 py-2"
             onClick={onClose}
             disabled={isSubmitting}
           >

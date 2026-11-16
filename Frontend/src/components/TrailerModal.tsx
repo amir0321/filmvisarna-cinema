@@ -37,12 +37,12 @@ export default function TrailerModal({
     >
       <div className="trailer-modal__content">
         <div className="d-flex align-items-center justify-content-between mb-2">
-          <h2 id="trailer-modal-title" className="h6 mb-0 text-light">
+          <h2 id="trailer-modal-title" className="h6 mb-0 text-body">
             Trailer: {movieTitle}
           </h2>
           <button
             type="button"
-            className="btn-close btn-close-white"
+            className="btn-close"
             aria-label="Stäng trailer"
             onClick={onClose}
           />
@@ -60,7 +60,7 @@ export default function TrailerModal({
               />
             </div>
           ) : (
-            <p className="text-light mb-0">
+            <p className="text-body mb-0">
               Trailern kan inte visas här.{" "}
               <a
                 href={trailerUrl}

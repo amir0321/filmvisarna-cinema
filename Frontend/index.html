@@ -1,8 +1,20 @@
 <!doctype html>
-<html lang="sv" data-bs-theme="dark">
+<html lang="sv" data-theme="dark" data-bs-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function () {
+      var theme = 'dark';
+      try {
+        if (localStorage.getItem('fv-theme') === 'light') theme = 'light';
+      } catch (_) { /* Storage may be disabled. */ }
+      var root = document.documentElement;
+      root.setAttribute('data-theme', theme);
+      root.setAttribute('data-bs-theme', theme);
+      root.style.colorScheme = theme;
+    })();
+  </script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />

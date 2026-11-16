@@ -74,7 +74,7 @@ export default function MyTicketModal({
 
         <button
           type="button"
-          className="btn btn-outline-light w-100 mt-3"
+          className="btn btn-secondary-outline w-100 mt-3"
           onClick={onClose}
         >
           Stäng biljett

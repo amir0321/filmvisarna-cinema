@@ -1,23 +1,25 @@
-// Must be evaluated before Bootstrap is imported
-$body-bg: $color-bg;
-$body-color: $text-primary;
-$body-secondary-color: $text-secondary;
+// Bootstrap computes contrast, mixes and SVG assets at build time, so these
+// inputs must remain literal Sass colors. Runtime overrides are applied below
+// via fv-bootstrap-theme after Bootstrap has been imported.
+$body-bg: #0B0F19;
+$body-color: #F8FAFC;
+$body-secondary-color: #CBD5E1;
 
-$primary: $color-primary;
-$secondary: $text-secondary;
-$success: $color-success;
-$warning: $color-warning;
-$danger: $color-primary;
-$info: $color-info;
-$light: $text-primary;
-$dark: $color-bg;
+$primary: #E50914;
+$secondary: #CBD5E1;
+$success: #10B981;
+$warning: #F59E0B;
+$danger: #E50914;
+$info: #3B82F6;
+$light: #F8FAFC;
+$dark: #0B0F19;
 
-$border-color: $border-default;
-$border-color-translucent: $border-default;
+$border-color: rgba(148, 163, 184, 0.15);
+$border-color-translucent: rgba(148, 163, 184, 0.15);
 
 $font-family-sans-serif: $font-sans;
 $headings-font-family: $font-heading;
-$headings-color: $text-heading;
+$headings-color: #FFFFFF;
 $headings-font-weight: 700;
 $font-family-monospace: $font-mono;
 
@@ -26,69 +28,195 @@ $border-radius-sm: $radius-sm;
 $border-radius-lg: $radius-card;
 $border-radius-pill: $radius-pill;
 
-$card-bg: $color-surface;
-$card-color: $text-primary;
-$card-border-color: $border-default;
+$card-bg: #161F30;
+$card-color: #F8FAFC;
+$card-border-color: rgba(148, 163, 184, 0.15);
 $card-border-radius: $radius-card;
-$card-cap-bg: $color-surface-2;
+$card-cap-bg: #1E2D47;
 
-$input-bg: $color-surface-muted;
-$input-color: $text-primary;
-$input-border-color: $border-strong;
-$input-placeholder-color: $text-muted;
+$input-bg: #111827;
+$input-color: #F8FAFC;
+$input-border-color: rgba(255, 255, 255, 0.18);
+$input-placeholder-color: #94A3B8;
 $input-border-radius: $radius-base;
-$input-focus-bg: $color-surface-muted;
-$input-focus-border-color: $color-primary;
-$input-focus-box-shadow: 0 0 0 2px tint($color-primary, 0.35);
+$input-focus-bg: #111827;
+$input-focus-border-color: #E50914;
+$input-focus-box-shadow: 0 0 0 2px tint(#E50914, 0.35);
 
-$form-check-input-bg: $color-surface-muted;
-$form-check-input-border: 1px solid $border-strong;
-$form-check-input-checked-bg-color: $color-primary;
-$form-check-input-checked-border-color: $color-primary;
+$form-check-input-bg: #111827;
+$form-check-input-border: 1px solid rgba(255, 255, 255, 0.18);
+$form-check-input-checked-bg-color: #E50914;
+$form-check-input-checked-border-color: #E50914;
 
-$form-select-bg: $color-surface-muted;
-$form-select-color: $text-primary;
-$form-select-border-color: $border-strong;
-$form-select-focus-box-shadow: 0 0 0 2px tint($color-primary, 0.35);
+$form-select-bg: #111827;
+$form-select-color: #F8FAFC;
+$form-select-border-color: rgba(255, 255, 255, 0.18);
+$form-select-focus-box-shadow: 0 0 0 2px tint(#E50914, 0.35);
 
-$modal-content-bg: $color-surface;
-$modal-content-color: $text-primary;
-$modal-content-border-color: $border-default;
+$modal-content-bg: #161F30;
+$modal-content-color: #F8FAFC;
+$modal-content-border-color: rgba(148, 163, 184, 0.15);
 $modal-content-border-radius: $radius-card;
-$modal-backdrop-bg: $color-black;
+$modal-backdrop-bg: #000000;
 $modal-backdrop-opacity: 0.75;
-$modal-header-border-color: $border-default;
-$modal-footer-border-color: $border-default;
+$modal-header-border-color: rgba(148, 163, 184, 0.15);
+$modal-footer-border-color: rgba(148, 163, 184, 0.15);
 
 $table-bg: transparent;
-$table-color: $text-primary;
-$table-border-color: $border-default;
-$table-striped-bg: $white-overlay-03;
-$table-hover-bg: $white-overlay-05;
+$table-color: #F8FAFC;
+$table-border-color: rgba(148, 163, 184, 0.15);
+$table-striped-bg: rgba(255, 255, 255, 0.03);
+$table-hover-bg: rgba(255, 255, 255, 0.05);
 
-$dropdown-bg: $color-surface-2;
-$dropdown-color: $text-primary;
-$dropdown-border-color: $border-default;
+$dropdown-bg: #1E2D47;
+$dropdown-color: #F8FAFC;
+$dropdown-border-color: rgba(148, 163, 184, 0.15);
 $dropdown-border-radius: $radius-md;
-$dropdown-link-color: $text-primary;
-$dropdown-link-hover-color: $text-heading;
-$dropdown-link-hover-bg: $white-overlay-08;
-$dropdown-link-active-bg: $color-primary;
-$dropdown-link-active-color: $color-white;
-$dropdown-divider-bg: $border-default;
+$dropdown-link-color: #F8FAFC;
+$dropdown-link-hover-color: #FFFFFF;
+$dropdown-link-hover-bg: rgba(255, 255, 255, 0.08);
+$dropdown-link-active-bg: #E50914;
+$dropdown-link-active-color: #FFFFFF;
+$dropdown-divider-bg: rgba(148, 163, 184, 0.15);
 
-$navbar-dark-color: $text-secondary;
-$navbar-dark-hover-color: $text-heading;
-$navbar-dark-active-color: $color-primary;
+$navbar-dark-color: #CBD5E1;
+$navbar-dark-hover-color: #FFFFFF;
+$navbar-dark-active-color: #E50914;
 
-$link-color: $color-primary;
-$link-hover-color: $color-primary-dark;
+$link-color: #E50914;
+$link-hover-color: #B2070F;
 
 $enable-shadows: false;
 $enable-gradients: false;
 
-$body-bg-dark: $color-bg;
-$body-color-dark: $text-primary;
-$body-secondary-color-dark: $text-secondary;
-$border-color-dark: $border-default;
-$border-color-translucent-dark: $border-default;
+$body-bg-dark: #0B0F19;
+$body-color-dark: #F8FAFC;
+$body-secondary-color-dark: #CBD5E1;
+$border-color-dark: rgba(148, 163, 184, 0.15);
+$border-color-translucent-dark: rgba(148, 163, 184, 0.15);
+
+$form-select-indicator-color: #0F172A;
+$form-select-indicator-color-dark: #F8FAFC;
+
+// Include after Bootstrap to replace generated values with runtime tokens.
+@mixin fv-bootstrap-theme {
+  :root,
+  [data-bs-theme] {
+    --bs-body-bg: #{$color-bg};
+    --bs-body-bg-rgb: var(--color-bg-rgb);
+    --bs-body-color: #{$text-primary};
+    --bs-body-color-rgb: var(--text-primary-rgb);
+    --bs-emphasis-color: #{$text-heading};
+    --bs-emphasis-color-rgb: var(--text-heading-rgb);
+    --bs-secondary-color: #{$text-secondary};
+    --bs-secondary-color-rgb: var(--text-secondary-rgb);
+    --bs-tertiary-color: #{$text-muted};
+    --bs-tertiary-color-rgb: var(--text-muted-rgb);
+    --bs-secondary-bg: #{$color-surface};
+    --bs-secondary-bg-rgb: var(--color-surface-rgb);
+    --bs-tertiary-bg: #{$color-surface-muted};
+    --bs-tertiary-bg-rgb: var(--color-surface-muted-rgb);
+    --bs-heading-color: #{$text-heading};
+    --bs-border-color: #{$border-default};
+    --bs-border-color-translucent: #{$border-default};
+    --bs-link-color: #{$color-danger-soft};
+    --bs-link-color-rgb: var(--color-danger-soft-rgb);
+    --bs-link-hover-color: #{$color-danger-soft};
+    --bs-link-hover-color-rgb: var(--color-danger-soft-rgb);
+
+    @each $name, $token in (
+      primary: 'color-primary', secondary: 'text-secondary',
+      success: 'color-success', warning: 'color-warning',
+      danger: 'color-primary', info: 'color-info',
+      light: 'text-primary', dark: 'color-bg'
+    ) {
+      --bs-#{$name}: rgb(var(--#{$token}-rgb));
+      --bs-#{$name}-rgb: var(--#{$token}-rgb);
+      --bs-#{$name}-text-emphasis: rgb(var(--#{$token}-rgb));
+      --bs-#{$name}-bg-subtle: rgba(var(--#{$token}-rgb), 0.1);
+      --bs-#{$name}-border-subtle: rgba(var(--#{$token}-rgb), 0.3);
+    }
+  }
+
+  .card {
+    --bs-card-bg: #{$color-surface};
+    --bs-card-color: #{$text-primary};
+    --bs-card-border-color: #{$border-default};
+    --bs-card-cap-bg: #{$color-surface-2};
+    --bs-card-cap-color: #{$text-primary};
+  }
+
+  .modal-content {
+    --bs-modal-bg: #{$color-surface};
+    --bs-modal-color: #{$text-primary};
+    --bs-modal-border-color: #{$border-default};
+    --bs-modal-header-border-color: #{$border-default};
+    --bs-modal-footer-border-color: #{$border-default};
+  }
+
+  .table {
+    --bs-table-color: #{$text-primary};
+    --bs-table-border-color: #{$border-default};
+    --bs-table-striped-color: #{$text-primary};
+    --bs-table-striped-bg: #{$white-overlay-03};
+    --bs-table-hover-color: #{$text-primary};
+    --bs-table-hover-bg: #{$white-overlay-05};
+    --bs-table-active-color: #{$text-primary};
+    --bs-table-active-bg: #{$white-overlay-10};
+  }
+
+  .dropdown-menu {
+    --bs-dropdown-bg: #{$color-surface-2};
+    --bs-dropdown-color: #{$text-primary};
+    --bs-dropdown-border-color: #{$border-default};
+    --bs-dropdown-divider-bg: #{$border-default};
+    --bs-dropdown-link-color: #{$text-primary};
+    --bs-dropdown-link-hover-color: #{$text-heading};
+    --bs-dropdown-link-hover-bg: #{$white-overlay-08};
+    --bs-dropdown-link-active-bg: #{$color-primary};
+    --bs-dropdown-link-active-color: #{$color-white};
+  }
+
+  .form-control,
+  .form-select {
+    color: $text-primary;
+    background-color: $color-surface-muted;
+    border-color: $border-strong;
+
+    &:focus {
+      color: $text-primary;
+      background-color: $color-surface-muted;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 2px tint($color-primary, 0.35);
+    }
+
+    &::placeholder { color: $text-muted; }
+    &:disabled { background-color: $color-surface-2; }
+  }
+
+  .form-check-input {
+    background-color: $color-surface-muted;
+    border-color: $border-strong;
+    &:checked {
+      background-color: $color-primary;
+      border-color: $color-primary;
+    }
+  }
+
+  .btn-primary,
+  .btn-danger {
+    --bs-btn-color: #{$color-white};
+    --bs-btn-bg: #{$color-primary};
+    --bs-btn-border-color: #{$color-primary};
+    --bs-btn-hover-color: #{$color-white};
+    --bs-btn-hover-bg: #{$color-primary-dark};
+    --bs-btn-hover-border-color: #{$color-primary-dark};
+    --bs-btn-active-color: #{$color-white};
+    --bs-btn-active-bg: #{$color-primary-dark};
+    --bs-btn-active-border-color: #{$color-primary-dark};
+    --bs-btn-disabled-color: #{$color-white};
+    --bs-btn-disabled-bg: #{$color-primary};
+    --bs-btn-disabled-border-color: #{$color-primary};
+    --bs-btn-focus-shadow-rgb: var(--color-primary-rgb);
+  }
+}

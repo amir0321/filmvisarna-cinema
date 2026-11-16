@@ -1,12 +1,12 @@
 @import './tokens';
 @import './bootstrap-overrides';
 @import 'bootstrap/scss/bootstrap';
+@include fv-bootstrap-theme;
 @import './components';
 @import './navigation';
 
 html,
 body {
-  color-scheme: dark;
   background-color: var(--color-bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -99,6 +99,7 @@ textarea:focus-visible,
 
 .age-badge-all {
   background-color: $fv-success;
+  color: var(--text-on-success);
 }
 
 .age-badge-mid {
@@ -167,7 +168,7 @@ textarea:focus-visible,
 .backoffice-badge {
   padding: 2px 7px;
   border-radius: 5px;
-  background-color: rgba($fv-primary, 0.15);
+  background-color: tint($fv-primary, 0.15);
   color: $fv-danger-light;
   font-size: $font-size-10;
   font-weight: 600;
@@ -265,7 +266,7 @@ textarea:focus-visible,
 
 .seat-available {
   background-color: $seat-available-bg;
-  border-color: rgba($seat-available-border, 0.35);
+  border-color: tint($seat-available-border, 0.35);
   cursor: pointer;
 
   &:hover,
@@ -279,7 +280,7 @@ textarea:focus-visible,
   background-color: $seat-selected-bg;
   border-color: $seat-selected-border;
   box-shadow: $seat-selected-glow;
-  color: $color-white;
+  color: var(--text-on-success);
   cursor: pointer;
 
   &:hover,
@@ -290,7 +291,7 @@ textarea:focus-visible,
 
 .seat-occupied {
   background-color: $seat-occupied-bg;
-  border-color: rgba($seat-occupied-border, 0.4);
+  border-color: tint($seat-occupied-border, 0.4);
   opacity: 0.4;
   cursor: not-allowed;
   overflow: hidden;
@@ -302,8 +303,8 @@ textarea:focus-visible,
     background: linear-gradient(
       135deg,
       transparent 40%,
-      rgba($color-white, 0.3) 40%,
-      rgba($color-white, 0.3) 60%,
+      tint($color-white, 0.3) 40%,
+      tint($color-white, 0.3) 60%,
       transparent 60%
     );
   }

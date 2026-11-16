@@ -144,6 +144,7 @@
   }
 
   &--selected {
+    color: var(--text-on-success);
     background: $seat-selected-bg;
     border-color: $seat-selected-border;
     box-shadow: $seat-selected-glow;
@@ -913,17 +914,9 @@
     margin-top: 12px;
     padding: 12px;
     font-weight: 500;
-    color: $fv-danger-light;
     text-align: center;
     text-decoration: none;
-    border: 1px solid $fv-danger-weak;
     border-radius: 12px;
-    transition: background-color 0.15s ease;
-
-    &:hover {
-      color: $fv-danger-light;
-      background: tint($fv-danger-weak, 0.1);
-    }
   }
 
   &__footer {
