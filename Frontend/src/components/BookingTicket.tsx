@@ -115,14 +115,13 @@ export default function BookingTicket({
               Skriv ut / Spara som PDF
             </button>
 
-            {data.cancelToken && (
-              <Link
-                className="fv-ticket__cancel"
-                to={`/avboka#token=${encodeURIComponent(data.cancelToken)}`}
-              >
-                Avboka biljett
-              </Link>
-            )}
+            <Link
+              className="fv-ticket__cancel"
+              to="/avboka"
+              state={{ bookingRef: data.bookingRef, email: data.email }}
+            >
+              Avboka biljett
+            </Link>
           </div>
         </>
       ) : (

@@ -496,19 +496,18 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningsreferensen hittades inte.
 
-#### `POST /api/bookings/cancel-preview` (även `GET /api/bookings/cancel-preview?token=...`)
-- **Åtkomst:** Publik (via länk i bekräftelsemejl, `token` skickas i JSON-body `{ "token": "..." }` för att undvika tokens i URL-loggar; `GET` med query-parameter stöds för bakåtkompatibilitet)
+#### `POST /api/bookings/cancel-preview`
+- **Åtkomst:** Publik via `/avboka`. Skicka `{ "bookingRef": "FV-ABCDE", "email": "kund@example.se" }` i JSON-body med `X-CSRF-Protection: 1`. GET och token-body stöds inte längre; gamla avbokningslänkar visar formuläret.
 - **`200 OK`**: Hämtar film, salong, stolar och bokningsnr till bekräftelsemodalen.
-- **`400 Bad Request`**: Ogiltig/utgången länk, redan avbokad, eller mindre än 2 timmar kvar till start.
-- **`403 Forbidden`**: E-postadressen matchar inte bokningen.
-- **`404 Not Found`**: Bokningen hittades inte.
+- **`400 Bad Request`**: Ogiltiga fält, redan avbokad, startad visning eller mindre än 2 timmar kvar till start. Bokningsstatus kontrolleras först när referens och e-post matchar.
+- **`403 Forbidden`**: CSRF-skyddet nekar anropet.
+- **`404 Not Found`**: Både saknad referens och fel e-post ger exakt `Vi hittade ingen bokning som matchar angivet bokningsnummer och e-postadress.`
+- **`429 Too Many Requests`**: Global/IP-gräns eller fem försök per normaliserad bokningsreferens/e-post under 15 minuter. Referens- och e-postgränserna delas med bekräftelserutten och gäller även vid IP-byte. Svaret innehåller `Retry-After: 900`.
 
 #### `POST /api/bookings/cancel-by-token`
-- **Åtkomst:** Publik (via länk i bekräftelsemejl)
+- **Åtkomst:** Publik med samma body, CSRF-skydd och försöksgränser som `cancel-preview`. Ruttnamnet behålls, men ingen token används.
 - **`200 OK`**: Bokningen avbokad och stolarna frigjorda.
-- **`400 Bad Request`**: Ogiltig/utgången länk, redan avbokad, eller mindre än 2 timmar kvar till start.
-- **`403 Forbidden`**: E-postadressen matchar inte bokningen.
-- **`404 Not Found`**: Bokningen hittades inte.
+- **`400` / `403` / `404` / `429`**: Samma villkor som för förhandsgranskningen. Identitet, status och tidsgräns verifieras igen med bokningsraden låst i en transaktion. Betalda medlemsbokningars lojalitetspoäng dras av atomärt tillsammans med att biljetter raderas och bokningen markeras avbokad.
 
 #### `DELETE /api/bookings/:id`
 - **Åtkomst:** Inloggad användare

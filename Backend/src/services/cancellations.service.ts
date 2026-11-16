@@ -1,12 +1,38 @@
 import jwt from "jsonwebtoken";
+import { timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 import { pool } from "../db.js";
 import { config } from "../config.js";
 import { HttpError } from "../utils/httpErorr.js";
+import { consumeBookingLimit, hashBookingValue, normalizeBookingEmail } from "./bookingLimits.service.js";
 import {
   CancelBookingResult,
   CancellationJwtPayload,
   CancelPreviewResult,
 } from "../interfaces/types.js";
+
+export const cancellationCredentialsSchema = z.object({
+  bookingRef: z.string().trim().toUpperCase().regex(/^FV-[A-Z0-9]{5}$/, "Ange ett bokningsnummer i formatet FV-XXXXX."),
+  email: z.string().trim().email("Ange en giltig e-postadress.").max(200).transform(normalizeBookingEmail),
+});
+export type CancellationCredentials = z.infer<typeof cancellationCredentialsSchema>;
+
+async function limitCancellationAttempts(input: CancellationCredentials) {
+  // Shared by preview and confirmation, independent of IP and booking existence.
+  await consumeBookingLimit(pool, `cancel-ref:${input.bookingRef}`, 5, 900);
+  await consumeBookingLimit(pool, `cancel-email:${input.email}`, 5, 900);
+}
+
+function verifyBookingEmail(bookingEmail: string | undefined, suppliedEmail: string, exists: boolean) {
+  // Hash even for missing bookings, and compare fixed-length digests in constant time.
+  const matches = timingSafeEqual(
+    Buffer.from(hashBookingValue(bookingEmail ?? ""), "hex"),
+    Buffer.from(hashBookingValue(suppliedEmail), "hex"),
+  );
+  if (!exists || !matches) {
+    throw new HttpError(404, "Vi hittade ingen bokning som matchar angivet bokningsnummer och e-postadress.");
+  }
+}
 
 export function generateCancellationJwt(bookingRef: string, email: string): string {
   return jwt.sign(
@@ -126,12 +152,14 @@ export async function cancelBooking(
 }
 
 export async function getBookingCancelPreview(
-  token: string,
+  input: CancellationCredentials,
 ): Promise<CancelPreviewResult> {
-  const payload = verifyCancellationJwt(token);
+  const credentials = cancellationCredentialsSchema.parse(input);
+  await limitCancellationAttempts(credentials);
 
   const { rows } = await pool.query(
-    `SELECT b.id, b.booking_reference, b.status, b.guest_email, u.email AS user_email,
+    `SELECT b.id, b.booking_reference, b.status,
+            COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) AS booking_email,
             m.title, m.poster_url, c.name AS cinema_name, st.starts_at
      FROM booking b
      JOIN screening st ON st.id = b.screening_id
@@ -139,18 +167,11 @@ export async function getBookingCancelPreview(
      JOIN cinema c ON c.id = st.cinema_id
      LEFT JOIN app_user u ON u.id = b.user_id
      WHERE b.booking_reference = $1`,
-    [payload.bookingRef],
+    [credentials.bookingRef],
   );
 
-  if (rows.length === 0) {
-    throw new HttpError(404, "Bokningen kunde inte hittas.");
-  }
-
   const booking = rows[0];
-  const bookingEmail = booking.guest_email || booking.user_email;
-  if (bookingEmail?.toLowerCase() !== payload.email.toLowerCase()) {
-    throw new HttpError(403, "E-postadressen matchar inte bokningen.");
-  }
+  verifyBookingEmail(booking?.booking_email, credentials.email, rows.length > 0);
 
   if (booking.status === "cancelled") {
     throw new HttpError(400, "Denna bokning är redan avbokad.");
@@ -183,9 +204,10 @@ export async function getBookingCancelPreview(
 }
 
 export async function cancelBookingByToken(
-  token: string,
+  input: CancellationCredentials,
 ): Promise<CancelBookingResult> {
-  const payload = verifyCancellationJwt(token);
+  const credentials = cancellationCredentialsSchema.parse(input);
+  await limitCancellationAttempts(credentials);
 
   const client = await pool.connect();
   try {
@@ -194,24 +216,18 @@ export async function cancelBookingByToken(
     const { rows } = await client.query(
       `SELECT b.id, b.booking_reference AS "reference", b.status, b.is_paid, b.user_id,
               COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price,
-              b.guest_email, u.email AS user_email, s.starts_at
+              COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) AS booking_email,
+              s.starts_at
        FROM booking b
        JOIN screening s ON s.id = b.screening_id
        LEFT JOIN app_user u ON u.id = b.user_id
        WHERE b.booking_reference = $1
        FOR UPDATE OF b`,
-      [payload.bookingRef],
+      [credentials.bookingRef],
     );
 
-    if (rows.length === 0) {
-      throw new HttpError(404, "Bokningen kunde inte hittas.");
-    }
-
     const booking = rows[0];
-    const bookingEmail = booking.guest_email || booking.user_email;
-    if (bookingEmail?.toLowerCase() !== payload.email.toLowerCase()) {
-      throw new HttpError(403, "E-postadressen matchar inte bokningen.");
-    }
+    verifyBookingEmail(booking?.booking_email, credentials.email, rows.length > 0);
 
     if (booking.status === "cancelled") {
       throw new HttpError(400, "Bokningen är redan avbokad.");

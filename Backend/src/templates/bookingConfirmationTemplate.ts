@@ -72,7 +72,7 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
     (bookingData.kioskItems.length > 0 ? `Kioskvaror:\n${kioskText}\n\n` : '') +
     `Totalt att betala: ${total} SEK\n\n` +
     (cancelUrl
-      ? `Avboka din bokning här: ${cancelUrl}\n\n`
+      ? `Avboka din bokning här: ${cancelUrl}\nAnge bokningsnummer och e-postadressen som användes vid bokningen. Avboka senast 2 timmar före visningen.\n\n`
       : `Kontakta biografen om du vill avboka din bokning.\n\n`) +
     `Visa bokningsreferensen i kassan vid ankomst!`
   );
@@ -201,7 +201,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
           ${cancelUrl ? `<a href="${cancelUrl}"
             style="display: block; padding: 12px 0; font-size: 13px; font-weight: 600; color: #EF4444; text-decoration: none; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05); margin-bottom: 12px;">
             Avboka biljett
-          </a>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
+          </a><p style="font-size: 12px; color: #94A3B8;">Ange bokningsnummer och e-postadressen som användes vid bokningen på avbokningssidan. Avboka senast 2 timmar före visningen.</p>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
           <div style="font-size: 12px; color: #94A3B8;">
             Betalning sker på plats. Biljetter hämtas senast 15 min före start.
           </div>

@@ -14,6 +14,7 @@ import { parseId } from "../utils/httpErorr.js";
 import { guestBookingService } from '../services/guestBookings.service.js';
 import { HttpError } from '../utils/httpErorr.js';
 import { config } from '../config.js';
+import { cancellationCredentialsSchema } from '../services/cancellations.service.js';
 
 export const listBookingsQuerySchema = z.object({
   screeningId: z.coerce.number().int().positive().optional(),
@@ -82,10 +83,6 @@ const lookupBookingSchema = z.object({
   reference: z.string().trim().min(1).max(50),
 });
 
-const cancelTokenSchema = z.object({
-  token: z.string().trim().min(1, "Token krävs."),
-});
-
 export async function getBookings(req: Request, res: Response) {
   const query = listBookingsQuerySchema.parse(req.query);
   const bookings = await listAllBookings(query);
@@ -140,16 +137,14 @@ export async function deleteBooking(req: Request, res: Response): Promise<void> 
 }
 
 export async function getCancelPreview(req: Request, res: Response) {
-  const { token } = cancelTokenSchema.parse(
-    req.method === "POST" ? req.body : req.query,
-  );
-  const preview = await getBookingCancelPreview(token);
+  const credentials = cancellationCredentialsSchema.parse(req.body);
+  const preview = await getBookingCancelPreview(credentials);
   res.json(preview);
 }
 
 export async function postCancelByToken(req: Request, res: Response) {
-  const { token } = cancelTokenSchema.parse(req.body);
-  const booking = await cancelBookingByToken(token);
+  const credentials = cancellationCredentialsSchema.parse(req.body);
+  const booking = await cancelBookingByToken(credentials);
   res.json({
     success: true,
     message: "Bokningen har avbokats.",
