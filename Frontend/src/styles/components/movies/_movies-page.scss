@@ -9,6 +9,16 @@
 
   .fv-tab-list {
     border-bottom: 0;
+
+    @media (max-width: ($fv-bp-sm - 0.02px)) {
+      flex-wrap: wrap;
+      gap: 8px 16px;
+    }
+  }
+
+  .fv-tab-trigger {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 

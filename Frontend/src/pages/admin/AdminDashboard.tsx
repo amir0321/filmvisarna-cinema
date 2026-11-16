@@ -37,7 +37,7 @@ export default function AdminDashboard() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Administrationsöversikt</h2>
+          <h1 className="h2 fw-bold mb-1">Administrationsöversikt</h1>
           <p className="text-secondary mb-0">Välkommen till Filmvisarnas administrationspanel.</p>
         </div>
       </div>
@@ -48,10 +48,10 @@ export default function AdminDashboard() {
             <div className="card h-100 bg-card border-secondary border-opacity-25 shadow-sm">
               <div className="card-body d-flex flex-column p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <i className={`bi ${c.icon} text-danger fs-2`}></i>
+                  <i className={`bi ${c.icon} text-danger fs-2`} aria-hidden="true"></i>
                   <Badge variant="muted">{c.badge}</Badge>
                 </div>
-                <h5 className="card-title fw-bold text-white mb-2">{c.title}</h5>
+                <h2 className="h5 card-title fw-semibold mb-0">{c.title}</h2>
                 <p className="card-text text-secondary small flex-grow-1">{c.description}</p>
                 <Link to={c.path} className="btn btn-outline-danger btn-sm mt-3 w-100">
                   Öppna modul &rarr;

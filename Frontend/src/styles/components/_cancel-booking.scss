@@ -27,6 +27,15 @@
 .fv-cancel-booking-card {
   background: rgba($fv-secondary, 0.4);
   border-color: $fv-border !important;
+
+  &__details {
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    i {
+      flex-shrink: 0;
+    }
+  }
 }
 
 .fv-cancel-success-icon {
@@ -57,4 +66,18 @@
   border: 1px solid $fv-border;
   padding: 4px 10px;
   border-radius: $radius-sm;
+}
+
+.fv-cancel-success-details {
+  max-width: 440px;
+}
+
+.fv-cancel-receipt-poster {
+  width: 80px;
+  height: 120px;
+}
+
+.fv-cancel-modal-poster {
+  width: 56px;
+  height: 84px;
 }

@@ -1,6 +1,7 @@
 import type { Booking } from "../types/booking";
 import { Poster } from "./Poster";
 import { canCancelBooking, getBookingState } from "../utils/bookings";
+import { formatSek } from '../utils/price';
 
 export interface MyBookingCardProps {
   booking: Booking;
@@ -46,10 +47,7 @@ export default function MyBookingCard({
     cancelled: "Avbokad",
     unknown: "Tid ej angiven",
   }[bookingState];
-  const formattedPrice = new Intl.NumberFormat("sv-SE", {
-    style: "currency",
-    currency: "SEK",
-  }).format(totalPrice);
+  const formattedPrice = formatSek(totalPrice);
 
   const seats = tickets.map((ticket) => {
     if (ticket.row && ticket.seatNumber != null) {
@@ -114,6 +112,7 @@ export default function MyBookingCard({
               type="button"
               className="btn btn-outline-light"
               onClick={() => onViewTicket?.(booking)}
+              aria-label={`Visa biljett för ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
               disabled={!onViewTicket}
             >
               Visa biljett
@@ -125,6 +124,7 @@ export default function MyBookingCard({
               type="button"
               className="btn btn-outline-danger"
               onClick={() => onCancel?.(booking)}
+              aria-label={`Avboka ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
               disabled={!canCancel || !onCancel}
               aria-describedby={!canCancel ? deadlineId : undefined}
             >

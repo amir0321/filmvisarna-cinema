@@ -176,6 +176,48 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await request('/guest/preview', { token: 'invalid' }, { ip: '198.51.100.1' })).status, 429);
   });
 
+  test('case and trailing-slash path variants cannot bypass the public IP limit', async () => {
+    app.set('trust proxy', false);
+    const variants = ['/guest/preview/', '/Guest/Preview', '/GUEST/PREVIEW/'];
+    for (let i = 0; i < 30; i++) assert.equal((await request(variants[i % variants.length], { token: 'invalid' })).status, 400);
+    for (const path of [...variants, '/guest/request/', '/Guest/Confirm/']) {
+      assert.equal((await request(path, { token: 'invalid' })).status, 429);
+    }
+  });
+
+  test('a booking blocks a concurrent cinema change and never takes seats from the previous cinema', async () => {
+    await db.query("INSERT INTO cinema(name) VALUES ('Second room')");
+    await db.query("INSERT INTO seat(cinema_id, row_label, seat_number) SELECT 2, 'A', n FROM generate_series(1,10) n");
+    const mover = await db.connect();
+    try {
+      await mover.query('BEGIN');
+      await mover.query('SELECT id FROM screening WHERE id = 1 FOR UPDATE');
+      const pending = request('/', payload([1]), { user: 1 });
+      const deadline = Date.now() + 10_000;
+      while (
+        Number(
+          (
+            await db.query(
+              `SELECT count(*) FROM pg_stat_activity
+               WHERE datname = current_database()
+                 AND wait_event_type = 'Lock'
+                 AND query LIKE '%FROM screening WHERE id = $1 FOR SHARE%'`,
+            )
+          ).rows[0].count,
+        ) === 0
+      ) {
+        assert.ok(Date.now() < deadline, 'booking never waited for the screening lock');
+        await new Promise(resolveWait => setTimeout(resolveWait, 25));
+      }
+      await mover.query('UPDATE screening SET cinema_id = 2 WHERE id = 1');
+      await mover.query('COMMIT');
+      assert.equal((await pending).status, 400);
+    } finally {
+      mover.release();
+    }
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), 0);
+  });
+
   test('concurrent bookings cannot exceed ten combined seats at one screening', async () => {
     await seedBooking([1, 2, 3, 4, 5, 6], 1, { paid: true });
     const results = await Promise.all([request('/', payload([7, 8, 9]), { user: 1 }), request('/', payload([10, 11, 12]), { user: 1 })]);

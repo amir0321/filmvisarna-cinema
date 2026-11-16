@@ -4,6 +4,20 @@ export type { TicketInfo, KioskItemInfo, EmailPayload };
 
 // Template & Calculation Helpers
 
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (ch) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[ch]!,
+  );
+}
+
 export function calculateBookingTotal(bookingData: EmailPayload): number {
   const ticketTotal = bookingData.tickets.reduce(
     (sum, t) => sum + (t.price * t.quantity),
@@ -19,8 +33,8 @@ export function calculateBookingTotal(bookingData: EmailPayload): number {
 function renderTicketsHtml(tickets: TicketInfo[]): string {
   return tickets.map(t => `
     <div style="margin-bottom: 6px;">
-      <span style="color: #CBD5E1;">${t.quantity}x ${t.type}</span>
-      <span style="float: right; color: #FFFFFF;">${t.price * t.quantity} kr</span>
+      <span style="color: #CBD5E1;">${Number(t.quantity)}x ${escapeHtml(t.type)}</span>
+      <span style="float: right; color: #FFFFFF;">${Number(t.price) * Number(t.quantity)} kr</span>
     </div>
     <div style="clear: both;"></div>
   `).join('');
@@ -29,8 +43,8 @@ function renderTicketsHtml(tickets: TicketInfo[]): string {
 function renderKioskHtml(kioskItems: KioskItemInfo[]): string {
   return kioskItems.map(k => `
     <div style="margin-bottom: 6px;">
-      <span style="color: #F59E0B;">${k.quantity}x ${k.name}</span>
-      <span style="float: right; color: #F59E0B;">${k.price * k.quantity} kr</span>
+      <span style="color: #F59E0B;">${Number(k.quantity)}x ${escapeHtml(k.name)}</span>
+      <span style="float: right; color: #F59E0B;">${Number(k.price) * Number(k.quantity)} kr</span>
     </div>
     <div style="clear: both;"></div>
   `).join('');
@@ -68,7 +82,14 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
   const total = calculateBookingTotal(bookingData);
   const ticketsHtml = renderTicketsHtml(bookingData.tickets);
   const kioskHtml = renderKioskHtml(bookingData.kioskItems);
-  const cancelUrl = bookingData.cancelUrl;
+  const cancelUrl = bookingData.cancelUrl ? escapeHtml(bookingData.cancelUrl) : undefined;
+  const bookingRef = escapeHtml(bookingData.bookingRef);
+  const posterUrl = bookingData.posterUrl ? escapeHtml(bookingData.posterUrl) : undefined;
+  const movieTitle = escapeHtml(bookingData.movieTitle);
+  const cinemaName = escapeHtml(bookingData.cinemaName);
+  const screeningDate = escapeHtml(bookingData.screeningDate);
+  const screeningTime = escapeHtml(bookingData.screeningTime);
+  const seats = escapeHtml(bookingData.seats.join(', '));
 
   return `
     <div 
@@ -113,7 +134,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
             <div 
               style="font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; font-weight: 700; color: #FFFFFF; letter-spacing: 3px;"
             >
-              ${bookingData.bookingRef}
+              ${bookingRef}
             </div>
           </div>
         </div>
@@ -123,10 +144,10 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
           <div style="background-color: #111827; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px;">
             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
               <tr>
-                ${bookingData.posterUrl ? `
+                ${posterUrl ? `
                   <td width="72" valign="middle" style="padding-right: 18px;">
                     <img 
-                      src="${bookingData.posterUrl}" 
+                      src="${posterUrl}" 
                       width="72" 
                       alt="Filmaffisch"
                       style="border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" 
@@ -135,13 +156,13 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
                 ` : ''}
                 <td valign="middle">
                   <div style="font-family: 'Poppins', 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; line-height: 1.2;">
-                    ${bookingData.movieTitle}
+                    ${movieTitle}
                   </div>
                   <div style="font-size: 14px; color: #94A3B8; margin-bottom: 4px;">
-                    ${bookingData.cinemaName}
+                    ${cinemaName}
                   </div>
                   <div style="font-size: 13px; font-weight: 600; color: #CBD5E1;">
-                    ${bookingData.screeningDate} <span style="color: #64748B; margin: 0 4px;">&bull;</span> kl. ${bookingData.screeningTime}
+                    ${screeningDate} <span style="color: #64748B; margin: 0 4px;">&bull;</span> kl. ${screeningTime}
                   </div>
                 </td>
               </tr>
@@ -152,7 +173,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
         <!-- Platser, biljetter & sammanställning -->
         <div style="padding: 0 28px 20px 28px;">
           <div style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">
-            Platser: ${bookingData.seats.join(', ')}
+            Platser: ${seats}
           </div>
 
           <div style="font-size: 13px; color: #CBD5E1;">

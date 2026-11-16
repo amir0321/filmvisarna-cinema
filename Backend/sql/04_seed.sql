@@ -1,3 +1,7 @@
+-- DEVELOPMENT / DEMO SEED ONLY.
+-- Never run this file against a production database (it inserts demo accounts with known passwords).
+-- In production, run 01_schema.sql, 02_views.sql, 03_security.sql, and migrations, then use `npm run create-admin`.
+
 INSERT INTO cinema (name, format, tech, screen_size, opened_year) VALUES
   ('Stora Salongen', '4K Dolby Atmos', 'Laser 4K, Dolby Atmos 7.1, Induktionsslinga', '18×8 m', 1987),
   ('Lilla Salongen', '2D Intimt', '2K Digital, Dolby 5.1, Rullstolsanpassad', '10×4,5 m', 2019);

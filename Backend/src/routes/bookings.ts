@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { optionalAuth, requireAdmin, requireAuth } from "../middleware/auth.js";
 import {
   deleteBooking,
@@ -24,8 +24,9 @@ export function createBookingsRouter(...dependencies: Parameters<typeof createBo
     res.setHeader('Cache-Control', 'no-store');
     next();
 });
-bookingsRouter.use(async (req, res, next) => {
-  if (req.method !== 'POST' || !['/', '/guest/request', '/guest/preview', '/guest/confirm'].includes(req.path)) return next();
+// Attached per route so the limit matches exactly the same paths as the handlers
+// (Express routing is case-insensitive and ignores trailing slashes).
+const limitPublicBookingRequest: RequestHandler = async (req, res, next) => {
   // Separate global and IP buckets; forwarded headers are trusted only by explicit app configuration.
   try {
     await consumeBookingLimit(pool, 'requests:global', config.bookingLimits.globalAttempts);
@@ -35,7 +36,7 @@ bookingsRouter.use(async (req, res, next) => {
     res.setHeader('Retry-After', '900');
     throw error;
   }
-});
+};
 
 bookingsRouter.get("/", requireAdmin, getBookings);
 
@@ -44,13 +45,14 @@ bookingsRouter.get("/me", requireAuth, getMyBookings);
 bookingsRouter.get("/lookup", requireAdmin, lookupBooking);
 
 bookingsRouter.get("/cancel-preview", getCancelPreview);
+bookingsRouter.post("/cancel-preview", getCancelPreview);
 
 bookingsRouter.post("/cancel-by-token", postCancelByToken);
 
-bookingsRouter.post('/guest/request', handlers.requestGuestBooking);
-bookingsRouter.post('/guest/preview', handlers.previewGuestBooking);
-bookingsRouter.post('/guest/confirm', handlers.confirmGuestBooking);
-bookingsRouter.post("/", optionalAuth, handlers.postBooking);
+bookingsRouter.post('/guest/request', limitPublicBookingRequest, handlers.requestGuestBooking);
+bookingsRouter.post('/guest/preview', limitPublicBookingRequest, handlers.previewGuestBooking);
+bookingsRouter.post('/guest/confirm', limitPublicBookingRequest, handlers.confirmGuestBooking);
+bookingsRouter.post("/", limitPublicBookingRequest, optionalAuth, handlers.postBooking);
 
 bookingsRouter.patch("/:id", requireAdmin, patchBooking);
 

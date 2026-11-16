@@ -177,13 +177,13 @@ export default function ScreeningDetail() {
         </div>
         <div className="fv-booking__grid">
           <div>
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <Skeleton variant="text" width="180px" height="24px" className="mb-3" />
               <Skeleton variant="rect" width="100%" height="140px" />
             </div>
           </div>
           <aside className="fv-booking__aside">
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <Skeleton variant="text" width="140px" height="22px" className="mb-3" />
               <Skeleton variant="rect" width="100%" height="160px" />
             </div>
@@ -337,7 +337,7 @@ export default function ScreeningDetail() {
       ) : (
         <div className="fv-booking__grid">
           <div>
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <h2>1. Välj biljetter</h2>
               <p className="fv-card__subtitle" role="status">
                 {availableSeats <= 10
@@ -365,7 +365,7 @@ export default function ScreeningDetail() {
             </div>
 
             {ticketCount > 0 && (
-              <div className="fv-card">
+              <div className="fv-card fv-booking__card fv-booking__seat-card">
                 <h2>2. Välj platser</h2>
                 <p className="fv-card__subtitle">
                   Bästa tillgängliga platser är förvalda — klicka för att ändra
@@ -375,14 +375,15 @@ export default function ScreeningDetail() {
             )}
 
             {ticketCount > 0 && (
-              <div className="fv-card fv-kiosk">
+              <div className="fv-card fv-booking__card fv-kiosk">
                 <button
                   type="button"
                   className="fv-kiosk__header"
                   onClick={() => setKioskOpen(o => !o)}
                   aria-expanded={kioskOpen}
+                  aria-controls="fv-kiosk-items"
                 >
-                  <span className="fv-kiosk__icon" aria-hidden="true">🍿</span>
+                  <span className="fv-kiosk__icon fv-kiosk__emoji" aria-hidden="true">🍿</span>
                   <span className="fv-kiosk__text">
                     <strong>Bio-Kiosken – Förbeställ snacks &amp; slipp kön!</strong>
                     <small>
@@ -392,39 +393,40 @@ export default function ScreeningDetail() {
                     </small>
                   </span>
                   <i
-                    className={`bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
+                    className={`fv-kiosk__chevron bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
                     aria-hidden="true"
                   />
                 </button>
 
-                {kioskOpen && (
-                  <div className="fv-kiosk__items">
-                    {kioskError && <p role="alert">{kioskError}</p>}
-                    {kiosk.map(i => (
-                      <QuantityPicker
-                        key={i.id}
-                        label={`${i.name} (${formatSek(i.price)})`}
-                        value={kioskQty[i.id] ?? 0}
-                        max={20}
-                        onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div id="fv-kiosk-items" className="fv-kiosk__items" hidden={!kioskOpen}>
+                  {kioskError && <p role="alert">{kioskError}</p>}
+                  {kiosk.map(i => (
+                    <QuantityPicker
+                      key={i.id}
+                      label={`${i.name} (${formatSek(i.price)})`}
+                      value={kioskQty[i.id] ?? 0}
+                      max={20}
+                      onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
           <aside className="fv-booking__aside">
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <h2>Din bokning</h2>
 
-              {selectedIds.length > 0 && (
-                <div className="fv-selected">
-                  <span>{screening?.cinema}</span>
-                  <strong>{selectedLabels}</strong>
-                </div>
-              )}
+              <div role="status" aria-live="polite" aria-atomic="true">
+                <p className="visually-hidden">{selectedIds.length} av {ticketCount} platser valda</p>
+                {selectedIds.length > 0 && (
+                  <div className="fv-selected">
+                    <span>{screening?.cinema}</span>
+                    <strong>{selectedLabels}</strong>
+                  </div>
+                )}
+              </div>
 
               {ticketCount > 0 && (
                 <div className="fv-summary">
@@ -442,7 +444,7 @@ export default function ScreeningDetail() {
                       <span>{formatSek(kioskTotal)}</span>
                     </div>
                   )}
-                  <div className="fv-summary__row fv-summary__row--total">
+                  <div className="fv-summary__row fv-summary__row--total" role="status" aria-live="polite" aria-atomic="true">
                     <span>Totalt</span>
                     <span>{formatSek(ticketTotal + kioskTotal)}</span>
                   </div>
@@ -456,19 +458,27 @@ export default function ScreeningDetail() {
 
               {ticketCount > 0 && seatsLeft === 0 && (
                 <div className="fv-checkout">
-                  <label className="fv-checkout__field">
+                  <label className="fv-checkout__field" htmlFor="guest-name">
                     Namn
                     <input
                       type="text"
+                      id="guest-name"
+                      name="guestName"
+                      autoComplete="name"
+                      required
                       placeholder="Förnamn Efternamn"
                       value={name}
                       onChange={e => setName(e.target.value)}
                     />
                   </label>
-                  <label className="fv-checkout__field">
-                    E-post för bokningsbekräftelse
+                  <label className="fv-checkout__field" htmlFor="guest-email">
+                    E-postadress
                     <input
                       type="email"
+                      id="guest-email"
+                      name="email"
+                      autoComplete="email"
+                      required
                       placeholder="din@epost.se"
                       value={email}
                       readOnly={Boolean(user)}

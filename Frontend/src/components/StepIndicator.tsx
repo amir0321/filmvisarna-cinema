@@ -17,7 +17,8 @@ export default function StepIndicator({ current }: Props) {
             aria-current={state === 'current' ? 'step' : undefined}
           >
             <span className="fv-steps__num">{state === 'done' ? '✓' : n}</span>
-            <span>{label}</span>
+            <span className="fv-steps__label">{label}</span>
+            {n < STEPS.length && <span className="fv-steps__line" aria-hidden="true" />}
           </li>
         )
       })}

@@ -114,7 +114,7 @@
   padding: 2px 6px;
   border-radius: 4px;
   background-color: rgba($fv-primary, 0.15);
-  color: $fv-primary;
+  color: $fv-danger-light;
   font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -392,7 +392,7 @@
 
   &.active {
     background-color: rgba($fv-primary, 0.1);
-    color: $fv-primary;
+    color: $fv-danger-light;
     font-weight: 600;
     border-left-color: $fv-primary;
   }
@@ -453,7 +453,7 @@
   border-radius: $fv-radius-md;
   background-color: transparent;
   border: 1px solid rgba($fv-primary, 0.4);
-  color: $fv-primary;
+  color: $fv-danger-light;
   font-size: 0.875rem;
   font-weight: 600;
 
@@ -494,7 +494,7 @@
   }
 
   &.active {
-    color: $fv-primary;
+    color: $fv-danger-light;
     font-weight: 600;
   }
 }
@@ -640,5 +640,5 @@
 }
 
 .footer-link-admin {
-  color: rgba($fv-muted-fg, 0.4);
+  color: $fv-muted-fg;
 }

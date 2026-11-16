@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   cancellationService,
   mapCancelErrorToState,
@@ -30,9 +30,20 @@ function formatScreeningDateTime(startsAt?: string): {
 
 export default function CancelBooking() {
   const navigate = useNavigate()
+  const { hash, pathname, search } = useLocation()
   const { token: routeToken } = useParams<{ token?: string }>()
   const [searchParams] = useSearchParams()
-  const token = (routeToken || searchParams.get('token') || '').trim()
+  const [token] = useState(() => {
+    const hashToken = new URLSearchParams(hash.slice(1)).get('token')
+    return (hashToken || routeToken || searchParams.get('token') || '').trim()
+  })
+
+  useEffect(() => {
+    if (hash || search || routeToken) {
+      const cleanPath = pathname.startsWith('/cancel') ? '/cancel' : '/avboka'
+      void navigate(cleanPath, { replace: true })
+    }
+  }, [hash, pathname, routeToken, search, navigate])
 
   const [state, setState] = useState<CancelPageState>(() =>
     token ? 'loading' : 'invalid_token',
@@ -171,8 +182,7 @@ export default function CancelBooking() {
 
           {booking ? (
             <div
-              className="fv-cancel-booking-card p-3 rounded-3 text-start mb-4 border mx-auto"
-              style={{ maxWidth: '440px' }}
+              className="fv-cancel-booking-card fv-cancel-success-details p-3 rounded-3 text-start mb-4 border mx-auto"
             >
               <div className="fw-bold text-light mb-1">{booking.movieTitle}</div>
               <div className="text-secondary small mb-1">
@@ -237,8 +247,7 @@ export default function CancelBooking() {
             <div className="d-flex flex-column flex-sm-row gap-3 mb-4">
               {booking.posterUrl ? (
                 <div
-                  className="rounded overflow-hidden flex-shrink-0"
-                  style={{ width: '80px', height: '120px' }}
+                  className="fv-cancel-receipt-poster rounded overflow-hidden flex-shrink-0"
                 >
                   <Poster
                     src={booking.posterUrl}

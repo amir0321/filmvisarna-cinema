@@ -89,7 +89,7 @@ export default function MyBookings() {
         </div>
       </div>
 
-      <p role="status" className="text-secondary">{feedback}</p>
+      <p role="status" className={feedback ? 'text-secondary mb-3' : 'visually-hidden'}>{feedback}</p>
 
       {!isAuthenticated ? (
         <EmptyState

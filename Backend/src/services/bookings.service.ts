@@ -353,9 +353,10 @@ export function createBookingService(dependencies: {
       throw new HttpError(409, `Du kan ha högst ${config.bookingLimits.unpaidBookings} aktiva obetalda bokningar och ${config.bookingLimits.unpaidSeats} obetalda platser. Betala eller avboka en befintlig bokning först.`);
     }
 
-    // The screening must exist and not have started
+    // The screening must exist and not have started. FOR SHARE blocks a concurrent
+    // cinema/time change (updateScreening uses FOR UPDATE) until this booking commits.
     const screening = await client.query(
-      "SELECT cinema_id, starts_at FROM screening WHERE id = $1",
+      "SELECT cinema_id, starts_at FROM screening WHERE id = $1 FOR SHARE",
       [screeningId],
     );
     if (screening.rowCount === 0) {

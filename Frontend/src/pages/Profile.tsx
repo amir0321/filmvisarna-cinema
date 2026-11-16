@@ -17,7 +17,7 @@ export default function Profile() {
   }, [refreshUser]);
 
  if (loading && !user) {
-  return <p className="py-5 text-center">Laddar profil...</p>;
+  return <p className="py-5 text-center" role="status">Laddar profil...</p>;
 }
 
   if (!user) {
@@ -38,6 +38,7 @@ export default function Profile() {
           <div className="card p-4 text-center h-100">
             <div
              className="fv-profile-avatar rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-3"
+             aria-hidden="true"
           
             >
               {getUserInitials(user)}

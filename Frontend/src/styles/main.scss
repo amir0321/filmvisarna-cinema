@@ -6,6 +6,7 @@
 
 html,
 body {
+  color-scheme: dark;
   background-color: var(--color-bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -32,6 +33,10 @@ h6,
   color: var(--text-heading);
 }
 
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.btn-close:focus-visible,
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -40,6 +45,25 @@ textarea:focus-visible,
 [role='button']:focus-visible {
   outline: $focus-ring-width solid $focus-ring-color;
   outline-offset: $focus-ring-offset;
+}
+
+.fv-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 16px;
+  z-index: $fv-z-modal-top + 1;
+  padding: 12px 16px;
+  color: $fv-fg;
+  background: $fv-card-bg;
+  border-radius: $radius-md;
+
+  &:not(:focus-visible) {
+    @include visually-hidden();
+  }
+}
+
+#main-content {
+  scroll-margin-top: $fv-nav-height + 16px;
 }
 
 ::-webkit-scrollbar {
@@ -144,7 +168,7 @@ textarea:focus-visible,
   padding: 2px 7px;
   border-radius: 5px;
   background-color: rgba($fv-primary, 0.15);
-  color: $fv-primary;
+  color: $fv-danger-light;
   font-size: $font-size-10;
   font-weight: 600;
   text-transform: uppercase;
@@ -282,5 +306,28 @@ textarea:focus-visible,
       rgba($color-white, 0.3) 60%,
       transparent 60%
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition: none !important;
+  }
+
+  // Disable decorative scaling while preserving transforms used for positioning.
+  .fv-seat,
+  .seat,
+  .movie-card,
+  .fv-poster .fv-poster-img {
+    transform: none !important;
+  }
+
+  .movie-details-hero__play:hover {
+    transform: translate(-50%, -50%);
   }
 }
