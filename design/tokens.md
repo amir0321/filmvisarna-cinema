@@ -6,36 +6,60 @@ Alla värden nedan är översatta till konkreta mått (`hex`, `rgba`, `px`, `rem
 
 ### 2.1 Färger
 
-| Namn | Värde | Användning | Föreslaget SCSS-variabelnamn | Källfil |
-| :--- | :--- | :--- | :--- | :--- |
-| `--background` | `#0B0F19` | Sidbakgrund (Deep Graphite Dark) | `$fv-bg` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--foreground` / `--card-foreground` | `#F8FAFC` | Primär text och rubriker (Crisp White) | `$fv-fg` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--card` | `#161F30` | Kort, paneler, modaler, tabeller, bottennavigering (Elevated Navy Slate) | `$fv-card-bg` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--primary` / `--ring` | `#E50914` | Primär accent, CTA-knappar, aktivt chip, fokusring, 15-årsbadge, Salong 1 | `$fv-primary` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--primary-foreground` / `--accent-foreground` | `#ffffff` | Text och ikoner på primär och grön accentbakgrund | `$fv-white` | `src/index.css` |
-| `--secondary` | `#1E2D47` | Sekundär mörkblå yta definierad i `:root` | `$fv-secondary` | `src/index.css` |
-| `--secondary-foreground` / `--muted-foreground` | `#94A3B8` | Sekundär/dämpad text, etiketter, inaktiva länkar (Cool Slate Gray) | `$fv-muted-fg` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--muted` | `#111827` | Dämpad mörk bakgrundsyta definierad i `:root` | `$fv-muted-bg` | `src/index.css` |
-| `--accent` / `--success` | `#10B981` | Vald stol, bekräftelse, "Alla"-åldersbadge, betald status, Salong 2 (`SalongerScreen.tsx`) | `$fv-success` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| `--border` | `rgba(148, 163, 184, 0.15)` | Standardkantlinje (`1px solid`) för kort, inmatningsfält och tabeller | `$fv-border` | `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md` |
-| Seat Available | `#334155` | Ledig stol i salongskartor (`.seat-available`) och lägre beläggningsstapel (<= 50 %) | `$fv-seat-available` | `src/index.css`, `src/components/SeatSelectionScreen.tsx`, `src/components/admin/SchemaTab.tsx` |
-| Seat Occupied | `#1E293B` (`opacity: 0.4`) | Upptagen/inaktiverad stol i salongskarta (`.seat-occupied`) | `$fv-seat-occupied` | `src/index.css`, `src/components/SeatSelectionScreen.tsx` |
-| Danger Light | `#ff6b6b` | Varningstext vid få platser kvar, avboka-knapp, aktiv adminflik, Salong 1-badge i admin, inställd visning | `$fv-danger-light` | `src/components/HomeScreen.tsx`, `src/components/MovieDetailScreen.tsx`, `src/components/AdminScreen.tsx` |
-| Warning / Amber | `#F59E0B` | IMDb-stjärna och betyg, 7/11-årsbadge (`FilmerScreen.tsx`), "Inväntar"-status, beläggning > 80 %, lösenordsstyrka "Okej" | `$fv-warning` | `src/components/FilmerScreen.tsx`, `src/components/ProfilScreen.tsx`, `src/components/admin/BokningarTab.tsx` |
-| Warning Dark | `#D97706` | Startfärg i premiärbadge-gradient (`linear-gradient(135deg, #D97706 0%, #F59E0B 100%)`) | `$fv-warning-dark` | `src/components/FilmerScreen.tsx` |
-| Info / Accessible Blue | `#3B82F6` | Rullstolsplatser, "Tillgänglig"-badge, punktlista (`SalongerScreen.tsx`), KPI-kort "Dagens bokningar" | `$fv-info` | `src/components/SalongerScreen.tsx`, `src/components/admin/BokningarTab.tsx`, `src/components/admin/SalongerAdminTab.tsx` |
-| Info Light Blue | `#60A5FA` | Textfärg för Salong 2-badge i admin-visningsschema (`SchemaTab.tsx`) | `$fv-info-light` | `src/components/admin/SchemaTab.tsx` |
-| Password Weak Red | `#EF4444` | Färg för lösenordsstyrka nivå 1 ("Svagt") | `$fv-danger-weak` | `src/components/ProfilScreen.tsx` |
-| Avatar Purple | `#7C3AED` | Slutfärg i profil-avatargradient (`linear-gradient(135deg, #E50914 0%, #7C3AED 100%)`) | `$fv-purple` | `src/components/ProfilScreen.tsx` |
-| Primary Dark | `#B2070F` | Slutfärg i gäst-avatargradient (`linear-gradient(135deg, #E50914 0%, #B2070F 100%)`) | `$fv-primary-dark` | `src/components/MobileDrawer.tsx` |
-| Drawer Background | `#0F1729` | Bakgrundsfärg på sidopanelen i `MobileDrawer` | `$fv-drawer-bg` | `src/components/MobileDrawer.tsx` |
-| Poster Placeholder | `#0d1321` / `#0f172a` / `#1e293b` | Bakgrund bakom film- och salongsbilder (`#0d1321`, `bg-slate-900`, `bg-slate-800`) | `$fv-poster-bg` | `src/components/FilmerScreen.tsx`, `src/components/HomeScreen.tsx`, `src/components/admin/FilmarkivTab.tsx` |
-| Video Player Background | `#050810` | Bakgrund i 16:9 trailer-modal | `$fv-video-bg` | `src/components/FilmerScreen.tsx` |
-| Policy Notice Bg | `rgba(255, 200, 0, 0.06)` | Bakgrund för gul kassabetalningsnotis i stolsväljaren | `$fv-policy-bg` | `src/components/SeatSelectionScreen.tsx` |
-| Policy Notice Border | `rgba(255, 200, 0, 0.15)` | Kantlinje för gul kassabetalningsnotis i stolsväljaren | `$fv-policy-border` | `src/components/SeatSelectionScreen.tsx` |
-| Cancelled Badge Bg | `rgba(153, 27, 27, 0.2)` | Bakgrund för "Inställd"-badge på desktop i admin-schemat | `$fv-cancelled-bg` | `src/components/admin/SchemaTab.tsx` |
-| Glass Surface Bg | `rgba(22, 31, 48, 0.7)` | Semitransparent bakgrund för `.glass`-ytor (`border: 1px solid rgba(255, 255, 255, 0.08)`) | `$fv-glass-bg` | `src/index.css` |
-| Nav Surface Bg | `rgba(11, 15, 25, 0.9)` | Semitransparent bakgrund för publik toppnavigering (`0.95` i admin) | `$fv-nav-bg` | `src/components/Nav.tsx`, `src/components/AdminScreen.tsx` |
+Aktuell källa är `Frontend/src/styles/_tokens.scss`. `:root, [data-theme="dark"]` definierar mörkt standardtema; `[data-theme="light"]` definierar ljust. Värdena nedan gäller den implementerade applikationen och ersätter prototypens fasta mörka färger.
+
+| CSS-token | Mörkt | Ljust | Sass / användning |
+| :--- | :--- | :--- | :--- |
+| `--color-bg` | `#0B0F19` | `#F8FAFC` | `$color-bg`, `$fv-bg`: sidbakgrund |
+| `--color-bg-darkest` | `#060910` | `#E2E8F0` | Bakgrundsvariation |
+| `--color-surface` | `#161F30` | `#FFFFFF` | `$fv-card-bg`: kort, modaler, sidfot |
+| `--color-surface-2` | `#1E2D47` | `#E2E8F0` | `$fv-secondary`: sekundär yta |
+| `--color-surface-muted` | `#111827` | `#F1F5F9` | `$fv-muted-bg`: formulär och dämpade ytor |
+| `--color-surface-chip` | `#0F172A` | `#F1F5F9` | Chips |
+| `--color-surface-chip-hover` | `#1E293B` | `#E2E8F0` | Chip-hover |
+| `--color-drawer-bg` | `#0F1729` | `#FFFFFF` | `$fv-drawer-bg`: mobilmeny |
+| `--color-poster-bg` | `#0D1321` | `#E2E8F0` | `$fv-poster-bg`: bildreserv |
+| `--text-primary` | `#F8FAFC` | `#0F172A` | `$fv-fg`: brödtext |
+| `--text-heading` | `#FFFFFF` | `#0B0F19` | Rubriker |
+| `--text-secondary` | `#CBD5E1` | `#334155` | Sekundär text |
+| `--text-muted` | `#94A3B8` | `#475569` | `$fv-muted-fg`: dämpad text |
+| `--color-primary` | `#E50914` | `#C40712` | `$fv-primary`: primärknapp, fokusring |
+| `--color-primary-dark` | `#B2070F` | `#A3060E` | `$fv-primary-dark`: knapp-hover |
+| `--color-success` | `#10B981` | `#036347` | `$fv-success`: gröna statusar |
+| `--color-warning` | `#F59E0B` | `#92400E` | `$fv-warning`: betyg och varningar |
+| `--color-warning-dark` | `#D97706` | `#78350F` | Premiärgradient |
+| `--color-danger`, `--color-danger-soft` | `#FF6B6B` | `#B91C1C` | `$fv-danger-weak`, `$fv-danger-light`: fel/avbokningstext |
+| `--color-info`, `--color-info-light` | `#60A5FA` | `#1D4ED8` | `$fv-info`, `$fv-info-light`: tillgänglighet och information |
+| `--color-purple` | `#7C3AED` | `#6D28D9` | Avatargradient |
+| `--color-border-rgb` | `148, 163, 184` | `100, 116, 139` | `--border-default`: kanaler med alfa `0.15` |
+| `--surface-overlay-rgb` | `255, 255, 255` | `15, 23, 42` | `$white-overlay-*`: diskreta bakgrunder och kantlinjer |
+| `--seat-available-bg` / `--seat-available-border` | `#334155` / `#94A3B8` | `#E2E8F0` / `#475569` | Ledig stol |
+| `--seat-selected-bg` / `--seat-selected-border` | `#10B981` / `#A7F3D0` | `#036347` / `#065F46` | Vald stol |
+| `--seat-occupied-bg` / `--seat-occupied-border` | `#1E293B` / `#64748B` | `#CBD5E1` / `#64748B` | Upptagen stol |
+| `--seat-occupied-strike` | `#94A3B8` | `#475569` | Markering av upptagen stol |
+| `--text-on-success` | `#0B0F19` | `#FFFFFF` | Text på fylld grön yta/vald stol |
+| `--text-on-danger` | `#0B0F19` | `#FFFFFF` | Text på fylld `--color-danger` |
+
+#### RGB-kanaler, Sass och Bootstrap
+
+- Varje färg i paletten får också en `--*-rgb`-token med kommaseparerade kanaler, till exempel `--color-bg-rgb` och `--text-primary-rgb`. Sass-alias som `$fv-bg` och `$color-bg` är `rgb(var(--color-bg-rgb))`; de följer temat utan omkompilering.
+- Använd `tint($fv-primary, 0.15)` för transparens på RGB-tokens. Sass kan inte beräkna `rgba($fv-primary, 0.15)` när värdet är en CSS-variabel. Hjälparen lämnar `rgba(var(--color-primary-rgb), 0.15)` till webbläsaren.
+- `$white-overlay-*` använder `--surface-overlay-rgb`: vitt i mörkt tema och mörkt bläck i ljust. Använd dem för neutrala komponentytor, hover och kantlinjer, inte för vit text på bilder. Tillgängliga alfasteg: `02`, `03`, `04`, `05`, `06`, `07`, `08`, `10`, `14`, `15`, `20`, `25`, `50`.
+- `$fv-nav-bg` använder bakgrundens RGB-kanaler med alfa `0.9` och `$fv-glass-bg` kortytans med alfa `0.7`.
+- Bootstrap får fasta Sass-färger för beräkningar av kontrast, färgmixning och SVG. `fv-bootstrap-theme` inkluderas efter Bootstrap och kopplar dess CSS-variabler och formulär till aktuella tokens. `bg-body` och `text-body` följer därför temat.
+- Äldre semantiska alias (`--background`, `--foreground`, `--card`, `--primary`, `--accent` med flera) pekar på samma temafärger. Geometri, typografi och brytpunkter ändras inte med temat.
+
+#### Bildkontrast och fasta färger
+
+`--image-scrim` (`#0B0F19`), `--image-text` (`#FFFFFF`) och `--image-text-muted` (`#CBD5E1`) är fasta i båda teman och har RGB-kanaler samt Sass-alias `$image-scrim`, `$image-text`, `$image-text-muted`. Startsidan visar hero-texten direkt över en mörk riktad gradient, utan separat kortruta. På desktop har gradienten minst `0.85` opacitet genom textkolumnen och tonar bort mot bildens högra sida; på mobil går den nedifrån och upp. Bara de nedersta `64px` tonar mot `var(--color-bg)`, så att trailern inte täcks av en ljus slöja. Vita bildkontroller och salongsbildernas vita märkningar har egna mörka kontrastplattor.
+
+`--color-white` (`#FFFFFF`), `--color-black` (`#000000`) och `--color-video-bg` (`#050810`) är också fasta. Vit text på primära knappar ska använda `$fv-white`, inte den temaväxlande rubrikfärgen. Modalbackdrops förblir mörka; modalens innehåll, sidfot och draghandtag följer temat. Skeleton använder `--color-surface-muted` och `--color-surface-2`, även med reducerad rörelse.
+
+#### Verifiering
+
+`Frontend/tests/theme-storage.test.ts` testar exakt validering av `dark`/`light`, standardvärde, läsning, sparande under `fv-theme`, felaktiga värden, blockerad/saknad lagring och full lagring. `theme.test.ts` testar startskriptets överensstämmelse med valideringen, Sass-transparens och minst `4,5:1` kontrast för testade text-/ytpar samt bildtext över en vit bild med mörk platta.
+
+Kör `npm test`, `npm run lint` och `npm run build` i `Frontend/`. Granska dessutom hero, filmdetaljer, salonger, formulär, dialoger och hover/fokus visuellt i båda teman och på mobilbredd. Datum- och tidfält ärver `color-scheme` från dokumentets tema.
 
 ### 2.2 Typografi
 

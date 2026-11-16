@@ -14,38 +14,38 @@
 
   &.feedback-success {
     color: $fv-success;
-    background: rgba($fv-success, 0.12);
-    border: 1px solid rgba($fv-success, 0.25);
+    background: tint($fv-success, 0.12);
+    border: 1px solid tint($fv-success, 0.25);
   }
 
   &.feedback-info {
     color: $fv-info-light;
-    background: rgba($fv-info, 0.12);
-    border: 1px solid rgba($fv-info, 0.25);
+    background: tint($fv-info, 0.12);
+    border: 1px solid tint($fv-info, 0.25);
   }
 
   &.feedback-warning {
     color: $fv-warning;
-    background: rgba($fv-warning, 0.12);
-    border: 1px solid rgba($fv-warning, 0.25);
+    background: tint($fv-warning, 0.12);
+    border: 1px solid tint($fv-warning, 0.25);
   }
 
   &.feedback-error {
     color: $fv-danger-light;
-    background: rgba($fv-primary, 0.12);
-    border: 1px solid rgba($fv-primary, 0.25);
+    background: tint($fv-primary, 0.12);
+    border: 1px solid tint($fv-primary, 0.25);
   }
 }
 
 .btn-feedback-active {
   background-color: $fv-success !important;
   border-color: $fv-success !important;
-  color: $fv-white !important;
+  color: var(--text-on-success) !important;
 }
 
 .btn-feedback-active-soft {
-  background-color: rgba($fv-success, 0.15) !important;
-  border-color: rgba($fv-success, 0.3) !important;
+  background-color: tint($fv-success, 0.15) !important;
+  border-color: tint($fv-success, 0.3) !important;
   color: $fv-success !important;
 }
 
@@ -55,8 +55,8 @@
   gap: 8px;
 
   .btn-inline-cancel {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: $white-overlay-05;
+    border: 1px solid tint($fv-muted-fg, 0.2);
     color: $fv-muted-fg;
     border-radius: $radius-base;
     padding: 4px 12px;
@@ -65,7 +65,7 @@
     transition: all 0.15s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: $white-overlay-10;
       color: $fv-fg;
     }
   }
@@ -73,8 +73,8 @@
 
 // Button variants from design/components.md §3.1
 .btn-secondary-outline {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: $white-overlay-04;
+  border: 1px solid tint($fv-muted-fg, 0.25);
   color: $fv-fg;
   border-radius: $radius-base;
   padding: 8px 16px;
@@ -83,15 +83,15 @@
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: $fv-white;
+    background: $white-overlay-08;
+    border-color: $white-overlay-20;
+    color: $fv-fg;
   }
 }
 
 .btn-destructive-outline {
   background: transparent;
-  border: 1px solid rgba(229, 9, 20, 0.25);
+  border: 1px solid tint($fv-primary, 0.25);
   color: $fv-danger-light;
   border-radius: $radius-base;
   padding: 8px 16px;
@@ -100,15 +100,15 @@
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(229, 9, 20, 0.08);
-    border-color: rgba(229, 9, 20, 0.4);
+    background: tint($fv-primary, 0.08);
+    border-color: tint($fv-primary, 0.4);
     color: $fv-danger-light;
   }
 }
 
 .btn-paid-action {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: tint($fv-success, 0.15);
+  border: 1px solid tint($fv-success, 0.25);
   color: $fv-success;
   border-radius: 8px;
   padding: 6px 12px;
@@ -121,20 +121,20 @@
   transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(16, 185, 129, 0.22);
-    border-color: rgba(16, 185, 129, 0.4);
+    background: tint($fv-success, 0.22);
+    border-color: tint($fv-success, 0.4);
     color: $fv-success;
   }
 
   @media (max-width: ($fv-bp-md - 0.02px)) {
     border-radius: 10px;
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.3);
+    background: tint($fv-success, 0.12);
+    border-color: tint($fv-success, 0.3);
   }
 }
 
 .badge-paid-confirmed {
-  background: rgba(16, 185, 129, 0.08);
+  background: tint($fv-success, 0.08);
   border: 1px solid transparent;
   color: $fv-success;
   border-radius: 8px;

@@ -2,9 +2,11 @@
 
 ## 4. Layout och navigering
 
+Fasta färgexempel i äldre detaljbeskrivningar nedan avser mörkt tema. I implementationen följer motsvarande tokens aktuell palett; se [tematokens](tokens.md#21-färger). Vit bildtext skyddas av en mörk riktad gradient i startsidans hero och av separata mörka kontrastplattor för bildkontroller och salongsmärkningar.
+
 ### 4.1 Applikationsskal (`PublicLayout.tsx` & `AdminLayout.tsx`)
 
-- **Rot-container:** `min-height: 100vh` (`min-vh-100`), `background: $fv-bg` (`#0B0F19`), textfärg `$fv-fg` (`#F8FAFC`).
+- **Rot-container:** `min-height: 100vh` (`min-vh-100`), `bg-body text-body` kopplade via Bootstrap till aktuell `--color-bg` och `--text-primary`. Samma semantiska klasser används av `NotFound.tsx`.
 - **Gemensamt skal och header för publik hemsida och Admin:**
   - Både den publika hemsidan (`PublicLayout.tsx`) och administrationspanelen (`AdminLayout.tsx`) använder **samma design och header-struktur**:
     1. `Navbar` (klibbig toppnavigering, `height: 64px`, `.app-navbar`)
@@ -13,6 +15,13 @@
     4. Sidfot (`footer.public-footer` med `margin-bottom: 64px` på `< 768px`, `0` på `>= 768px`)
     5. `BottomNav` (fast bottennavigering på `< 768px`, `height: 64px`)
 - **Källfiler:** `Frontend/src/layouts/PublicLayout.tsx`, `Frontend/src/layouts/AdminLayout.tsx`.
+
+#### 4.1.1 Temamotor och lagring (FE-36)
+
+- `ThemeProvider` omsluter appen i `main.tsx`. `useTheme()` ger `theme`, `setTheme` och `toggleTheme`; giltiga värden är endast `dark` och `light`. Hooken kräver en provider.
+- `src/utils/theme.ts` läser och sparar `localStorage['fv-theme']`. Saknade/ogiltiga värden och läsfel ger `dark`. Skrivfel fångas så att temaväxlingen fungerar även utan beständig lagring. Inställningen är fristående från inloggning och används i både publik vy och admin.
+- Ett synkront inline-skript först i `index.html`-huvudet läser temat före stilmallarna för att undvika en blinkning av fel tema. Både skriptet och providern synkar `data-theme`, `data-bs-theme` och `style.colorScheme` på `<html>`.
+- Datum-/tidfält ärver dokumentets `color-scheme`. Dialoger, skeleton, text, kantlinjer och komponentytor följer tokens; startsidan använder en mörk gradient bakom vit hero-text utan kortruta. Trailern lämnas fri till höger och bara nederkanten tonar mot sidbakgrunden; övriga vita bildkontroller har mörka kontrastplattor.
 
 ### 4.2 Toppnavigering (`Navbar.tsx` & `BrandLogo.tsx`)
 
@@ -43,6 +52,7 @@
     - **Inaktiv:** Text `#94A3B8` (`$fv-muted-fg`), bakgrund `transparent`. Vid hover: text `#F8FAFC`.
 - **Höger – Åtgärder (`gap: 8px`):**
   - **Sökknapp (`.nav-search-btn`):** `36×36px`, `border-radius: 8px`, bakgrund `rgba(255, 255, 255, 0.04)`, ikon `bi-search` i `#94A3B8` (`aria-label="Sök filmer"`). Klick navigerar till `/filmer?sok=1`, fokuserar filmens sökfält och skrollar till det. Parametern tas sedan bort utan omladdning eller extra historikpost. Knappen fungerar i både publik vy och admin, med hover och synlig röd fokusring.
+  - **Temaväljare (`ThemeToggle`, `.nav-theme-btn`):** `36×36px`, placerad direkt efter sökknappen i publik vy och admin, på både mobil och desktop. Visar `bi-sun` och `aria-label="Byt till ljust tema"` i mörkt tema, `bi-moon-stars` och `aria-label="Byt till mörkt tema"` i ljust. Ikonen är dold för skärmläsare; knappen har synlig fokusindikator.
   - **Desktop (`>= 768px`, `d-none d-md-flex`):**
     - **Utloggad (Gäst):**
       1. **`Logga in`-länk (`.nav-login-btn`):** Navigerar till `/logga-in`. `padding: 8px 16px`, `border-radius: 8px`, `font-size: 14px`, `font-weight: 500`, kantlinje `1px solid rgba(148, 163, 184, 0.25)`, text `#94A3B8` (aktiv: `#F8FAFC` och bakgrund `rgba(248, 250, 252, 0.07)`).
@@ -57,7 +67,7 @@
 ### 4.3 Admin-navigering (Samma header som vanliga hemsidan)
 
 - Admin har **ingen separat admin-topbar** från Figma-prototypen. I stället använder `/admin` samma `Navbar`, `MobileDrawer` och `BottomNav` som den vanliga hemsidan:
-  - **Header (`Navbar.tsx`):** Samma höjd (`64px`), bakgrund (`.app-navbar`), container (`1280px`), logotyp (`BrandLogo` + `ADMIN`-badge), `.public-nav-link`-knappar och högerställda kontroller (sökknapp, avatar-dropdown på desktop, hamburgerknapp på mobil).
+  - **Header (`Navbar.tsx`):** Samma höjd (`64px`), bakgrund (`.app-navbar`), container (`1280px`), logotyp (`BrandLogo` + `ADMIN`-badge), `.public-nav-link`-knappar och högerställda kontroller (sökknapp, temaväljare, avatar-dropdown på desktop, hamburgerknapp på mobil).
   - **Desktop-länkar i `/admin`:** `Backoffice` (`/admin`), `Bokningar` (`/admin/bokningar`), `Schema` (`/admin/visningar`), `Filmer` (`/admin/filmer`), `Salonger` (`/admin/salonger`) samt `Till biografen` (`/`).
   - **Mobil i `/admin` (`< 768px`):** Använder samma `MobileDrawer` och `BottomNav` som övriga sidor, där `BottomNav` och `MobileDrawer` visar admin-länkarna när man befinner sig i `/admin`.
 
@@ -110,6 +120,7 @@
      - **Aktivt tillstånd (`.active`):** Bakgrund `rgba(229, 9, 20, 0.1)`, text `#E50914`, `font-weight: 600`, `border-left: 2px solid #E50914`.
      - **Inaktivt tillstånd:** Bakgrund `transparent`, text `#94A3B8`, `font-weight: 400`, `border-left: 2px solid transparent`.
   3. **Footer-knappar (`.drawer-footer`, `padding: 16px 12px 32px`, `border-top: 1px solid rgba(148, 163, 184, 0.1)`, `gap: 8px`):**
+     - **Temaväljare:** `ThemeToggle variant="menu"` (`.drawer-theme-btn`), full bredd och minst `44px` hög, före inloggnings-/utloggningsknapparna. Synlig svensk text och ikon matchar toppnavigeringens knapp. Temabyte håller mobilmenyn öppen och uppdaterar båda knapparna.
      - **Inloggad:** `Logga ut` (`.drawer-logout-btn`, röd outline-knapp, `border: 1px solid rgba(229, 9, 20, 0.4)`, text `#E50914`, `padding: 12px`, `border-radius: 10px`).
      - **Utloggad (Gäst):** `Logga in` (`.drawer-login-outline-btn`, sekundär outline-knapp till `/logga-in`) och `Bli Medlem` (`.drawer-login-btn`, primär röd knapp `#E50914` till `/skapa-konto`).
 - **Källfil:** `Frontend/src/components/MobileDrawer.tsx`.
@@ -123,6 +134,7 @@
   - **Kolumn 3 – Information:** Notisruta `Betalning sker alltid på plats i kassan vid ankomst.` (Ingen oautentiserad demo-länk till Admin i sidfoten för icke-admins).
 
 - **Responsivitet:** `footer-grid` har en kolumn under 640px och tre kolumner från 640px. `.public-footer` lämnar 64px under sig på mobil för bottennavigeringen.
+- **Lokal lagring:** `Cookie-inställningar` beskriver sessionscookien, bokningsbekräftelse i `sessionStorage` och temavalet i `localStorage` som återställs vid nästa besök. Lagrade uppgifter kan rensas i webbläsarens inställningar.
 - **Informationslänkar:** `Integritetspolicy` och `Cookie-inställningar` öppnar `Modal`; Admin-länken visas endast för `user.role === 'admin'`. Ingen publik admin-demo.
 - **Källfiler:** `Frontend/src/components/Footer.tsx`, båda layouterna och `Frontend/src/styles/_navigation.scss`.
 

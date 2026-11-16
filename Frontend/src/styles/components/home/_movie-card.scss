@@ -115,7 +115,7 @@
     border-color 0.15s ease;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: $white-overlay-50;
     background-color: $color-surface-chip-hover;
     color: $text-heading;
   }

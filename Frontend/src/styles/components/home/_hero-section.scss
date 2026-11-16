@@ -1,4 +1,6 @@
 .hero-section {
+  --hero-text-width: 540px;
+  --hero-side-padding: #{$space-2};
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -7,27 +9,45 @@
   background-color: $color-bg;
   isolation: isolate;
 
-  &::after {
+  // Keep contrast behind the copy without washing out the whole trailer.
+  &::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(to top, $color-bg 0%, rgba($color-bg, 0.85) 45%, rgba($color-bg, 0.3) 100%);
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      tint($image-scrim, 0.96) 0%,
+      tint($image-scrim, 0.85) 90%,
+      tint($image-scrim, 0.7) 100%
+    );
+  }
+
+  // Only the bottom edge blends into the current page theme.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 64px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--color-bg), transparent);
   }
 
   @media (min-width: 768px) {
+    --hero-text-width: min(540px, 48vw);
+    --hero-side-padding: 88px;
     align-items: center;
 
-    &::after {
-      background:
-        linear-gradient(to top, $color-bg 0%, transparent 25%),
-        linear-gradient(
-          to right,
-          rgba($color-bg, 0.95) 0%,
-          rgba($color-bg, 0.75) 35%,
-          rgba($color-bg, 0.25) 70%,
-          rgba($color-bg, 0.5) 100%
-        );
+    &::before {
+      background: linear-gradient(
+        to right,
+        tint($image-scrim, 0.94) 0%,
+        tint($image-scrim, 0.85) calc(var(--hero-side-padding) + var(--hero-text-width)),
+        tint($image-scrim, 0.3) calc(var(--hero-side-padding) + var(--hero-text-width) + 10vw),
+        transparent calc(var(--hero-side-padding) + var(--hero-text-width) + 25vw)
+      );
     }
   }
 }
@@ -77,16 +97,17 @@
 }
 
 .hero-section__content {
-  padding: 3rem $space-2;
+  padding: 3rem var(--hero-side-padding) 5rem;
 
   // Leaves room for the side arrows
   @media (min-width: 768px) {
-    padding: 8rem 88px 3rem;
+    padding: 5rem var(--hero-side-padding);
   }
 }
 
 .hero-section__text {
-  max-width: 540px;
+  max-width: var(--hero-text-width);
+  color: $image-text;
   animation: hero-fade-in 0.6s ease;
 }
 
@@ -109,20 +130,20 @@
 
 .hero-section__genre {
   padding: 0.4em 0.9em;
-  background-color: rgba(255, 255, 255, 0.12);
-  color: $text-heading;
+  background-color: tint($image-text, 0.12);
+  color: $image-text;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .hero-section__duration {
-  color: $text-secondary;
+  color: $image-text-muted;
   font-size: 0.875rem;
 }
 
 .hero-section__title {
-  color: $text-heading;
+  color: $image-text;
   font-size: clamp(2.25rem, 5vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
@@ -134,7 +155,7 @@
   -webkit-line-clamp: 3;
   line-clamp: 3;
   overflow: hidden;
-  color: $text-secondary;
+  color: $image-text-muted;
   line-height: 1.6;
 }
 
@@ -149,29 +170,29 @@
 }
 
 .btn-hero-primary {
-  --bs-btn-color: #{$text-heading};
+  --bs-btn-color: #{$image-text};
   --bs-btn-bg: #{$color-primary};
   --bs-btn-border-color: #{$color-primary};
-  --bs-btn-hover-color: #{$text-heading};
+  --bs-btn-hover-color: #{$image-text};
   --bs-btn-hover-bg: #{$color-primary-dark};
   --bs-btn-hover-border-color: #{$color-primary-dark};
-  --bs-btn-active-color: #{$text-heading};
+  --bs-btn-active-color: #{$image-text};
   --bs-btn-active-bg: #{$color-primary-dark};
   --bs-btn-active-border-color: #{$color-primary-dark};
   font-weight: 700;
 }
 
 .btn-hero-secondary {
-  --bs-btn-color: #{$text-heading};
-  --bs-btn-bg: #{$color-surface-2};
+  --bs-btn-color: #{$image-text};
+  --bs-btn-bg: #{$image-scrim};
   --bs-btn-border-width: 1px;
-  --bs-btn-border-color: rgba(255, 255, 255, 0.7);
-  --bs-btn-hover-color: #{$text-heading};
-  --bs-btn-hover-bg: #28365c;
-  --bs-btn-hover-border-color: #{$text-heading};
-  --bs-btn-active-color: #{$text-heading};
-  --bs-btn-active-bg: #30406c;
-  --bs-btn-active-border-color: #{$text-heading};
+  --bs-btn-border-color: #{tint($image-text, 0.7)};
+  --bs-btn-hover-color: #{$image-text};
+  --bs-btn-hover-bg: #{tint($image-text, 0.12)};
+  --bs-btn-hover-border-color: #{$image-text};
+  --bs-btn-active-color: #{$image-text};
+  --bs-btn-active-bg: #{tint($image-text, 0.2)};
+  --bs-btn-active-border-color: #{$image-text};
 }
 
 .hero-carousel__controls {
@@ -193,15 +214,15 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border: 1px solid $white-overlay-25;
+  border: 1px solid tint($image-text, 0.4);
   border-radius: $radius-full;
-  background-color: rgba($color-bg, 0.6);
-  color: $text-heading;
+  background-color: tint($image-scrim, 0.85);
+  color: $image-text;
   backdrop-filter: blur(6px);
   transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: rgba($color-bg, 0.9);
+    background-color: $image-scrim;
   }
 }
 
@@ -233,6 +254,9 @@
 }
 
 .hero-carousel__bottom {
+  padding: 8px 12px;
+  border-radius: $radius-full;
+  background: tint($image-scrim, 0.9);
   display: flex;
   align-items: center;
   gap: $space-1;
@@ -245,7 +269,7 @@
   padding: 0;
   border: 0;
   border-radius: $radius-full;
-  background-color: $white-overlay-25;
+  background-color: tint($image-text, 0.55);
   transition:
     width 0.2s ease,
     background-color 0.2s ease;

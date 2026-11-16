@@ -7,7 +7,7 @@ import EmailVerificationNotice from '../components/auth/EmailVerificationNotice'
 
 export default function PublicLayout() {
   return (
-    <div className="d-flex flex-column min-vh-100 bg-dark text-light">
+    <div className="d-flex flex-column min-vh-100 bg-body text-body">
       <a href="#main-content" className="fv-skip-link">Hoppa till huvudinnehåll</a>
       <Navbar />
       <MobileDrawer />

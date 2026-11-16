@@ -92,7 +92,7 @@ export default function CancelBooking() {
 
   return (
     <div className="container fv-cancel-page">
-      <h1 className="h3 fw-bold text-light mb-3">Avboka bokning</h1>
+      <h1 className="h3 fw-bold text-body mb-3">Avboka bokning</h1>
       <p className="text-secondary mb-4">
         Ange bokningsnumret från din bekräftelse och e-postadressen som användes vid bokningen.
         Du kan avboka senast 2 timmar före visningen.
@@ -101,13 +101,13 @@ export default function CancelBooking() {
       {state === 'success' ? (
         <div ref={feedback} tabIndex={-1} role="status" className="fv-cancel-receipt-card p-4">
           <div className="fv-cancel-success-icon" aria-hidden="true"><i className="bi bi-check-lg" /></div>
-          <h2 className="h4 text-light">Bokningen är avbokad</h2>
+          <h2 className="h4 text-body">Bokningen är avbokad</h2>
           <p>Bokning <span className="fv-cancel-ref-badge">{booking?.bookingRef}</span> har avbokats och dina platser har släppts fria.</p>
-          <Link to="/" className="btn btn-outline-secondary">Till startsidan</Link>
+          <Link to="/" className="btn btn-secondary-outline">Till startsidan</Link>
         </div>
       ) : showingBooking ? (
         <section className="fv-cancel-receipt-card p-4" aria-labelledby="cancel-details-title">
-          <h2 id="cancel-details-title" className="h4 text-light">Din biobokning</h2>
+          <h2 id="cancel-details-title" className="h4 text-body">Din biobokning</h2>
           <p><span className="fv-cancel-ref-badge">{booking.bookingRef}</span></p>
           <div className="d-flex gap-3 mb-4">
             {booking.posterUrl ? (
@@ -116,7 +116,7 @@ export default function CancelBooking() {
               </div>
             ) : null}
             <div>
-              <h3 className="h5 text-light">{booking.movieTitle}</h3>
+              <h3 className="h5 text-body">{booking.movieTitle}</h3>
               <p className="mb-1">{capitalize(formatDateLong(toCinemaIsoDate(booking.screeningStartsAt)))} kl. {formatTime(booking.screeningStartsAt)}</p>
               <p className="mb-1">{booking.cinemaName}</p>
               <p className="mb-0">{booking.seats.join(' · ')}</p>
@@ -127,7 +127,7 @@ export default function CancelBooking() {
             <button type="button" className="btn btn-danger" onClick={() => setIsModalOpen(true)} disabled={busy}>
               Öppna avbokningsdialog
             </button>
-            <button type="button" className="btn btn-outline-secondary" disabled={busy} onClick={() => {
+            <button type="button" className="btn btn-secondary-outline" disabled={busy} onClick={() => {
               setBooking(null)
               setCredentials(null)
               setActionError(null)

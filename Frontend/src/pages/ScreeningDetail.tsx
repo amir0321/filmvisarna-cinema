@@ -497,7 +497,7 @@ export default function ScreeningDetail() {
               {guestMessage && <p role="status" className="text-success">{guestMessage}</p>}
               {user && !user.isVerified && <div role="status" className="fv-notice">
                 <p>Verifiera din e-postadress innan du bokar biljetter. Du kan skicka ett nytt verifieringsmejl via meddelandet överst på sidan.</p>
-                <button type="button" className="btn btn-outline-light btn-sm" disabled={pending}
+                <button type="button" className="btn btn-secondary-outline btn-sm" disabled={pending}
                   onClick={async () => {
                     setPending(true)
                     try { await refreshUser() } catch { setMessage('Kunde inte kontrollera verifieringen. Försök igen.') }

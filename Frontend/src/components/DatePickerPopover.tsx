@@ -184,7 +184,7 @@ export default function DatePickerPopover({
         {loading ? <p role="status">Hämtar visningsdatum...</p>
           : error ? <div role="alert">
             <p>Kunde inte hämta visningsdatum.</p>
-            <button type="button" className="btn btn-outline-light btn-sm" onClick={() => void refetch()}>Försök igen</button>
+            <button type="button" className="btn btn-secondary-outline btn-sm" onClick={() => void refetch()}>Försök igen</button>
           </div>
             : availableDates.length === 0 ? <p role="status">Inga planerade visningar under perioden.</p>
               : <p className="date-picker-popover__legend">Markerade datum har visningar. Grå datum kan inte väljas.</p>}

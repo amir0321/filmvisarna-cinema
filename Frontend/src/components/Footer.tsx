@@ -102,6 +102,10 @@ export default function Footer({ onOpenCookieSettings }: FooterProps) {
                 Din bokningsbekräftelse sparas tillfälligt i flikens sessionslagring
                 (sessionStorage) så att du kan läsa den när du laddar om sidan.
               </p>
+              <p>
+                Ditt val av ljust eller mörkt tema sparas i webbläsarens lokala lagring
+                (localStorage) så att samma tema används när du besöker webbplatsen igen.
+              </p>
               <p className="mb-0">
                 Appen använder inga valfria analys- eller marknadsföringscookies. Det finns
                 därför inga cookie-val att ändra här. Du kan rensa webbplatsens lagrade

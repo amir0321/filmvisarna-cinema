@@ -36,7 +36,7 @@
 
   &__role {
     padding: 6px 12px;
-    background-color: rgba($color-success, 0.15);
+    background-color: tint($color-success, 0.15);
     color: $color-success;
     font-size: $font-size-12;
   }
@@ -72,14 +72,14 @@
   }
 
   &--upcoming &__status {
-    background-color: rgba($color-success, 0.08);
-    border-bottom-color: rgba($color-success, 0.15);
+    background-color: tint($color-success, 0.08);
+    border-bottom-color: tint($color-success, 0.15);
     color: $color-success;
   }
 
   &--cancelled &__status {
     background-color: $cancelled-badge-bg;
-    border-bottom-color: rgba($color-danger-soft, 0.15);
+    border-bottom-color: tint($color-danger-soft, 0.15);
     color: $color-danger-soft;
   }
 
@@ -98,7 +98,7 @@
 
   &__kiosk {
     max-width: 100%;
-    background-color: rgba($color-info, 0.15);
+    background-color: tint($color-info, 0.15);
     color: $color-info-light;
     white-space: normal;
   }

@@ -119,7 +119,7 @@ export default function MyBookings() {
               </div>
 
               <div className="fv-my-bookings__profile-text">
-                <h2 className="h5 fw-bold text-light mb-1">
+                <h2 className="h5 fw-bold text-body mb-1">
                   {getUserDisplayName(user)}
                 </h2>
 

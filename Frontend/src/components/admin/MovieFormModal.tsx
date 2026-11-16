@@ -178,7 +178,7 @@ export default function MovieFormModal({ movie, onClose, onSaved }: MovieFormMod
             <p id={`${id}-search-status`} className="movie-form__hint" role="status">
               {searchLoading ? 'Söker efter filmer…' : canSearch && currentSearch && !currentSearch.error && currentSearch.results.length === 0 ? 'Inga filmer hittades. Prova en annan titel eller fyll i filmen manuellt.' : null}
             </p>
-            {canSearch && currentSearch?.error ? <><InlineFeedback variant="danger" message={currentSearch.error} /><button type="button" className="btn btn-sm btn-outline-light mt-2" onClick={() => setRetry(count => count + 1)}>Försök igen</button></> : null}
+            {canSearch && currentSearch?.error ? <><InlineFeedback variant="danger" message={currentSearch.error} /><button type="button" className="btn btn-sm btn-secondary-outline mt-2" onClick={() => setRetry(count => count + 1)}>Försök igen</button></> : null}
             {canSearch && currentSearch && !currentSearch.loading && currentSearch.results.length > 0 ? (
               <ul className="movie-form__suggestions" aria-label="Filmförslag från TMDB">
                 {currentSearch.results.map(suggestion => <li key={suggestion.tmdbId}><button type="button" onClick={() => void importMovie(suggestion.tmdbId)}>
@@ -214,7 +214,7 @@ export default function MovieFormModal({ movie, onClose, onSaved }: MovieFormMod
                 {posterError ? <InlineFeedback variant="danger" message={posterError} /> : null}
                 <label htmlFor={`${id}-poster-url`} className="form-label">Eller ange affischens bild-URL</label>
                 <input id={`${id}-poster-url`} className="form-control" inputMode="url" maxLength={2048} value={values.poster_url} onChange={event => { releasePosterPreview(); setPosterError(null); change('poster_url', event.target.value) }} />
-                <button type="button" className="btn btn-sm btn-outline-light mt-2" onClick={() => { releasePosterPreview(); setPosterError(null); change('poster_url', '') }}>Ta bort affisch</button>
+                <button type="button" className="btn btn-sm btn-secondary-outline mt-2" onClick={() => { releasePosterPreview(); setPosterError(null); change('poster_url', '') }}>Ta bort affisch</button>
               </div>
             </div>
             <div className="movie-form__grid">
@@ -228,7 +228,7 @@ export default function MovieFormModal({ movie, onClose, onSaved }: MovieFormMod
           {castDraftOpen ? <p className="movie-form__hint" role="status">Spara eller avbryt skådespelarens redigering innan du sparar filmen eller hämtar en annan film.</p> : null}
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" className="btn btn-outline-light" onClick={onClose} disabled={saving}>{saved ? 'Stäng' : 'Avbryt'}</button>
+          <button type="button" className="btn btn-secondary-outline" onClick={onClose} disabled={saving}>{saved ? 'Stäng' : 'Avbryt'}</button>
           <button type="submit" className={`btn ${saved ? 'btn-success' : 'btn-danger'}`} disabled={locked || castDraftOpen || saved}>
             {saving ? <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" /> : null}
             {saving ? 'Sparar…' : saved ? 'Sparad!' : movieId === null ? 'Lägg till film' : 'Spara ändringar'}

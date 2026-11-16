@@ -247,7 +247,7 @@ export default function CastMemberEditor({ value, onChange, disabled = false, on
           <input ref={searchInputRef} id={`${id}-search`} type="search" className="form-control" value={query} maxLength={200}
             placeholder="Skriv minst två tecken" aria-describedby={`${id}-search-status`}
             onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.preventDefault() }} />
-          <button type="button" className="btn btn-outline-light" onClick={() => openDraft(null)}><i className="bi bi-plus-lg me-1" aria-hidden="true" />Ny skådespelare</button>
+          <button type="button" className="btn btn-secondary-outline" onClick={() => openDraft(null)}><i className="bi bi-plus-lg me-1" aria-hidden="true" />Ny skådespelare</button>
         </div>
         <div id={`${id}-search-status`} role="status" className="cast-editor__search-status">
           {searching ? 'Söker efter skådespelare…' : canSearch && currentSearch && !currentSearch.error && currentSearch.people.length === 0 ? 'Inga skådespelare hittades. Du kan lägga till en ny.' : null}
@@ -258,7 +258,7 @@ export default function CastMemberEditor({ value, onChange, disabled = false, on
             {currentSearch.people.map(person => {
               const added = value.some(member => samePerson(member, { ...person, person_id: person.id }))
               return <li key={person.id}><ProfileImage src={safePhoto(person.photo_url)} name={person.name} /><span>{person.name}</span>
-                <button type="button" className="btn btn-sm btn-outline-light" disabled={added} onClick={() => addPerson(person)}
+                <button type="button" className="btn btn-sm btn-secondary-outline" disabled={added} onClick={() => addPerson(person)}
                   aria-label={added ? `${person.name} är redan tillagd` : `Lägg till ${person.name}`}>{added ? 'Redan tillagd' : 'Lägg till'}</button></li>
             })}
           </ul>
@@ -299,7 +299,7 @@ export default function CastMemberEditor({ value, onChange, disabled = false, on
                   releasePreview(); setFileError(null); updateDraft('file', null); updateDraft('photoUrl', event.target.value)
                 }} />
               <p id={`${id}-url-help`} className={`cast-editor__hint${invalidUrl ? ' text-danger' : ''}`}>Använd http://, https:// eller /uploads/ utan inloggningsuppgifter eller dubbla punkter i sökvägen.</p>
-              <button type="button" className="btn btn-sm btn-outline-light" onClick={() => {
+              <button type="button" className="btn btn-sm btn-secondary-outline" onClick={() => {
                 releasePreview(); setFileError(null); updateDraft('file', null); updateDraft('photoUrl', '')
               }}>Ta bort profilbild</button>
             </div>
@@ -309,7 +309,7 @@ export default function CastMemberEditor({ value, onChange, disabled = false, on
           <label htmlFor={`${id}-character`} className="form-label">Rollfigur i filmen</label>
           <input id={`${id}-character`} className="form-control" value={draft.character} maxLength={300} onChange={event => updateDraft('character', event.target.value)} />
           <div className="cast-editor__draft-actions">
-            <button type="button" className="btn btn-outline-light" onClick={closeDraft}>Avbryt</button>
+            <button type="button" className="btn btn-secondary-outline" onClick={closeDraft}>Avbryt</button>
             <button type="button" className="btn btn-danger" onClick={() => void saveDraft()} disabled={!draft.name.trim() || Boolean(invalidUrl) || fileError !== null}>
               {pending ? <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" /> : null}
               {pending === 'upload' ? 'Laddar upp bild…' : pending === 'save' ? 'Sparar profil…' : draft.index === null ? 'Spara profil och lägg till' : 'Spara profil och rollfigur'}

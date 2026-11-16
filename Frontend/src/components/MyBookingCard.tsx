@@ -110,7 +110,7 @@ export default function MyBookingCard({
           {booking.status === "confirmed" && onViewTicket && (
             <button
               type="button"
-              className="btn btn-outline-light"
+              className="btn btn-secondary-outline"
               onClick={() => onViewTicket?.(booking)}
               aria-label={`Visa biljett för ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
               disabled={!onViewTicket}
@@ -122,7 +122,7 @@ export default function MyBookingCard({
           {bookingState === "upcoming" && onCancel && (
             <button
               type="button"
-              className="btn btn-outline-danger"
+              className="btn btn-danger"
               onClick={() => onCancel?.(booking)}
               aria-label={`Avboka ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
               disabled={!canCancel || !onCancel}

@@ -25,20 +25,20 @@
   border-radius: $radius-pill;
   font-size: 13px;
   font-weight: 400;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid tint($fv-muted-fg, 0.2);
+  background: $white-overlay-03;
   color: $fv-muted-fg;
   transition: all 0.15s ease;
   cursor: pointer;
   white-space: nowrap;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: $white-overlay-25;
     color: $fv-fg;
   }
 
   &.active {
-    background: rgba($fv-primary, 0.15);
+    background: tint($fv-primary, 0.15);
     border-color: $fv-primary;
     color: $fv-danger-light;
     font-weight: 600;
@@ -53,7 +53,7 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid tint($fv-muted-fg, 0.2);
   background: transparent;
   color: $fv-muted-fg;
   transition: all 0.15s ease;
@@ -61,7 +61,7 @@
   white-space: nowrap;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: $white-overlay-25;
     color: $fv-fg;
   }
 
@@ -80,8 +80,8 @@
   border-radius: $radius-md;
   font-size: 12px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: $white-overlay-07;
+  border: 1px solid $white-overlay-10;
   color: $fv-fg;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -91,9 +91,9 @@
     cursor: pointer;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.25);
-      color: $fv-white;
+      background: $white-overlay-14;
+      border-color: $white-overlay-25;
+      color: $fv-fg;
     }
   }
 
@@ -103,8 +103,8 @@
   }
 
   &.fv-screening-pill-low {
-    background: rgba($fv-primary, 0.15);
-    border-color: rgba($fv-primary, 0.3);
+    background: tint($fv-primary, 0.15);
+    border-color: tint($fv-primary, 0.3);
     color: $fv-danger-light;
 
     .seats-left {

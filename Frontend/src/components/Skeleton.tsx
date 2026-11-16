@@ -36,7 +36,7 @@ export function Skeleton({
 
 export function MovieCardSkeleton() {
   return (
-    <div className="card h-100 shadow-sm border-0 bg-card text-light overflow-hidden">
+    <div className="card h-100 shadow-sm border-0 bg-card text-body overflow-hidden">
       <div style={{ aspectRatio: '2 / 3', width: '100%' }}>
         <Skeleton variant="rect" />
       </div>
@@ -103,7 +103,7 @@ export function CardListSkeleton({
       {items.map((i) => (
         <div
           key={i}
-          className="card bg-card border-secondary border-opacity-25 p-4 rounded-3"
+          className="card bg-card p-4 rounded-3"
         >
           <div className="d-flex align-items-center gap-3">
             <Skeleton variant="rect" width="56px" height="84px" className="rounded-2 flex-shrink-0" />
