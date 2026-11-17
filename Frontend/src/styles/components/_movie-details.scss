@@ -143,6 +143,7 @@
   @media (min-width: $fv-bp-md) {
     grid-column: 2;
     grid-row: 2;
+    align-self: stretch;
   }
 }
 
@@ -339,6 +340,10 @@
   background: $fv-card-bg;
   border: 1px solid $fv-border;
   border-radius: $fv-card-radius;
+
+  @media (min-width: $fv-bp-md) {
+    flex: 1;
+  }
 }
 
 .screening-section__title {
