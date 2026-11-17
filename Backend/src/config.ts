@@ -7,7 +7,7 @@ const schema = z.object({
     const url = new URL(value);
     return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/';
   }, 'must be an HTTP(S) origin without credentials, a path, query or fragment'),
-  PORT: z.coerce.number().int().default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
   JWT_EXPIRES_IN: z.string().default("8h"),
   CORS_ORIGIN: z.string().default("http://localhost:5173").refine(value => value.split(',').every(origin => {
@@ -16,6 +16,8 @@ const schema = z.object({
   }), 'must contain explicit HTTP(S) origins without wildcards or paths'),
   TIMEZONE: z.string().default("Europe/Stockholm"),
   SCREENING_BUFFER_MINUTES: z.coerce.number().int().min(0).default(20),
+  SCREENINGS_REFILL_ENABLED: z.enum(['true', 'false']).optional(),
+  SCREENINGS_REFILL_DAYS: z.coerce.number().int().min(1).max(60).default(21),
   CANCELLATION_DEADLINE_HOURS: z.coerce.number().int().min(0).default(2),
   BOOKING_ATTEMPTS_PER_15_MIN: z.coerce.number().int().positive().default(3),
   BOOKING_IP_ATTEMPTS_PER_15_MIN: z.coerce.number().int().positive().default(30),
@@ -54,6 +56,9 @@ export const config = {
   corsOrigin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
   timezone: env.TIMEZONE,
   screeningBufferMinutes: env.SCREENING_BUFFER_MINUTES,
+  screeningsRefillEnabled: env.SCREENINGS_REFILL_ENABLED === undefined
+    ? env.NODE_ENV === 'production' : env.SCREENINGS_REFILL_ENABLED === 'true',
+  screeningsRefillDays: env.SCREENINGS_REFILL_DAYS,
   cancellationDeadlineHours: env.CANCELLATION_DEADLINE_HOURS,
   bookingLimits: {
     attempts: env.BOOKING_ATTEMPTS_PER_15_MIN,

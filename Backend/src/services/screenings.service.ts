@@ -249,7 +249,7 @@ export async function updateScreening(
       validateScreeningStartsAt(startsAt);
     }
 
-    await assertCinemaExists(client, cinemaId);
+    await assertCinemaExists(client, cinemaId, true);
     const duration = await getMovieDuration(client, movieId);
     await assertNoScreeningOverlap(client, cinemaId, startsAt, duration, id);
 

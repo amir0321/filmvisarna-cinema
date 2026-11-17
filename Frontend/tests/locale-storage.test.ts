@@ -47,7 +47,7 @@ test('unavailable or blocked storage does not break preference switching', () =>
 
 test('startup applies language and theme before styles load, with storage failure defaults', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)![1]
+  const script = readFileSync(new URL('../public/theme-init.js', import.meta.url), 'utf8')
   for (const blocked of [false, true]) {
     const attributes: Record<string, string> = {}
     const root = { lang: '', style: { colorScheme: '' }, setAttribute: (key: string, value: string) => { attributes[key] = value } }
@@ -59,7 +59,7 @@ test('startup applies language and theme before styles load, with storage failur
     assert.equal(attributes['data-theme'], blocked ? 'dark' : 'light')
     assert.equal(attributes['data-bs-theme'], root.style.colorScheme)
   }
-  assert.ok(html.indexOf('<script>') < html.indexOf('rel="stylesheet"'))
+  assert.ok(html.indexOf('<script src="/theme-init.js">') < html.indexOf('rel="stylesheet"'))
 })
 
 test('Swedish and English dictionaries have the same keys and interpolation parameters', () => {

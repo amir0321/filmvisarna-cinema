@@ -4,8 +4,9 @@ import path from "node:path";
 import fs from "node:fs";
 import { HttpError } from "../utils/httpErorr.js";
 import { requireAdmin } from "../middleware/auth.js";
+import { uploadsFolder } from '../paths.js';
 
-const uploadDir = path.resolve(process.cwd(), "uploads");
+const uploadDir = uploadsFolder;
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
