@@ -1,4 +1,13 @@
-export type BookingStatus = 'confirmed' | 'cancelled'
+export type BookingStatus = 'confirmed' | 'reserved' | 'cancelled' | 'expired'
+
+export interface ReservationWarningStatus {
+  warningCount: number
+  warningLimit: number
+  windowDays: number
+  blockDays: number
+  blockedUntil: string | null
+  warnings: { id: number; bookingRef: string; screeningEndedAt: string; recordedAt: string; usedForBlock: boolean }[]
+}
 
 export interface BookingRequestPayload {
   screeningId: number
@@ -15,6 +24,7 @@ export interface BookingCreatedResult {
 }
 
 export interface GuestBookingPreview {
+  reservationStatus: ReservationWarningStatus
   email: string
   guestName: string | null
   expiresAt: string

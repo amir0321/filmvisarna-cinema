@@ -1,3 +1,6 @@
+import { translateSeatLabel } from '../utils/bookingPresentation'
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import {
@@ -14,6 +17,7 @@ import { capitalize, formatDateLong, formatTime, toCinemaIsoDate } from '../util
 import type { CancelPreviewResult } from '../types/booking'
 
 export default function CancelBooking() {
+  const { t, locale } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -92,22 +96,21 @@ export default function CancelBooking() {
 
   return (
     <div className="container fv-cancel-page">
-      <h1 className="h3 fw-bold text-body mb-3">Avboka bokning</h1>
+      <h1 className="h3 fw-bold text-body mb-3">{t('cancellation.title')}</h1>
       <p className="text-secondary mb-4">
-        Ange bokningsnumret från din bekräftelse och e-postadressen som användes vid bokningen.
-        Du kan avboka senast 2 timmar före visningen.
+        {t('cancellation.intro')}
       </p>
 
       {state === 'success' ? (
         <div ref={feedback} tabIndex={-1} role="status" className="fv-cancel-receipt-card p-4">
           <div className="fv-cancel-success-icon" aria-hidden="true"><i className="bi bi-check-lg" /></div>
-          <h2 className="h4 text-body">Bokningen är avbokad</h2>
-          <p>Bokning <span className="fv-cancel-ref-badge">{booking?.bookingRef}</span> har avbokats och dina platser har släppts fria.</p>
-          <Link to="/" className="btn btn-secondary-outline">Till startsidan</Link>
+          <h2 className="h4 text-body">{t('cancellation.successTitle')}</h2>
+          <p>{t('cancellation.success', { reference: booking?.bookingRef ?? '' })}</p>
+          <Link to="/" className="btn btn-secondary-outline">{t('common.home')}</Link>
         </div>
       ) : showingBooking ? (
         <section className="fv-cancel-receipt-card p-4" aria-labelledby="cancel-details-title">
-          <h2 id="cancel-details-title" className="h4 text-body">Din biobokning</h2>
+          <h2 id="cancel-details-title" className="h4 text-body">{t('cancellation.yourBooking')}</h2>
           <p><span className="fv-cancel-ref-badge">{booking.bookingRef}</span></p>
           <div className="d-flex gap-3 mb-4">
             {booking.posterUrl ? (
@@ -117,50 +120,50 @@ export default function CancelBooking() {
             ) : null}
             <div>
               <h3 className="h5 text-body">{booking.movieTitle}</h3>
-              <p className="mb-1">{capitalize(formatDateLong(toCinemaIsoDate(booking.screeningStartsAt)))} kl. {formatTime(booking.screeningStartsAt)}</p>
+              <p className="mb-1">{t('common.dateTime', { date: capitalize(formatDateLong(toCinemaIsoDate(booking.screeningStartsAt), locale)), time: formatTime(booking.screeningStartsAt, locale) })}</p>
               <p className="mb-1">{booking.cinemaName}</p>
-              <p className="mb-0">{booking.seats.join(' · ')}</p>
+              <p className="mb-0">{booking.seats.map(seat => translateSeatLabel(seat, locale)).join(' · ')}</p>
             </div>
           </div>
-          {!isModalOpen ? <p role="status">Din bokning finns kvar. Öppna dialogen om du vill avboka.</p> : null}
+          {!isModalOpen ? <p role="status">{t('cancellation.kept')}</p> : null}
           <div className="d-flex flex-wrap gap-2">
             <button type="button" className="btn btn-danger" onClick={() => setIsModalOpen(true)} disabled={busy}>
-              Öppna avbokningsdialog
+              {t('cancellation.openDialog')}
             </button>
             <button type="button" className="btn btn-secondary-outline" disabled={busy} onClick={() => {
               setBooking(null)
               setCredentials(null)
               setActionError(null)
               setState('idle')
-            }}>Sök annan bokning</button>
+            }}>{t('cancellation.searchAnother')}</button>
           </div>
         </section>
       ) : (
         <form className="fv-cancel-form fv-cancel-receipt-card p-4 p-md-5" onSubmit={handleLookup} aria-busy={busy}>
           <div className="mb-4">
-            <label htmlFor="cancel-booking-ref" className="form-label">Bokningsnummer</label>
+            <label htmlFor="cancel-booking-ref" className="form-label">{t('cancellation.reference')}</label>
             <input id="cancel-booking-ref" name="bookingRef" className="form-control fv-cancel-form__reference"
               value={bookingRef} onChange={event => setBookingRef(event.target.value)}
               placeholder="FV-XXXXX" autoCapitalize="characters" autoComplete="off" spellCheck={false}
               aria-describedby="cancel-ref-help" required pattern="\s*[Ff][Vv]-[A-Za-z0-9]{5}\s*" disabled={busy} />
-            <p id="cancel-ref-help" className="form-text text-secondary">Du hittar bokningsnumret i ditt bekräftelsemejl, till exempel FV-A1B2C.</p>
+            <p id="cancel-ref-help" className="form-text text-secondary">{t('cancellation.referenceHelp')}</p>
           </div>
           <div className="mb-4">
-            <label htmlFor="cancel-email" className="form-label">E-postadress</label>
+            <label htmlFor="cancel-email" className="form-label">{t('form.email')}</label>
             <input id="cancel-email" name="email" type="email" className="form-control" value={email}
               onChange={event => setEmail(event.target.value)} autoComplete="email" maxLength={200} required disabled={busy} />
           </div>
           {errorMessage ? (
-            <div ref={feedback} tabIndex={-1} role="alert" className="alert alert-danger">{errorMessage}</div>
+            <div ref={feedback} tabIndex={-1} role="alert" className="alert alert-danger">{translateApiError(errorMessage, locale)}</div>
           ) : null}
           <button type="submit" className="btn btn-danger w-100" disabled={busy}>
-            {state === 'loading' ? 'Hämtar bokning…' : 'Hämta bokning'}
+            {state === 'loading' ? t('cancellation.loading') : t('cancellation.lookup')}
           </button>
-          {state === 'loading' ? <p role="status" className="mt-3 mb-0">Hämtar din bokning, vänta en stund.</p> : null}
+          {state === 'loading' ? <p role="status" className="mt-3 mb-0">{t('cancellation.loadingNotice')}</p> : null}
         </form>
       )}
 
-      {user ? <p className="small text-secondary mt-4 mb-0">Som medlem kan du även hantera dina bokningar under <Link to="/mina-bokningar">Mina bokningar</Link>.</p> : null}
+      {user ? <p className="small text-secondary mt-4 mb-0">{t('cancellation.memberPrefix')} <Link to="/mina-bokningar">{t('member.title')}</Link>.</p> : null}
 
       <CancelBookingModal isOpen={isModalOpen} booking={booking} isSubmitting={state === 'cancelling'}
         canCancel={booking?.canCancel ?? false} error={actionError} onConfirm={handleConfirm} onClose={() => setIsModalOpen(false)} />

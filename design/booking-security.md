@@ -32,16 +32,29 @@ Standardvärden är konfigurerbara i backend, och kontrollerna gäller även dir
 - E-post normaliseras med trimning och gemener. Samma verifierade adress delar kvot för gäst- och medlemsbokningar. Olika leverantörers aliasregler antas inte vara identiska.
 - En IP-gräns är ett extra skydd. VPN/IP-byte nollställer inte identitetskvoter, och en VPN-adress är inte i sig grund för blockering. E-postverifiering bevisar tillgång till en brevlåda, inte en unik fysisk person.
 - Antalskontroll och skapande sker i samma databastransaktion med gemensam identitetslåsning. Stolarnas databasunikhet ska behållas som ytterligare skydd mot dubbelbokning.
-- Betalda platser räknas fortfarande mot visningens tioplatsgräns. Avbokade bokningar och visningar som redan börjat räknas inte som aktiva. Gamla bokningar behålls vid migrering; nya bokningar kan nekas om identiteten redan ligger över en kvot.
+- Betalda platser räknas fortfarande mot visningens tioplatsgräns. Obetalda reservationer räknas som aktiva fram till 15 minuter före filmstart; betalda bokningar räknas fram till filmens sluttid. Avbokade och avslutade visningar räknas inte som aktiva. Nya bokningar kan nekas om identiteten redan ligger över en kvot.
 - Boknings- och förfrågningsinskick använder `Idempotency-Key` (UUID). Samma nyckel ska återanvändas vid återförsök av samma val; nya val får ny nyckel.
 - Gränser kontrolleras i gemensam PostgreSQL-lagring, över serverinstanser och omstarter. `429` visar ett svenskt meddelande. Nekade kvoter återställs inte genom utloggning, flikbyte eller IP-byte.
 - Verifieringsmejl för medlemskonton har också högst tre utskick per 15 minuter och minst en minut mellan utskick. Omskick får inte skapa en bokning.
 - Ingen ny bokningsförfrågan godkänns om nödvändig e-posttjänst saknas. Misslyckade gästutskick lämnar inga platser eller övergivna förfrågningar. Dubbletter skickar inte nya mejl eller förlänger länken.
-- Utgångna gästförfrågningar och spärrposter städas regelbundet. Säkerheten får inte bero på att städjobbet körts: utgångna länkar avvisas alltid vid anrop. Bekräftade bokningar städas inte bort av detta jobb.
+- Utgångna gästförfrågningar och spärrposter städas regelbundet. Säkerheten får inte bero på att städjobbet körts: utgångna länkar avvisas alltid vid anrop.
+- Obetalda reservationer släpps 15 minuter före filmstart (`expired`). Nya nätreservationer stoppas då. Betalda platser behålls även vid sen ankomst. Kassa-API:t kan registrera sen betalning före filmens sluttid endast efter en ny atomär ledighetskontroll; andra platser kan väljas via `seatIds` om de ursprungliga är tagna. Betalning ger `confirmed` och krävs före incheckning. Släppta biljetter bevaras som inaktiva för historik och prisuppgifter; ett partiellt unikt index hindrar dubbla aktiva biljetter för samma stol och visning. Obetalda utgångna bokningar visas i historiken till sju dagar efter filmens sluttid och rensas sedan med biljetter och kioskbeställningar. Betalda och avbokade bokningar behålls.
+
+## Uteblivna besök och varningar – automatik implementerad
+
+- Betalda bokningar kan kunden avboka senast två timmar före start. Obetalda reservationer kan avbokas fram tills stolarna släpps 15 minuter före start. En avbokad bokning ska inte ge en uteblivandevarning.
+- En fortfarande obetald, ej avbokad bokning ger högst en varning först efter filmens sluttid. Betalning före sluttiden och obekräftade gästförfrågningar ger inga varningar.
+- **Tre giltiga varningar inom 90 dagar ger spärr för nya obetalda reservationer i 30 dagar.** Samma verifierade konto/e-post delar underlag över gäst- och medlemsflöden. Spärren gäller inte kontoåtkomst, avbokning, befintlig betalning eller betalda kassaköp.
+- Varningar och spärrar ska överleva bokningarnas sjudagarsrensning. Registrering måste vara beständig och idempotent. Samma händelser får inte skapa dubbla varningar eller återstarta spärren. När spärren löper ut ska nya reservationer fungera igen.
+- Personalens varningshantering ska vara en liten sektion i kundens detaljvy/modal i Admin/Bokningar, utan separat sida, route eller navigationsflik. Automatiken sköter varningar, spärrar och upplåsning; personalens åtgärder begränsas till granskning och rättelser med motivering.
+- Kunden ska få tydlig information om antal, orsak och spärrens sluttid. Administratörer ska kunna rätta felaktiga varningar och häva felaktiga spärrar med motivering och granskningslogg. En rättad varning får inte fortsätta påverka spärrunderlaget.
+- Fullständiga implementations- och acceptanskrav finns i [Admin/Bokningar – varningar och reservationsspärr](pages/admin-bokningar.md#uteblivna-besök-varningar-och-reservationsspärr--automatik-och-framtida-adminhantering). Automatisk registrering, reservationsspärrar, mejlkö och kundinformation är implementerade. Kundsektionen och API för rättelser/hävning är framtida arbete. `booking_warning` och `booking_reservation_block` lagras oberoende av bokningarnas sjudagarsrensning. `booking_warning_policy.activated_at` hindrar retroaktiva varningar från äldre bokningar.
 
 ## Åtskillnad och framtida adminarbete – krav, inte implementerad adminfunktion
 
 Detta avsnitt är bindande när adminarbetet genomförs senare. Ingen ny adminvy eller missbrukshantering ingår i nuvarande ändring.
+
+Implementationskrav för kassavyn finns i [Admin – Bokningar & Kassa](pages/admin-bokningar.md#bindande-verksamhetsregler-reservation-betalning-och-incheckning): statusar, 15-minutersfrist, sena köp och alternativt platsval, separata betalnings-/incheckningsåtgärder, API-kontrakt samt acceptanskriterier. Där framgår också att nya kassaköp utan tidigare bokning och generell adminavbokning behöver egna backendfunktioner. Befintlig kundavbokning får inte återanvändas som administratörens genväg.
 
 - Gästförfrågningar, bekräftade bokningar och betalningsstatus ska vara separata begrepp. Väntande/utgångna gästförfrågningar får inte blandas in i vanliga bokningslistor, beläggning, biljettantal, kassasiffror eller intäktsstatistik.
 - Om en separat administrativ vy för gästförfrågningar införs ska den ha ett eget, serverkontrollerat admin-API och en begränsad datamodell. Den får inte exponera token, tokenhash, mejllänkar eller inloggningsuppgifter. Publika gästendpoints får aldrig lista andra kunders förfrågningar.

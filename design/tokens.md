@@ -57,7 +57,7 @@ Aktuell källa är `Frontend/src/styles/_tokens.scss`. `:root, [data-theme="dark
 
 #### Verifiering
 
-`Frontend/tests/theme-storage.test.ts` testar exakt validering av `dark`/`light`, standardvärde, läsning, sparande under `fv-theme`, felaktiga värden, blockerad/saknad lagring och full lagring. `theme.test.ts` testar startskriptets överensstämmelse med valideringen, Sass-transparens och minst `4,5:1` kontrast för testade text-/ytpar samt bildtext över en vit bild med mörk platta.
+`Frontend/tests/locale-storage.test.ts` testar lagring, standardvärden och blockerad/saknad lagring för språk och tema samt synkron tillämpning vid sidstart. `theme.test.ts` kontrollerar minst `4,5:1` kontrast för testade text-/ytpar samt bildtext över en vit bild med mörk platta.
 
 Kör `npm test`, `npm run lint` och `npm run build` i `Frontend/`. Granska dessutom hero, filmdetaljer, salonger, formulär, dialoger och hover/fokus visuellt i båda teman och på mobilbredd. Datum- och tidfält ärver `color-scheme` från dokumentets tema.
 

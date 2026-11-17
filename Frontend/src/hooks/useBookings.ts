@@ -1,10 +1,12 @@
 import { createContext, use } from 'react'
-import type { Booking } from '../types/booking'
+import type { Booking, ReservationWarningStatus } from '../types/booking'
 
 export interface BookingsContextValue {
   bookings: Booking[]
   loading: boolean
   error: string | null
+  reservationStatus: ReservationWarningStatus | null
+  reservationStatusError: boolean
   currentTime: number
   upcomingCount: number
   refresh: () => void
