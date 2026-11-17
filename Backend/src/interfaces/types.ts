@@ -237,7 +237,7 @@ export interface KioskItemFilters {
 // 7. Bokningar (Bookings)
 export interface BookingFilters {
   screeningId?: number;
-  status?: "confirmed" | "cancelled";
+  status?: "confirmed" | "reserved" | "cancelled" | "expired";
   isPaid?: boolean;
   search?: string;
   from?: string;
@@ -265,6 +265,7 @@ export interface CreateBookingInput {
 export interface UpdateBookingInput {
   isPaid?: boolean;
   isCheckedIn?: boolean;
+  seatIds?: number[];
 }
 
 export interface UpdateBookingStatusResult {

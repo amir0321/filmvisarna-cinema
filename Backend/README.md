@@ -479,9 +479,30 @@ Standardvärden och framtida adminkrav finns i [design/booking-security.md](../d
 
 `TRUST_PROXY` är tom som standard: klientens `X-Forwarded-For` används då inte. Bakom en proxy anger driften endast betrodda IP-adresser/CIDR eller explicita Express-proxyintervall, separerade med komma. Sätt inte en generell `true` eller ett obegränsat proxyintervall.
 
-Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen. Idempotensnycklar för bekräftade bokningar lagras på själva bokningen och städas inte bort av jobbet.
+Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen.
+
+Obetalda bokningar visas som `reserved` tills 15 minuter före filmstart. Därefter blir de `expired` och platserna släpps. Nya obetalda nätreservationer stoppas vid samma gräns. Betalda bokningar behåller sina platser även vid sen ankomst. Sen betalning i kassan kräver en ny ledighetskontroll och kan göras före filmens sluttid: `PATCH /api/bookings/:id/pay` återtar de ursprungliga platserna om de är lediga, eller tar emot `seatIds` med lika många andra lediga platser. Samma stöd finns i den generella admin-PATCH-rutten med `isPaid: true`. Incheckning kräver betalning. All platstilldelning och betalning sker atomärt; konflikter ger 409 utan betalning eller poäng.
+
+Kör `npm run migrate:bookings` före start med denna version. Migreringen lägger till `ticket.is_active`, behåller historiska biljettuppgifter och säkrar med ett unikt index att en stol bara kan ha en aktiv biljett per visning. API och platskartor kontrollerar tidsgränsen även om städjobbet inte körts. Serverns befintliga minutjobb släpper reservationerna i databasen. Obetalda utgångna bokningar behålls till sju dagar efter filmens sluttid och raderas sedan med biljetter och kioskbeställningar via befintliga kaskadregler. Betalda och avbokade bokningar behålls. Idempotensnyckeln följer bokningen tills den rensas.
 
 Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_URL` och körs i ett eget slumpmässigt schema. De skickar inga riktiga mejl och använder aldrig applikationens databas som reserv. Adminfunktioner för flaggning och avbokning är enbart dokumenterade framtida krav i denna ändring.
+
+Kundavbokning använder betalstatus: betalda bokningar har två timmars avbokningsgräns; obetalda reservationer kan avbokas fram tills stolarna släpps 15 minuter före start. Vid själva frisläppningstidpunkten kan de inte längre avbokas.
+
+### Automatiska uteblivandevarningar och reservationsspärrar
+
+`npm run migrate:bookings` inkluderar `20261116_booking_warnings.sql`. Den skapar `booking_warning_policy`, `booking_warning` och `booking_reservation_block` med RLS. `activated_at` sätts en gång vid införande och bevaras vid omkörning. Både bokning och filmens sluttid måste vara efter aktivering; äldre demo-/historikbokningar får inga retroaktiva varningar.
+
+Efter filmens slut får en fortfarande obetald, ej avbokad bokning exakt en varning. Betalning och varningsregistrering använder bokningsradens transaktionslås. En varning per bokning säkras av `source_booking_id` och kan inte försvinna när bokningen rensas. Tre nya, giltiga varningar inom 90 dagar ger en beständig 30-dagarsspärr. De tre används sedan inte igen för att återstarta spärren; nya uteblivanden krävs. Utgångna och rättade varningar räknas inte. Gäst-/medlemsbokningar delar normaliserad e-post och kontokoppling.
+
+Spärren kontrolleras före medlemsbokning, gästförfrågan och gästbekräftelse samt i reservationens transaktion. `403` nekar nya obetalda reservationer utan att röja varningshistorik eller spärrens exakta sluttid i offentliga formulär. Sessionsinloggning, avbokning och betalning av befintliga bokningar påverkas inte. Nya betalda kassaköp ska tillåtas när deras admin-API byggs.
+
+- `GET /api/bookings/reservation-status` kräver session och använder dess konto/e-post. Svaret innehåller `warningCount`, `warningLimit: 3`, `windowDays: 90`, `blockDays: 30`, `blockedUntil` samt de senaste 90 dagarnas giltiga varningar med `id`, `bookingRef`, `screeningEndedAt`, `recordedAt` och `usedForBlock`. Räknaren visar nya varningar i aktuell omgång; redan förbrukade varningar finns endast i historiken. Under aktiv spärr visas tre av tre.
+- `POST /api/bookings/guest/preview` innehåller samma struktur i `reservationStatus` först efter att gästlänken verifierats. En gammal länk kringgår inte spärrkontrollen vid bekräftelse.
+- `cleanupBookingProtection` registrerar uteblivanden före bokningarnas sjudagarsrensning. Serverns minutjobb och `npm run cleanup:bookings` levererar dessutom mejlkön. Varningar beräknas också vid status- och reservationskontroller, så skyddet beror inte på att minutjobbet hunnit köras.
+- Mejlen är tvåspråkiga och använder befintliga `EMAIL_*`-inställningar utan Ethereal-fallback. Saknad SMTP lämnar mejlet i kö. Fel ger återförsök efter 15 minuter; högst tio mejl behandlas per körning. Radlås hindrar samtidiga arbetare från att skicka samma köpost och ett stabilt `Message-ID` används. SMTP ger ingen absolut exakt-en-gång-garanti om processen kraschar efter lyckad leverans men före databasens kvittens; själva varningen/spärren dubbleras aldrig av mejlåterförsök.
+
+**Kvar för adminarbetet:** En liten varningssektion i kundens detaljvy/modal i Admin/Bokningar, rättelse-/hävnings-API, obligatorisk motivering, omräkning och administrativ granskningslogg. Ingen separat varningssida, route eller navigationsflik ska byggas. Databasfälten `revoked_at` och `revocation_reason` är förberedda, men ingen sådan adminfunktion är exponerad. Se [Admin/Bokningar – varningar och reservationsspärr](../design/pages/admin-bokningar.md#uteblivna-besök-varningar-och-reservationsspärr--automatik-och-framtida-adminhantering).
 
 #### `GET /api/bookings/me`
 - **Åtkomst:** Inloggad användare
@@ -499,7 +520,7 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 #### `POST /api/bookings/cancel-preview`
 - **Åtkomst:** Publik via `/avboka`. Skicka `{ "bookingRef": "FV-ABCDE", "email": "kund@example.se" }` i JSON-body med `X-CSRF-Protection: 1`. GET och token-body stöds inte längre; gamla avbokningslänkar visar formuläret.
 - **`200 OK`**: Hämtar film, salong, stolar och bokningsnr till bekräftelsemodalen.
-- **`400 Bad Request`**: Ogiltiga fält, redan avbokad, startad visning eller mindre än 2 timmar kvar till start. Bokningsstatus kontrolleras först när referens och e-post matchar.
+- **`400 Bad Request`**: Ogiltiga fält, redan avbokad, släppt obetald reservation eller mindre än 2 timmar kvar till start för en betald bokning. Bokningsstatus kontrolleras först när referens och e-post matchar.
 - **`403 Forbidden`**: CSRF-skyddet nekar anropet.
 - **`404 Not Found`**: Både saknad referens och fel e-post ger exakt `Vi hittade ingen bokning som matchar angivet bokningsnummer och e-postadress.`
 - **`429 Too Many Requests`**: Global/IP-gräns eller fem försök per normaliserad bokningsreferens/e-post under 15 minuter. Referens- och e-postgränserna delas med bekräftelserutten och gäller även vid IP-byte. Svaret innehåller `Retry-After: 900`.
@@ -512,23 +533,29 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 #### `DELETE /api/bookings/:id`
 - **Åtkomst:** Inloggad användare
 - **`200 OK`**: Bokningen avbokad och stolarna frigjorda.
-- **`400 Bad Request`**: Ogiltigt ID, redan avbokad, eller mindre än 2 timmar kvar till start.
+- **`400 Bad Request`**: Ogiltigt ID, redan avbokad, släppt obetald reservation eller mindre än 2 timmar kvar till start för en betald bokning.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`404 Not Found`**: Bokningen hittades inte eller tillhör en annan användare.
 
 #### `PATCH /api/bookings/:id/pay`
 - **Åtkomst:** Admin (`requireAdmin`)
-- **Beskrivning:** Bekräftar bokningen som betald i kassan (`is_paid = true`, `paid_at = now()`).
+- **Beskrivning:** Registrerar betalning som redan tagits emot i kassan (`is_paid = true`, `status = 'confirmed'`, första `paid_at` bevaras). Anropet tar inte betalt via en betaltjänst och checkar inte in kunden.
+- **Body:** Valfri `{ "seatIds": [41, 42] }` för andra platser på en obetald bokning. Utan `seatIds` används de ursprungliga platserna. Antal och biljettkategorier behålls; stolarna måste vara olika och tillhöra rätt salong. Backend matchar listan mot befintliga biljetter i stigande `seat_id`-ordning.
+- **Sen kund:** Från 15 minuter före filmstart är obetalda reservationer släppta. Betalning kan registreras före filmens sluttid endast om samtliga önskade platser kan tilldelas atomärt. Samma genomförda betalningsanrop med samma platser kan upprepas utan nya poäng. En redan betald bokning kan inte byta platser genom denna åtgärd.
 - **Lojalitetspoäng:** Om bokningen tillhör en registrerad medlem (`user_id IS NOT NULL`) tilldelas medlemmen automatiskt 1 lojalitetspoäng per krona (1 SEK = 1 poäng baserat på `totalPrice`). Idempotent: om bokningen redan är betald delas inga dubbla poäng ut (`pointsAwarded: 0`). Gästbokningar ger 0 poäng till användarkonton.
 - **`200 OK`**: `{ success: true, message: "Bokningen har markerats som betald.", booking, pointsAwarded: number }`
+- **`400 Bad Request`**: Avbokad bokning eller ogiltigt platsval.
+- **`409 Conflict`**: Platser upptagna eller filmen har slutat; ingen betalning eller poängtilldelning genomförs.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningen hittades inte.
 
 #### `PATCH /api/bookings/:id/checkin`
 - **Åtkomst:** Admin (`requireAdmin`)
-- **Beskrivning:** Checkar in gästen (`is_checked_in = true`, `checked_in_at = now()`).
+- **Beskrivning:** Checkar in kunden (`is_checked_in = true`, `checked_in_at = now()`). Kräver betald bokning; registrerar inte betalning. För uttrycklig kombinerad betalning och incheckning används `PATCH /api/bookings/:id` med `{ "isPaid": true, "isCheckedIn": true }` och vid behov `seatIds`.
 - **`200 OK`**: `{ success: true, message: "Bokningen har checkats in.", booking }`
+- **`400 Bad Request`**: Bokningen är avbokad.
+- **`409 Conflict`**: Bokningen är obetald eller den obetalda bokningens film har slutat.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningen hittades inte.

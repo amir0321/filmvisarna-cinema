@@ -31,6 +31,14 @@ test('cancellation is allowed exactly two hours before start, but not one millis
   assert.throws(() => validateCancellationDeadline(startsAt, startsAt, 2), { status: 400, message: 'Kan inte avboka en visning som redan har startat.' });
 });
 
+test('unpaid reservations can be cancelled until the exact seat release deadline', () => {
+  const now = Date.parse('2026-11-15T12:00:00Z');
+  const startsAt = new Date(now + 15 * 60 * 1000);
+  assert.doesNotThrow(() => validateCancellationDeadline(startsAt, now - 1, 2, false));
+  assert.throws(() => validateCancellationDeadline(startsAt, now, 2, false), { status: 400, message: 'Reservationen har redan släppts och kan inte avbokas.' });
+  assert.throws(() => validateCancellationDeadline(startsAt, now + 1, 2, false), { status: 400 });
+});
+
 test('HTML and text confirmation emails explain the reference/email form and cancellation deadline', () => {
   const data = {
     email: 'anna@example.test', bookingRef: 'FV-ABCDE', movieTitle: 'Testfilm',
@@ -42,6 +50,7 @@ test('HTML and text confirmation emails explain the reference/email form and can
     assert.match(content, /https:\/\/cinema.example\/avboka/);
     assert.match(content, /Ange bokningsnummer och e-postadressen som användes vid bokningen/);
     assert.match(content, /senast 2 timmar före visningen/);
+    assert.match(content, /Obetalda reservationer kan avbokas fram tills platserna släpps 15 minuter före start/);
     assert.doesNotMatch(content, /#token=|\?token=/);
   }
 });

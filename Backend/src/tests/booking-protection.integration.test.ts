@@ -11,6 +11,9 @@ import type { GuestBookingEmail } from '../services/guestBookings.service.js';
 
 const databaseUrl = process.env.AUTH_TEST_DATABASE_URL;
 interface ResponseBody {
+  warningCount?: number;
+  blockedUntil?: string | null;
+  reservationStatus?: { warningCount: number; blockedUntil: string | null };
   error?: string;
   bookingRef?: string;
   totalPrice?: number;
@@ -93,6 +96,7 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     await db.query("INSERT INTO screening(movie_id, cinema_id, starts_at) SELECT 1, 1, '2099-07-01T18:00:00Z'::timestamptz + i * interval '1 day' FROM generate_series(0,7) i");
     await db.query("INSERT INTO price_group(name, price) VALUES ('adult', 140), ('child', 80)");
     await db.query("INSERT INTO menu_item(name, price, category) VALUES ('Popcorn', 40, 'food')");
+    await db.query('UPDATE booking_warning_policy SET activated_at = clock_timestamp()');
     messages.length = 0;
     notifications.length = 0;
     mailConfigured = true;
@@ -139,6 +143,117 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     await db.query('UPDATE booking SET booking_reference = $1 WHERE id = $2', [bookingRef, id]);
     return { id, bookingRef, email: 'anna@example.test' };
   }
+
+  async function activateWarnings() {
+    await db.query("UPDATE booking_warning_policy SET activated_at = clock_timestamp() - interval '180 days'");
+  }
+
+  async function seedNoShow(screeningId: number, options: Parameters<typeof seedBooking>[2] = {}) {
+    const id = await seedBooking([screeningId], screeningId, options);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '101 minutes' WHERE id = $1", [screeningId]);
+    return id;
+  }
+
+  test('warnings are recorded once after film end, excluding paid, cancelled, ongoing and pre-activation bookings', async () => {
+    const { processBookingWarnings, getReservationWarningStatus } = await import('../services/bookingWarnings.service.js');
+    await activateWarnings();
+    const unpaid = await seedNoShow(1);
+    await seedNoShow(2, { paid: true });
+    await seedNoShow(3, { cancelled: true });
+    await seedBooking([4], 4);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '5 minutes' WHERE id = 4");
+    const legacy = await seedNoShow(5);
+    await db.query("UPDATE booking SET created_at = clock_timestamp() - interval '181 days' WHERE id = $1", [legacy]);
+    await Promise.all([processBookingWarnings(db), processBookingWarnings(db), getReservationWarningStatus(' ANNA@EXAMPLE.TEST ', 1, db)]);
+    const status = await getReservationWarningStatus('anna@example.test', 1, db);
+    assert.equal(status.warningCount, 1);
+    assert.equal(status.blockedUntil, null);
+    assert.deepEqual((await db.query('SELECT source_booking_id FROM booking_warning')).rows, [{ source_booking_id: unpaid }]);
+  });
+
+  test('three warnings share guest/member identity and block new reservations, including existing guest links, while payment stays available', async () => {
+    const { getReservationWarningStatus, deliverBookingWarningEmails } = await import('../services/bookingWarnings.service.js');
+    const { updateBookingStatus } = await import('../services/bookings.service.js');
+    await activateWarnings();
+    await request('/guest/request', payload([8], 8));
+    const token = latestToken();
+    const payable = await seedBooking([9], 8);
+    await seedNoShow(1);
+    await seedNoShow(2, { guest: true });
+    await seedNoShow(3);
+    const status = await getReservationWarningStatus(' ANNA@EXAMPLE.TEST ', 1, db);
+    assert.equal(status.warningCount, 3);
+    assert.ok(status.blockedUntil);
+    assert.ok(Math.abs(Date.parse(status.blockedUntil) - Date.now() - 30 * 86400_000) < 10_000);
+    assert.equal((await request('/', payload([10], 8), { user: 1 })).status, 403);
+    const deniedGuest = await request('/guest/request', payload([10], 8));
+    assert.equal(deniedGuest.status, 403);
+    assert.equal(deniedGuest.body.blockedUntil, undefined);
+    assert.equal((await request('/guest/preview', { token })).body.reservationStatus?.blockedUntil, status.blockedUntil);
+    assert.equal((await request('/guest/confirm', { token })).status, 403);
+    assert.equal((await request('/reservation-status', undefined, { user: 1, method: 'GET' })).body.warningCount, 3);
+    assert.equal((await request('/reservation-status', undefined, { user: 2, method: 'GET' })).body.warningCount, 0);
+    assert.equal((await request('/reservation-status', undefined, { method: 'GET' })).status, 401);
+    assert.equal((await updateBookingStatus(payable, { isPaid: true })).booking.isPaid, true);
+    const sent: { warningCount: number; blockedUntil: string | null }[] = [];
+    await deliverBookingWarningEmails({ db, canSendEmail: () => true, sendEmail: async message => { sent.push(message); } });
+    assert.deepEqual(sent.map(message => message.warningCount), [1, 2, 3]);
+    assert.equal(sent.filter(message => message.blockedUntil !== null).length, 1);
+  });
+
+  test('blocks expire after thirty days, old or revoked warnings do not count, and consumed warnings cannot restart a block', async () => {
+    const { getReservationWarningStatus, processBookingWarnings } = await import('../services/bookingWarnings.service.js');
+    await activateWarnings();
+    await db.query(`INSERT INTO booking_warning(source_booking_id, booking_reference, identity_email, user_id, screening_ended_at)
+      VALUES (999998, 'FV-OLD00', 'anna@example.test', 1, clock_timestamp() - interval '91 days'),
+             (999999, 'FV-REV00', 'anna@example.test', 1, clock_timestamp() - interval '1 day')`);
+    await db.query("UPDATE booking_warning SET revoked_at = clock_timestamp(), revocation_reason = 'Test correction' WHERE source_booking_id = 999999");
+    await seedNoShow(1); await seedNoShow(2); await seedNoShow(3);
+    const blocked = await getReservationWarningStatus('anna@example.test', 1, db);
+    assert.equal(blocked.warningCount, 3);
+    assert.equal(blocked.warnings.length, 3);
+    await processBookingWarnings(db);
+    assert.equal((await getReservationWarningStatus('anna@example.test', 1, db)).blockedUntil, blocked.blockedUntil);
+    await db.query("UPDATE booking_reservation_block SET starts_at = clock_timestamp() - interval '31 days', expires_at = clock_timestamp() - interval '1 second'");
+    const expired = await getReservationWarningStatus('anna@example.test', 1, db);
+    assert.equal(expired.blockedUntil, null);
+    assert.equal(expired.warningCount, 0);
+    assert.equal((await request('/', payload([8], 8), { user: 1 })).status, 201);
+    await seedNoShow(4); await seedNoShow(5); await seedNoShow(6);
+    assert.ok((await getReservationWarningStatus('anna@example.test', 1, db)).blockedUntil);
+    assert.equal(Number((await db.query('SELECT count(*) FROM booking_reservation_block')).rows[0].count), 2);
+  });
+
+  test('warning history and active blocks survive seven-day booking cleanup', async () => {
+    const { getReservationWarningStatus } = await import('../services/bookingWarnings.service.js');
+    await activateWarnings();
+    const ids = await Promise.all([seedNoShow(1), seedNoShow(2, { guest: true }), seedNoShow(3)]);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '8 days' WHERE id = ANY($1::int[])", [[1, 2, 3]]);
+    await cleanup(); await cleanup();
+    assert.equal(Number((await db.query('SELECT count(*) FROM booking WHERE id = ANY($1::int[])', [ids])).rows[0].count), 0);
+    const status = await getReservationWarningStatus('anna@example.test', 1, db);
+    assert.equal(status.warningCount, 3);
+    assert.equal(status.warnings.length, 3);
+    assert.ok(status.blockedUntil);
+  });
+
+  test('warning mail retries safely and concurrent delivery workers do not send the same pending message together', async () => {
+    const { processBookingWarnings, deliverBookingWarningEmails } = await import('../services/bookingWarnings.service.js');
+    await activateWarnings(); await seedNoShow(1); await processBookingWarnings(db);
+    let attempts = 0;
+    await deliverBookingWarningEmails({ db, canSendEmail: () => false, sendEmail: async () => { attempts++; } });
+    assert.equal(attempts, 0);
+    await deliverBookingWarningEmails({ db, canSendEmail: () => true, sendEmail: async () => { attempts++; throw new Error('SMTP unavailable'); } });
+    const pending = (await db.query('SELECT email_sent_at, email_attempts, email_next_attempt_at > clock_timestamp() AS deferred FROM booking_warning')).rows[0];
+    assert.deepEqual(pending, { email_sent_at: null, email_attempts: 1, deferred: true });
+    await db.query("UPDATE booking_warning SET email_next_attempt_at = clock_timestamp() - interval '1 second'");
+    const sent: number[] = [];
+    const deliver = () => deliverBookingWarningEmails({ db, canSendEmail: () => true, sendEmail: async message => { sent.push(message.id); } });
+    await Promise.all([deliver(), deliver()]); await deliver(); await processBookingWarnings(db); await deliver();
+    assert.equal(sent.length, 1);
+    assert.equal(Number((await db.query('SELECT count(*) FROM booking_warning')).rows[0].count), 1);
+    assert.equal((await db.query('SELECT email_attempts FROM booking_warning')).rows[0].email_attempts, 2);
+  });
 
   test('public cancellation requires POST and CSRF protection on both routes', async () => {
     const input = await seedCancellation();
@@ -260,11 +375,37 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 500);
   });
 
+  test('unpaid member and guest reservations can be cancelled within two hours, until the fifteen-minute release deadline', async () => {
+    const guest = await seedCancellation({ guest: true }, 1, 1);
+    const member = await seedCancellation({ user: 1 }, 2, 1);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '30 minutes' WHERE id = 1");
+    assert.equal((await request('/cancel-preview', guest)).status, 200);
+    assert.equal((await request('/cancel-by-token', guest)).status, 200);
+    assert.equal((await request(`/${member.id}`, {}, { user: 1, method: 'DELETE' })).status, 200);
+    const released = await seedCancellation({}, 3, 2);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '15 minutes' WHERE id = 2");
+    assert.equal((await request('/cancel-preview', released)).status, 400);
+    assert.equal((await request(`/${released.id}`, {}, { user: 1, method: 'DELETE' })).status, 400);
+    assert.equal(Number((await db.query("SELECT count(*) FROM booking WHERE status = 'cancelled'")).rows[0].count), 2);
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket WHERE booking_id = $1', [released.id])).rows[0].count), 1);
+  });
+
   test('migration is additive, repeatable and backfills existing guest/member identities', async () => {
     const member = await seedBooking([1]);
     const guest = await seedBooking([2], 1, { guest: true });
     const migration = await readFile(resolve('sql/migrations/20261110_booking_protection.sql'), 'utf8');
     await db.query(migration); await db.query(migration);
+    // Exercise the reservation migration against the previous ticket key.
+    await db.query('DROP INDEX ticket_active_seat_idx');
+    await db.query('ALTER TABLE ticket DROP CONSTRAINT ticket_pkey');
+    await db.query('ALTER TABLE ticket DROP COLUMN is_active');
+    await db.query('ALTER TABLE ticket ADD CONSTRAINT ticket_pkey PRIMARY KEY(screening_id, seat_id)');
+    const reservationMigration = await readFile(resolve('sql/migrations/20261116_reservation_expiry.sql'), 'utf8');
+    await db.query(reservationMigration); await db.query(reservationMigration);
+    const activatedAt = (await db.query('SELECT activated_at FROM booking_warning_policy')).rows[0].activated_at;
+    const warningMigration = await readFile(resolve('sql/migrations/20261116_booking_warnings.sql'), 'utf8');
+    await db.query(warningMigration); await db.query(warningMigration);
+    assert.equal((await db.query('SELECT activated_at FROM booking_warning_policy')).rows[0].activated_at.getTime(), activatedAt.getTime());
     const result = await db.query('SELECT identity_email FROM booking WHERE id = ANY($1::int[])', [[member, guest]]);
     assert.deepEqual(result.rows.map(row => row.identity_email), ['anna@example.test', 'anna@example.test']);
     assert.equal(Number((await db.query('SELECT count(*) FROM ticket')).rows[0].count), 2);
@@ -534,5 +675,111 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
 
     const user = (await db.query<{ points: number }>('SELECT points FROM app_user WHERE id = 1')).rows[0];
     assert.equal(user.points, 0);
+  });
+
+  test('late arrivals can pay during the film; unpaid reservations expire at film end and cannot be revived', async () => {
+    const { updateBookingStatus, getUserBookings, listAllBookings, getBookingByReference } = await import('../services/bookings.service.js');
+    const unpaidId = await seedBooking([1], 1, { user: 1 });
+    const paidId = await seedBooking([2], 1, { user: 1 });
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '1 second' WHERE id = 1");
+    assert.equal((await getUserBookings(1)).find(booking => booking.id === unpaidId)!.status, 'expired');
+    assert.equal((await listAllBookings({ status: 'reserved' })).length, 0);
+    assert.equal((await listAllBookings({ status: 'confirmed' })).length, 0);
+    await assert.rejects(() => updateBookingStatus(unpaidId, { isCheckedIn: true }), { status: 409 });
+    const latePayment = await updateBookingStatus(paidId, { isPaid: true, isCheckedIn: true });
+    assert.equal(latePayment.booking.status, 'confirmed');
+    assert.equal(latePayment.pointsAwarded, 140);
+    await assert.rejects(() => updateBookingStatus(paidId, { isPaid: false }), { status: 409 });
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '101 minutes' WHERE id = 1");
+
+    const bookings = await getUserBookings(1);
+    const expired = bookings.find(booking => booking.id === unpaidId)!;
+    assert.equal(expired.status, 'expired');
+    assert.equal((await getBookingByReference(expired.reference)).status, 'expired');
+    assert.equal(bookings.find(booking => booking.id === paidId)!.status, 'confirmed');
+    assert.deepEqual((await listAllBookings({ status: 'confirmed' })).map(booking => booking.id), [paidId]);
+    assert.deepEqual((await listAllBookings({ status: 'expired' })).map(booking => booking.id), [unpaidId]);
+    for (const input of [{ isPaid: true }, { isCheckedIn: true }, { isPaid: true, isCheckedIn: true }]) {
+      await assert.rejects(() => updateBookingStatus(unpaidId, input), { status: 409 });
+    }
+    const unchanged = (await db.query('SELECT is_paid, paid_at, is_checked_in FROM booking WHERE id = $1', [unpaidId])).rows[0];
+    assert.deepEqual(unchanged, { is_paid: false, paid_at: null, is_checked_in: false });
+    assert.equal((await updateBookingStatus(paidId, { isCheckedIn: true })).booking.isCheckedIn, true);
+  });
+
+  test('unpaid seats release fifteen minutes before start without cleanup; late payment must acquire available seats', async () => {
+    const { getScreeningSeats, listUpcomingScreenings } = await import('../services/screenings.service.js');
+    const { updateBookingStatus, getUserBookings } = await import('../services/bookings.service.js');
+    const id = await seedBooking([1, 2], 1, { user: 1 });
+    const paid = await seedBooking([3], 1, { user: 2, paid: true });
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '16 minutes' WHERE id = 1");
+    assert.equal((await getScreeningSeats(1)).seats.filter(seat => seat.status === 'booked').length, 3);
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '15 minutes' WHERE id = 1");
+    assert.equal((await getScreeningSeats(1)).seats.filter(seat => seat.status === 'booked').length, 1);
+    assert.equal((await listUpcomingScreenings({})).find(screening => screening.id === 1)!.bookedSeats, 1);
+    assert.equal((await getUserBookings(1)).find(booking => booking.id === id)!.status, 'expired');
+    assert.equal((await request('/', payload([4]), { user: 1 })).status, 409);
+    assert.equal((await request('/guest/request', payload([4]))).status, 409);
+    assert.equal(messages.length, 0);
+    await cleanup(); await cleanup();
+    const historical = (await getUserBookings(1)).find(booking => booking.id === id)!;
+    assert.equal(historical.tickets.length, 2);
+    assert.equal(Number(historical.totalPrice), 280);
+    assert.deepEqual((await db.query('SELECT is_active FROM ticket WHERE booking_id = $1', [id])).rows, [{ is_active: false }, { is_active: false }]);
+    const replacement = await seedBooking([1], 1, { user: 2, paid: true });
+    await assert.rejects(() => updateBookingStatus(id, { isPaid: true }), { status: 409 });
+    assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 0);
+    assert.equal((await db.query('SELECT is_paid FROM booking WHERE id = $1', [id])).rows[0].is_paid, false);
+    const result = await updateBookingStatus(id, { isPaid: true, seatIds: [4, 5] });
+    assert.equal(result.booking.status, 'confirmed');
+    assert.equal(result.pointsAwarded, 280);
+    assert.deepEqual(result.booking.tickets.map((ticket: { seatId: number }) => ticket.seatId), [4, 5]);
+    const retry = await updateBookingStatus(id, { isPaid: true, seatIds: [4, 5] });
+    assert.equal(retry.pointsAwarded, 0);
+    assert.equal(retry.booking.status, 'confirmed');
+    assert.equal((await getScreeningSeats(1)).seats.filter(seat => seat.status === 'booked').length, 4);
+    for (const bookingId of [paid, replacement]) {
+      assert.equal((await db.query('SELECT is_active FROM ticket WHERE booking_id = $1', [bookingId])).rows[0].is_active, true);
+    }
+  });
+
+  test('concurrent late payments cannot claim the same released seat', async () => {
+    const { updateBookingStatus } = await import('../services/bookings.service.js');
+    const first = await seedBooking([1], 1, { user: 1 });
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '10 minutes' WHERE id = 1");
+    await cleanup();
+    const second = await seedBooking([1], 1, { user: 2 });
+    await cleanup();
+    const results = await Promise.allSettled([updateBookingStatus(first, { isPaid: true }), updateBookingStatus(second, { isPaid: true })]);
+    assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+    const rejected = results.find(result => result.status === 'rejected');
+    assert.ok(rejected?.status === 'rejected');
+    assert.equal(rejected.reason.status, 409);
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket WHERE screening_id = 1 AND seat_id = 1 AND is_active')).rows[0].count), 1);
+    assert.equal(Number((await db.query('SELECT sum(points) FROM app_user')).rows[0].sum), 140);
+  });
+
+  test('cleanup deletes only unpaid reservations seven days after film end, including their tickets and kiosk lines', async () => {
+    const expiredId = await seedBooking([1], 1);
+    const paidId = await seedBooking([2], 1, { paid: true });
+    const cancelledId = await seedBooking([], 1, { cancelled: true });
+    const recentId = await seedBooking([3], 2);
+    const ongoingId = await seedBooking([4], 3);
+    const futureId = await seedBooking([5], 4);
+    const guestId = await seedBooking([6], 1, { guest: true });
+    for (const id of [expiredId, paidId, guestId]) {
+      await db.query('INSERT INTO booking_item(booking_id, menu_item_id, quantity) VALUES ($1, 1, 1)', [id]);
+    }
+    // Film duration is 100 minutes. The recent film started over seven days
+    // ago but ended less than seven days ago, so it must still be retained.
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '7 days 101 minutes' WHERE id = 1");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '7 days 1 minute' WHERE id = 2");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() - interval '1 minute' WHERE id = 3");
+    await cleanup();
+    await cleanup();
+    assert.deepEqual((await db.query('SELECT id FROM booking ORDER BY id')).rows.map(row => row.id), [paidId, cancelledId, recentId, ongoingId, futureId].sort((a, b) => a - b));
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket WHERE booking_id = ANY($1)', [[expiredId, guestId]])).rows[0].count), 0);
+    assert.deepEqual((await db.query('SELECT booking_id FROM booking_item')).rows, [{ booking_id: paidId }]);
+    assert.equal(Number((await db.query('SELECT count(*) FROM ticket WHERE booking_id = $1', [paidId])).rows[0].count), 1);
   });
 });
