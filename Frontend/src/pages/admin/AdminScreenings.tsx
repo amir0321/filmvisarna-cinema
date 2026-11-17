@@ -1,3 +1,7 @@
+import type { SimpleTranslationKey } from '../../i18n'
+import { translateApiError } from '../../i18n/mappers'
+import { sv } from '../../i18n/sv'
+import { useTranslation } from '../../context/LocaleContext'
 import { useRef, useState } from 'react'
 import apiClient from '../../api/client'
 import { useCinemas, useMovies, usePagination, useScreenings } from '../../hooks'
@@ -16,11 +20,11 @@ import { addDaysToIsoDate, formatDateShort, toCinemaIsoDate, todayIsoDate } from
 
 type Period = 'upcoming' | 'today' | 'tomorrow' | 'week'
 
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: 'upcoming', label: 'Alla kommande' },
-  { value: 'today', label: 'Idag' },
-  { value: 'tomorrow', label: 'Imorgon' },
-  { value: 'week', label: 'Hela veckan' },
+const PERIOD_OPTIONS: { value: Period; label: SimpleTranslationKey }[] = [
+  { value: 'upcoming', label: 'admin.screenings.allUpcoming' },
+  { value: 'today', label: 'date.today' },
+  { value: 'tomorrow', label: 'date.tomorrow' },
+  { value: 'week', label: 'admin.screenings.week' },
 ]
 
 const PAGE_SIZE = 15
@@ -40,6 +44,7 @@ function isInPeriod(screening: Screening, period: Period, today: string): boolea
 }
 
 export default function AdminScreenings() {
+  const { t, locale } = useTranslation()
   const today = todayIsoDate()
   const [period, setPeriod] = useState<Period>('upcoming')
   // Overrides the period chips
@@ -48,7 +53,7 @@ export default function AdminScreenings() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingScreening, setEditingScreening] = useState<Screening | null>(null)
-  const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string; movieTitle?: string } | null>(null)
   const datePickerButtonRef = useRef<HTMLButtonElement>(null)
   const closeDatePicker = () => setIsDatePickerOpen(false)
 
@@ -90,25 +95,25 @@ export default function AdminScreenings() {
   async function handleCancel(screening: Screening) {
     try {
       await apiClient.delete(`/screenings/${screening.id}`)
-      setFeedback({ variant: 'success', message: `${screening.movieTitle} har ställts in.` })
+      setFeedback({ variant: 'success', message: '', movieTitle: screening.movieTitle })
       await refetch()
     } catch (err) {
       setFeedback({
         variant: 'danger',
-        message: err instanceof Error ? err.message : 'Det gick inte att ställa in visningen.',
+        message: err instanceof Error ? err.message : sv['admin.screenings.cancelError'],
       })
     }
   }
 
   return (
     <div className="admin-screenings">
-      <AdminPageHeader title="Visningsschema" subtitle="Schemalägg och hantera filmvisningar" />
+      <AdminPageHeader title={t('movieDetails.scheduleHeading')} subtitle={t('admin.screenings.subtitle')} />
 
       <div className="admin-toolbar">
         <div className="admin-toolbar__filters">
           <FilterPillGroup<string>
-            ariaLabel="Period"
-            options={PERIOD_OPTIONS}
+            ariaLabel={t('admin.screenings.period')}
+            options={PERIOD_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             value={pickedDate ? '' : period}
             onChange={(value) => choosePeriod(value as Period)}
           />
@@ -123,7 +128,7 @@ export default function AdminScreenings() {
             onClick={() => setIsDatePickerOpen((isOpen) => !isOpen)}
           >
             <i className="bi bi-calendar3 me-2" aria-hidden="true"></i>
-            {pickedDate ? formatDateShort(pickedDate) : 'Välj datum'}
+            {pickedDate ? formatDateShort(pickedDate, locale) : t('calendar.chooseDate')}
           </button>
           {isDatePickerOpen && (
             <DatePickerPopover
@@ -139,7 +144,7 @@ export default function AdminScreenings() {
           )}
 
           <label htmlFor="admin-cinema-filter" className="visually-hidden">
-            Salong
+            {t('admin.auditorium')}
           </label>
           <select
             id="admin-cinema-filter"
@@ -150,7 +155,7 @@ export default function AdminScreenings() {
               setPage(1)
             }}
           >
-            <option value="all">Alla salonger</option>
+            <option value="all">{t('admin.screenings.allCinemas')}</option>
             {(cinemas ?? []).map((cinema) => (
               <option key={cinema.id} value={cinema.id}>
                 {cinema.name}
@@ -161,20 +166,20 @@ export default function AdminScreenings() {
 
         <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => openForm(null)}>
           <i className="bi bi-plus-lg me-2" aria-hidden="true"></i>
-          Schemalägg ny visning
+          {t('admin.screenings.add')}
         </button>
       </div>
 
-      {feedback && <InlineFeedback variant={feedback.variant} message={feedback.message} className="mb-3" />}
+      {feedback && <InlineFeedback variant={feedback.variant} message={feedback.movieTitle !== undefined ? t('admin.screenings.cancelled', { title: feedback.movieTitle }) : translateApiError(feedback.message, locale)} className="mb-3" />}
 
       {loading && <CardListSkeleton count={4} />}
 
       {error && (
         <EmptyState
           variant="error"
-          title="Kunde inte ladda visningar"
-          description={error}
-          actionLabel="Försök igen"
+          title={t('admin.screenings.loadError')}
+          description={translateApiError(error, locale)}
+          actionLabel={t('common.retry')}
           onAction={refetch}
         />
       )}
@@ -182,9 +187,9 @@ export default function AdminScreenings() {
       {!loading && !error && filteredScreenings.length === 0 && (
         <EmptyState
           icon="bi-calendar-x"
-          title="Inga visningar"
-          description="Det finns inga visningar för vald period och salong."
-          actionLabel="Schemalägg ny visning"
+          title={t('admin.screenings.empty')}
+          description={t('admin.screenings.emptyPeriod')}
+          actionLabel={t('admin.screenings.add')}
           onAction={() => openForm(null)}
         />
       )}
@@ -192,7 +197,7 @@ export default function AdminScreenings() {
       {!loading && !error && filteredScreenings.length > 0 && (
         <>
           <p className="admin-screenings__count" role="status">
-            {filteredScreenings.length} {filteredScreenings.length === 1 ? 'visning' : 'visningar'}
+            {t(filteredScreenings.length === 1 ? 'admin.screenings.countOne' : 'admin.screenings.countMany', { count: filteredScreenings.length })}
           </p>
           <ScreeningsTable
             screenings={pageItems}
@@ -200,7 +205,7 @@ export default function AdminScreenings() {
             onEdit={openForm}
             onCancel={handleCancel}
           />
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-3" />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-3" ariaLabel={t('admin.screenings.pagination')} />
         </>
       )}
 

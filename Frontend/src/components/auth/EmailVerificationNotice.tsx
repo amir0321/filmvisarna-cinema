@@ -1,3 +1,6 @@
+import { useTranslation } from '../../context/LocaleContext'
+import { translateApiError, translateApiMessage } from '../../i18n/mappers'
+import { sv } from '../../i18n/sv'
 import { useEffect, useRef, useState } from 'react'
 import { resendVerification } from '../../api/auth'
 import { ApiError } from '../../api/client'
@@ -9,6 +12,7 @@ export default function EmailVerificationNotice() {
 }
 
 function VerificationNotice() {
+  const { t, locale } = useTranslation()
   const { refreshUser, verificationDeliveryFailed } = useAuth()
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -28,22 +32,22 @@ function VerificationNotice() {
       setMessage(response.message)
       void refreshUser().catch(() => undefined)
     } catch (error) {
-      if (!controller.signal.aborted) setError(error instanceof ApiError ? error.message : 'Kunde inte nå servern. Försök igen.')
+      if (!controller.signal.aborted) setError(error instanceof ApiError ? error.message : sv['common.networkError'])
     } finally {
       if (!controller.signal.aborted) { request.current = null; setPending(false) }
     }
   }
 
   return (
-    <aside className="fv-verification-notice" aria-label="E-postverifiering">
+    <aside className="fv-verification-notice" aria-label={t('verification.label')}>
       <p>{verificationDeliveryFailed && !message
-        ? 'Kontot är skapat, men verifieringsmejlet kunde inte skickas. Försök skicka det igen.'
-        : 'Din e-postadress är inte verifierad. Bekräfta adressen via länken i verifieringsmejlet.'}</p>
+        ? t('verification.deliveryFailed')
+        : t('verification.notice')}</p>
       <button type="button" className="fv-auth-link" disabled={pending} onClick={() => void resend()}>
-        {pending ? 'Skickar...' : 'Skicka nytt verifieringsmejl'}
+        {t(pending ? 'verification.sending' : 'verification.resend')}
       </button>
-      <p role="status">{message}</p>
-      {error && <p role="alert">{error}</p>}
+      <p role="status">{translateApiMessage(message, locale)}</p>
+      {error && <p role="alert">{translateApiError(error, locale)}</p>}
     </aside>
   )
 }

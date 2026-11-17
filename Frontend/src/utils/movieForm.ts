@@ -1,3 +1,5 @@
+import { translate } from '../i18n/index.ts'
+import { readLocale, type Locale } from './locale.ts'
 import type { ExternalMovieDetails, Movie, MovieCastInput, MovieFormPayload } from '../types/movie.ts'
 import { isSafeImageUrl } from './imageValidation.ts'
 
@@ -38,29 +40,29 @@ function isHttpUrl(value: string): boolean {
 }
 
 // Returns the first actionable error; the backend still validates the entire request.
-export function validateMovieValues(values: MovieFormValues): string | null {
-  if (!values.title.trim() || values.title.trim().length > 300) return 'Ange en filmtitel med högst 300 tecken.'
+export function validateMovieValues(values: MovieFormValues, locale: Locale = readLocale()): string | null {
+  if (!values.title.trim() || values.title.trim().length > 300) return translate(locale, 'validation.movie.title')
   const duration = Number(values.duration_minutes)
-  if (!Number.isInteger(duration) || duration <= 0 || duration > 2147483647) return 'Ange speltiden som ett positivt heltal i minuter.'
-  if (values.description.trim().length > 2000) return 'Beskrivningen får vara högst 2 000 tecken.'
-  if (values.director.trim().length > 200) return 'Regissörens namn får vara högst 200 tecken.'
-  if (values.age_rating.trim().length > 10) return 'Åldersgränsen får vara högst 10 tecken.'
+  if (!Number.isInteger(duration) || duration <= 0 || duration > 2147483647) return translate(locale, 'validation.movie.duration')
+  if (values.description.trim().length > 2000) return translate(locale, 'validation.movie.description')
+  if (values.director.trim().length > 200) return translate(locale, 'validation.movie.director')
+  if (values.age_rating.trim().length > 10) return translate(locale, 'validation.movie.age')
   if (values.imdb_rating.trim() && (!Number.isFinite(Number(values.imdb_rating)) || Number(values.imdb_rating) < 0 || Number(values.imdb_rating) > 10)) {
-    return 'Ange ett betyg mellan 0 och 10.'
+    return translate(locale, 'validation.movie.rating')
   }
-  for (const [label, url] of [['Affischen', values.poster_url], ['Den breda bilden', values.landscape_image_url]]) {
-    if (url.trim() && !isSafeImageUrl(url)) return `${label} måste ha en giltig HTTP(S)-URL eller en sökväg under /uploads/.`
+  for (const [key, url] of [['validation.movie.poster', values.poster_url], ['validation.movie.landscape', values.landscape_image_url]] as const) {
+    if (url.trim() && !isSafeImageUrl(url)) return translate(locale, key)
   }
-  if (values.trailer_url.trim() && !isHttpUrl(values.trailer_url.trim())) return 'Trailern måste ha en giltig HTTP(S)-URL utan inloggningsuppgifter.'
+  if (values.trailer_url.trim() && !isHttpUrl(values.trailer_url.trim())) return translate(locale, 'validation.movie.trailer')
   if (values.release_date) {
     const date = new Date(`${values.release_date}T12:00:00Z`)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(values.release_date) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== values.release_date) {
-      return 'Ange ett giltigt premiärdatum.'
+      return translate(locale, 'validation.movie.date')
     }
   }
   const genres = values.genres.split(',').map(genre => genre.trim()).filter(Boolean)
-  if (new Set(genres).size > 10 || genres.some(genre => genre.length > 100)) return 'Ange högst 10 genrer med högst 100 tecken per genre.'
-  if (values.cast_members.length > 100) return 'Rollistan får innehålla högst 100 skådespelare.'
+  if (new Set(genres).size > 10 || genres.some(genre => genre.length > 100)) return translate(locale, 'validation.movie.genres')
+  if (values.cast_members.length > 100) return translate(locale, 'validation.movie.cast')
   return null
 }
 

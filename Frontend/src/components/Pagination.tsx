@@ -1,3 +1,5 @@
+import { useTranslation } from '../context/LocaleContext'
+
 export interface PaginationProps {
   page: number
   totalPages: number
@@ -23,13 +25,14 @@ export default function Pagination({
   page,
   totalPages,
   onPageChange,
-  ariaLabel = 'Sidnumrering',
+  ariaLabel,
   className = '',
 }: PaginationProps) {
+  const { t } = useTranslation()
   if (totalPages <= 1) return null
 
   return (
-    <nav className={['fv-pagination', className].filter(Boolean).join(' ')} aria-label={ariaLabel}>
+    <nav className={['fv-pagination', className].filter(Boolean).join(' ')} aria-label={ariaLabel ?? t('pagination.label')}>
       <button
         type="button"
         className="fv-pagination__btn"
@@ -37,7 +40,7 @@ export default function Pagination({
         onClick={() => onPageChange(page - 1)}
       >
         <i className="bi bi-chevron-left" aria-hidden="true"></i>
-        Föregående
+        {t('pagination.previous')}
       </button>
 
       <div className="fv-pagination__pages">
@@ -47,7 +50,7 @@ export default function Pagination({
               key={item}
               type="button"
               className={`fv-pagination__btn${item === page ? ' is-active' : ''}`}
-              aria-label={`Sida ${item}`}
+              aria-label={t('pagination.page', { page: item })}
               aria-current={item === page ? 'page' : undefined}
               onClick={() => onPageChange(item)}
             >
@@ -60,10 +63,10 @@ export default function Pagination({
       </div>
 
       <span className="fv-pagination__mobile-status" aria-hidden="true">
-        Sida {page} av {totalPages}
+        {t('pagination.status', { page, total: totalPages })}
       </span>
       <span className="visually-hidden" role="status" aria-atomic="true">
-        Sida {page} av {totalPages}
+        {t('pagination.status', { page, total: totalPages })}
       </span>
 
       <button
@@ -72,7 +75,7 @@ export default function Pagination({
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
       >
-        Nästa
+        {t('pagination.next')}
         <i className="bi bi-chevron-right" aria-hidden="true"></i>
       </button>
     </nav>

@@ -11,6 +11,7 @@ export type CancelErrorState =
   | 'rate_limited'
   | 'expired'
   | 'too_late'
+  | 'released'
   | 'already_cancelled'
   | 'error'
 
@@ -25,6 +26,7 @@ export function mapCancelErrorToState(err: unknown): CancelErrorState {
     if (msg.includes('redan avbokad')) {
       return 'already_cancelled'
     }
+    if (msg.includes('reservationen har redan släppts')) return 'released'
     if (msg.includes('redan har startat') || msg.includes('passerats')) {
       return 'expired'
     }
@@ -55,6 +57,7 @@ export const cancelErrorMessages: Record<CancelErrorState, string> = {
   rate_limited: 'För många försök. Vänta 15 minuter och försök igen.',
   expired: 'Visningen har redan startat eller passerat och kan inte avbokas.',
   too_late: 'Det är mindre än 2 timmar kvar till visningen. Det går inte längre att avboka online.',
+  released: 'Reservationen har redan släppts och kan inte avbokas.',
   already_cancelled: 'Bokningen är redan avbokad. Du behöver inte göra något mer.',
   error: 'Bokningen kunde inte hanteras just nu. Kontrollera din anslutning och försök igen.',
 }

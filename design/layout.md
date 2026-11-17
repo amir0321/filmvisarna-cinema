@@ -22,6 +22,14 @@ Fasta färgexempel i äldre detaljbeskrivningar nedan avser mörkt tema. I imple
 - `src/utils/theme.ts` läser och sparar `localStorage['fv-theme']`. Saknade/ogiltiga värden och läsfel ger `dark`. Skrivfel fångas så att temaväxlingen fungerar även utan beständig lagring. Inställningen är fristående från inloggning och används i både publik vy och admin.
 - Ett synkront inline-skript först i `index.html`-huvudet läser temat före stilmallarna för att undvika en blinkning av fel tema. Både skriptet och providern synkar `data-theme`, `data-bs-theme` och `style.colorScheme` på `<html>`.
 - Datum-/tidfält ärver dokumentets `color-scheme`. Dialoger, skeleton, text, kantlinjer och komponentytor följer tokens; startsidan använder en mörk gradient bakom vit hero-text utan kortruta. Trailern lämnas fri till höger och bara nederkanten tonar mot sidbakgrunden; övriga vita bildkontroller har mörka kontrastplattor.
+#### 4.1.2 Språkmotor och språkval (FE-41)
+
+- Språkvalet gäller både publik vy och Backoffice och är fristående från tema och inloggning. `src/utils/locale.ts` läser/sparar `localStorage['fv-locale']`; endast `sv` och `en` godtas. Saknat eller ogiltigt värde och läsfel ger `sv`. Skrivfel fångas så att språkbyte fortfarande fungerar i den öppna appen.
+- `LocaleProvider` omsluter appen i `main.tsx`. `useLocale()` ger `locale`, `setLocale` och `toggleLocale`; `useTranslation()` ger `t` och `locale`. Vid språkbyte uppdateras även `<html lang>`. Inline-skriptet i `index.html` sätter språket synkront före React-start.
+- `LanguageToggle` använder `variant="icon"` i `Navbar` och `variant="menu"` i `MobileDrawer`, med lokaliserad tillgänglig etikett. Språkbyte håller mobilmenyn öppen och uppdaterar båda kontrollerna.
+- `src/i18n/sv.ts` och `en.ts` har samma nycklar och interpoleringsparametrar, kontrollerade av TypeScript och tester. `t()` används för UI-texter; mappers översätter kända genrer, biljettyper, kioskvaror och API-meddelanden vid visning. API-värden, formulärdata, titlar och användarinmatning bevaras. Datum och tider använder `sv-SE` / `en-GB` och biografens tidszon `Europe/Stockholm`.
+
+- **Svenska och engelska (`sv` / `en`):** Gemensamt applikationsskal (`Navbar`, `MobileDrawer`, `BottomNav`, `Footer`, `AdminPageHeader` och `NotFound`) samt alla sidor som byggs eller uppdateras (inklusive adminvyerna `/admin`, `/admin/bokningar`, `/admin/visningar`, `/admin/filmer`, `/admin/salonger` och `/admin/kiosk`) ska stödja både svenska (`sv`) och engelska (`en`). Inga nya vyer får hårdkoda enspråkiga etiketter, `aria-label`-attribut eller statusmeddelanden.
 
 ### 4.2 Toppnavigering (`Navbar.tsx` & `BrandLogo.tsx`)
 
@@ -67,7 +75,7 @@ Fasta färgexempel i äldre detaljbeskrivningar nedan avser mörkt tema. I imple
 ### 4.3 Admin-navigering (Samma header som vanliga hemsidan)
 
 - Admin har **ingen separat admin-topbar** från Figma-prototypen. I stället använder `/admin` samma `Navbar`, `MobileDrawer` och `BottomNav` som den vanliga hemsidan:
-  - **Header (`Navbar.tsx`):** Samma höjd (`64px`), bakgrund (`.app-navbar`), container (`1280px`), logotyp (`BrandLogo` + `ADMIN`-badge), `.public-nav-link`-knappar och högerställda kontroller (sökknapp, temaväljare, avatar-dropdown på desktop, hamburgerknapp på mobil).
+  - **Header (`Navbar.tsx`):** Samma höjd (`64px`), bakgrund (`.app-navbar`), container (`1280px`), logotyp (`BrandLogo` + `ADMIN`-badge), `.public-nav-link`-knappar och högerställda kontroller (sökknapp, tema- och språkväljare, avatar-dropdown på desktop, hamburgerknapp på mobil).
   - **Desktop-länkar i `/admin`:** `Backoffice` (`/admin`), `Bokningar` (`/admin/bokningar`), `Schema` (`/admin/visningar`), `Filmer` (`/admin/filmer`), `Salonger` (`/admin/salonger`) samt `Till biografen` (`/`).
   - **Mobil i `/admin` (`< 768px`):** Använder samma `MobileDrawer` och `BottomNav` som övriga sidor, där `BottomNav` och `MobileDrawer` visar admin-länkarna när man befinner sig i `/admin`.
 
@@ -134,7 +142,7 @@ Fasta färgexempel i äldre detaljbeskrivningar nedan avser mörkt tema. I imple
   - **Kolumn 3 – Information:** Notisruta `Betalning sker alltid på plats i kassan vid ankomst.` (Ingen oautentiserad demo-länk till Admin i sidfoten för icke-admins).
 
 - **Responsivitet:** `footer-grid` har en kolumn under 640px och tre kolumner från 640px. `.public-footer` lämnar 64px under sig på mobil för bottennavigeringen.
-- **Lokal lagring:** `Cookie-inställningar` beskriver sessionscookien, bokningsbekräftelse i `sessionStorage` och temavalet i `localStorage` som återställs vid nästa besök. Lagrade uppgifter kan rensas i webbläsarens inställningar.
+- **Lokal lagring:** `Cookie-inställningar` beskriver sessionscookien, bokningsbekräftelse i `sessionStorage` samt tema- och språkvalen i `localStorage` som återställs vid nästa besök. Lagrade uppgifter kan rensas i webbläsarens inställningar.
 - **Informationslänkar:** `Integritetspolicy` och `Cookie-inställningar` öppnar `Modal`; Admin-länken visas endast för `user.role === 'admin'`. Ingen publik admin-demo.
 - **Källfiler:** `Frontend/src/components/Footer.tsx`, båda layouterna och `Frontend/src/styles/_navigation.scss`.
 

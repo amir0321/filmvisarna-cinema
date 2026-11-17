@@ -2,7 +2,9 @@
 
 ## 3. Komponenter
 
-Här dokumenteras samtliga återanvända UI-delar i prototypen med utseende, mått, tillstånd och källfiler.
+Här dokumenteras samtliga återanvända UI-delar med utseende, mått, tillstånd och källfiler.
+- **Mörkt och ljust tema (`dark` / `light`, FE-36):** Fasta hex-värden nedan (`#161F30`, `#0B0F19`, `#F8FAFC`, `#94A3B8` m.fl.) avser prototypens mörka tema. Alla nya och uppdaterade komponenter **måste** använda semantiska tokens från [tokens.md](tokens.md) (`$fv-*`, `--color-*`, `--text-*`, `tint(...)`, `$white-overlay-*`) och hålla minst `4,5:1` kontrast (WCAG AA) i både mörkt och ljust tema.
+- **Svenska och engelska (`sv` / `en`):** Alla synliga texter i komponenter (knappetiketter, statusbadges, tabellrubriker, paginering, inline-feedback som `Kopierat` / `Copied` och `Sparad!` / `Saved!`, tom-/laddnings-/feltillstånd och `aria-label`-attribut) ska gå via det gemensamma översättningssystemet utan hårdkodade enspråkiga strängar.
 
 ### 3.1 Knappar (Buttons)
 

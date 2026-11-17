@@ -5,6 +5,7 @@ import {
   getBookings,
   getCancelPreview,
   getMyBookings,
+  getMyReservationStatus,
   lookupBooking,
   patchBooking,
   patchBookingCheckin,
@@ -41,6 +42,7 @@ const limitPublicBookingRequest: RequestHandler = async (req, res, next) => {
 bookingsRouter.get("/", requireAdmin, getBookings);
 
 bookingsRouter.get("/me", requireAuth, getMyBookings);
+bookingsRouter.get('/reservation-status', requireAuth, getMyReservationStatus);
 
 bookingsRouter.get("/lookup", requireAdmin, lookupBooking);
 

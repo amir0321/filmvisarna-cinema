@@ -6,6 +6,8 @@ import { sendConfirmationForBooking } from "./bookingNotification.service.js";
 import { generateCancellationJwt } from "./cancellations.service.js";
 import type pg from 'pg';
 import { consumeBookingLimit, hashBookingValue, normalizeBookingEmail } from './bookingLimits.service.js';
+import { releaseExpiredReservations } from './reservationExpiry.service.js';
+import { assertReservationAllowed, getReservationWarningStatus, RESERVATION_BLOCKED_MESSAGE } from './bookingWarnings.service.js';
 
 import {
   BookingFilters,
@@ -37,9 +39,16 @@ export type {
   UpdateBookingStatusResult,
 };
 
+// DB status tracks held seats. API status also distinguishes unpaid reservations
+// and expiry 15 minutes before start, independently of the cleanup schedule.
+const BOOKING_STATUS_SQL = `CASE
+  WHEN b.status = 'confirmed' AND NOT b.is_paid THEN
+    CASE WHEN st.starts_at <= statement_timestamp() + interval '15 minutes' THEN 'expired' ELSE 'reserved' END
+  ELSE b.status::text END`;
+
 // SQL för att hämta kompletta bokningsdetaljer med film, salong, biljetter och kioskvaror
 const BOOKING_DETAILS_QUERY = `
-  SELECT b.id, b.booking_reference AS "reference", b.status,
+  SELECT b.id, b.booking_reference AS "reference", ${BOOKING_STATUS_SQL} AS status,
          b.is_paid AS "isPaid",
          b.paid_at AS "paidAt",
          b.is_checked_in AS "isCheckedIn",
@@ -83,7 +92,7 @@ function isSeatTaken(err: unknown): boolean {
     "code" in err &&
     (err as { code?: string }).code === "23505" &&
     "constraint" in err &&
-    (err as { constraint?: string }).constraint === "ticket_pkey"
+    ['ticket_pkey', 'ticket_active_seat_idx'].includes((err as { constraint: string }).constraint)
   );
 }
 
@@ -106,7 +115,7 @@ export async function listAllBookings(filters: BookingFilters = {}) {
 
   if (filters.status) {
     params.push(filters.status);
-    conditions.push(`b.status = $${params.length}`);
+    conditions.push(`(${BOOKING_STATUS_SQL}) = $${params.length}`);
   }
 
   if (filters.isPaid !== undefined) {
@@ -150,7 +159,7 @@ export async function updateBookingStatus(
   bookingId: number,
   input: UpdateBookingInput,
 ): Promise<UpdateBookingStatusResult> {
-  const { isPaid, isCheckedIn } = input;
+  const { isPaid, isCheckedIn, seatIds } = input;
   if (isPaid === undefined && isCheckedIn === undefined) {
     throw new HttpError(400, "Minst ett fält (isPaid eller isCheckedIn) måste anges.");
   }
@@ -160,7 +169,7 @@ export async function updateBookingStatus(
     await client.query("BEGIN");
 
     const existing = await client.query(
-      `SELECT b.id, b.status, b.is_paid, b.is_checked_in, b.user_id,
+      `SELECT b.id, b.status, b.is_paid, b.is_checked_in, b.user_id, b.screening_id,
               COALESCE((SELECT total_price FROM booking_totals WHERE booking_id = b.id), 0) AS total_price
        FROM booking b
        WHERE b.id = $1
@@ -172,8 +181,56 @@ export async function updateBookingStatus(
     }
 
     const current = existing.rows[0];
-    if (current.status !== "confirmed") {
+    if (current.status === "cancelled") {
       throw new HttpError(400, "Kan inte uppdatera en avbokad bokning.");
+    }
+    // Check the deadline after acquiring the booking lock, including after a wait
+    // for another cashier. Late payments must reacquire available seats.
+    if (!current.is_paid) {
+      const { rows: [screening] } = await client.query(
+        'SELECT ends_at <= clock_timestamp() AS ended FROM screening_times WHERE id = $1',
+        [current.screening_id],
+      );
+      if (screening.ended) {
+        throw new HttpError(409, "Bokningen har gått ut eftersom den inte betalades före filmens sluttid.");
+      }
+    }
+    if (isCheckedIn && !(isPaid ?? current.is_paid)) {
+      throw new HttpError(409, "Bokningen måste vara betald före incheckning.");
+    }
+    if (isPaid === false && current.is_checked_in && isCheckedIn !== false) {
+      throw new HttpError(409, "Ta bort incheckningen innan betalningen återställs.");
+    }
+    if (seatIds && isPaid !== true) {
+      throw new HttpError(400, 'Platsbyte kräver en obetald bokning och betalning.');
+    }
+    if (seatIds && current.is_paid) {
+      const { rows: assigned } = await client.query<{ seat_id: number }>(
+        'SELECT seat_id FROM ticket WHERE booking_id = $1', [bookingId]);
+      const requested = new Set(seatIds);
+      if (requested.size !== seatIds.length || assigned.length !== seatIds.length || assigned.some(ticket => !requested.has(ticket.seat_id))) {
+        throw new HttpError(400, 'Platsbyte kräver en obetald bokning och betalning.');
+      }
+    }
+    if (isPaid === true && !current.is_paid) {
+      await releaseExpiredReservations(client, current.screening_id);
+      if (seatIds) {
+        const { rows: tickets } = await client.query<{ price_group_id: number }>(
+          'SELECT price_group_id FROM ticket WHERE booking_id = $1 ORDER BY seat_id', [bookingId]);
+        if (seatIds.length !== tickets.length || new Set(seatIds).size !== seatIds.length) {
+          throw new HttpError(400, 'Välj lika många olika platser som biljetter.');
+        }
+        const valid = await client.query(`SELECT id FROM seat WHERE id = ANY($1::int[])
+          AND cinema_id = (SELECT cinema_id FROM screening WHERE id = $2)`, [seatIds, current.screening_id]);
+        if (valid.rowCount !== seatIds.length) throw new HttpError(400, 'Ogiltiga stolar för visningen.');
+        await client.query('DELETE FROM ticket WHERE booking_id = $1', [bookingId]);
+        for (const [index, seatId] of seatIds.entries()) {
+          await client.query('INSERT INTO ticket(screening_id, seat_id, booking_id, price_group_id) VALUES ($1, $2, $3, $4)',
+            [current.screening_id, seatId, bookingId, tickets[index].price_group_id]);
+        }
+      } else {
+        await client.query('UPDATE ticket SET is_active = true WHERE booking_id = $1', [bookingId]);
+      }
     }
     let pointsAwarded = 0;
 
@@ -211,7 +268,8 @@ export async function updateBookingStatus(
       params.push(isPaid);
       updates.push(`is_paid = $${params.length}`);
       if (isPaid) {
-        updates.push(`paid_at = now()`);
+        updates.push("status = 'confirmed'");
+        updates.push(`paid_at = COALESCE(paid_at, clock_timestamp())`);
       } else {
         updates.push(`paid_at = null`);
       }
@@ -227,10 +285,19 @@ export async function updateBookingStatus(
       }
     }
 
-    await client.query(
-      `UPDATE booking SET ${updates.join(", ")} WHERE id = $1`,
+    const paymentDeadline = isPaid === true && !current.is_paid
+      ? 'AND EXISTS (SELECT 1 FROM screening_times st WHERE st.id = booking.screening_id AND st.ends_at > clock_timestamp())'
+      : '';
+    const updated = await client.query(
+      `UPDATE booking SET ${updates.join(", ")} WHERE id = $1 ${paymentDeadline}`,
       params,
     );
+    if (updated.rowCount === 0) {
+      // A points/account lock may have held up payment past the deadline.
+      // Roll back both payment and any awarded points.
+      throw new HttpError(409, "Bokningen har gått ut eftersom den inte betalades före filmens sluttid.");
+    }
+    await releaseExpiredReservations(client, current.screening_id);
 
     await client.query("COMMIT");
 
@@ -241,6 +308,7 @@ export async function updateBookingStatus(
     };
   } catch (error) {
     await client.query("ROLLBACK");
+    if (isSeatTaken(error)) throw new HttpError(409, 'Platserna är inte längre lediga. Välj andra platser i kassan.');
     throw error;
   } finally {
     client.release();
@@ -317,6 +385,9 @@ export function createBookingService(dependencies: {
   };
   const previous = await existingRequest(db);
   if (previous) return bookingResult(db, previous.id, email);
+  // Commit any newly due warnings independently of a failed booking attempt.
+  const warningStatus = await getReservationWarningStatus(email, userId, db);
+  if (warningStatus.blockedUntil) throw new HttpError(403, RESERVATION_BLOCKED_MESSAGE);
   // Persist attempt counters independently, including failed booking attempts.
   await consumeBookingLimit(db, `identity:${email}`, config.bookingLimits.attempts);
 
@@ -337,13 +408,15 @@ export function createBookingService(dependencies: {
       await client.query('COMMIT');
       return bookingResult(db, duplicate.id, email);
     }
+    await assertReservationAllowed(client, email, userId);
     const { rows: [usage] } = await client.query<{ bookings: string; unpaidSeats: string; screeningSeats: string }>(`
       SELECT count(DISTINCT b.id) FILTER (WHERE NOT b.is_paid) AS bookings,
         count(t.seat_id) FILTER (WHERE NOT b.is_paid) AS "unpaidSeats",
         count(t.seat_id) FILTER (WHERE b.screening_id = $3) AS "screeningSeats"
-      FROM booking b JOIN screening s ON s.id = b.screening_id
+      FROM booking b JOIN screening_times s ON s.id = b.screening_id
       LEFT JOIN app_user u ON u.id = b.user_id LEFT JOIN ticket t ON t.booking_id = b.id
-      WHERE b.status = 'confirmed' AND s.starts_at > clock_timestamp()
+      WHERE b.status = 'confirmed' AND s.ends_at > clock_timestamp()
+        AND (b.is_paid OR s.starts_at > clock_timestamp() + interval '15 minutes')
         AND (COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) = $1 OR b.user_id = $2)`,
     [email, userId ?? null, screeningId]);
     if (Number(usage.screeningSeats) + tickets.length > config.bookingLimits.seatsPerScreening) {
@@ -364,6 +437,9 @@ export function createBookingService(dependencies: {
     }
     if (new Date(screening.rows[0].starts_at) <= new Date()) {
       throw new HttpError(409, "Visningen har redan startat.");
+    }
+    if (new Date(screening.rows[0].starts_at).getTime() <= Date.now() + 15 * 60_000) {
+      throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
     }
 
     // Prices from price_group
@@ -433,6 +509,9 @@ export function createBookingService(dependencies: {
       }
     }
 
+    const stillOpen = await client.query(`SELECT 1 FROM screening WHERE id = $1
+      AND starts_at > clock_timestamp() + interval '15 minutes'`, [screeningId]);
+    if (!stillOpen.rowCount) throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
     if (!userId) {
       await client.query('UPDATE guest_booking_intent SET booking_id = $1, payload = $2 WHERE token_hash = $3',
         [bookingId, { ...input, email }, hashBookingValue(options.guestToken!)]);

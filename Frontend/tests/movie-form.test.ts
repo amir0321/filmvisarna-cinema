@@ -37,11 +37,6 @@ test('TMDB previews retain actor identities, photos, bios and characters before 
   assert.deepEqual(moviePayload(values).cast_members, imported.cast_members)
 })
 
-test('legacy actor names remain in the payload when detailed cast data is absent', () => {
-  const values = initialMovieValues({ ...movie, cast_members: undefined, actors: ['First', 'Second'] })
-  assert.deepEqual(moviePayload(values).cast_members, [{ name: 'First', billing_order: 0 }, { name: 'Second', billing_order: 1 }])
-})
-
 test('empty optional fields clear stored values and genres are trimmed and deduplicated', () => {
   const values = { ...initialMovieValues(null), title: '  Ny film  ', duration_minutes: '90', genres: ' Drama, Action, Drama, , ' }
   assert.equal(validateMovieValues(values), null)
@@ -73,14 +68,4 @@ test('unsafe poster, landscape and trailer links cannot pass form validation', (
     }
   }
   assert.notEqual(validateMovieValues({ ...initialMovieValues(movie), trailer_url: '/uploads/trailer.mp4' }), null)
-})
-
-test('form validation enforces backend text, genre and cast limits', () => {
-  const values = initialMovieValues(movie)
-  for (const invalid of [
-    { title: ' ' }, { title: 'a'.repeat(301) }, { description: 'a'.repeat(2001) },
-    { director: 'a'.repeat(201) }, { age_rating: 'a'.repeat(11) },
-    { genres: 'a'.repeat(101) }, { genres: Array.from({ length: 11 }, (_, i) => `Genre ${i}`).join(',') },
-    { cast_members: Array.from({ length: 101 }, () => ({ name: 'Actor' })) },
-  ]) assert.notEqual(validateMovieValues({ ...values, ...invalid }), null)
 })

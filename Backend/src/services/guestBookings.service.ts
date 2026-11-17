@@ -7,6 +7,7 @@ import { HttpError } from '../utils/httpErorr.js';
 import { isAuthEmailConfigured, sendGuestBookingEmail } from './emailService.js';
 import { bookingFingerprint, createBooking } from './bookings.service.js';
 import { consumeBookingLimit, hashBookingValue, normalizeBookingEmail } from './bookingLimits.service.js';
+import { getReservationWarningStatus, RESERVATION_BLOCKED_MESSAGE } from './bookingWarnings.service.js';
 
 export interface GuestBookingEmail { email: string; url: string; expiresInMinutes: number }
 interface GuestIntent { email: string; payload: CreateBookingInput; requestKey: string; expiresAt: Date }
@@ -31,12 +32,16 @@ export function createGuestBookingService(dependencies: {
   async function preview(token: string) {
     const intent = await getIntent(token);
     const input = intent.payload;
+    const reservationStatus = await getReservationWarningStatus(intent.email, null, db);
     const { rows: [screening] } = await db.query<{ id: number; movieTitle: string; posterUrl: string | null; cinema: string; startsAt: Date; endsAt: Date }>(`
       SELECT st.id, m.title AS "movieTitle", m.poster_url AS "posterUrl", c.name AS cinema,
         st.starts_at AS "startsAt", st.ends_at AS "endsAt"
       FROM screening_times st JOIN movie m ON m.id = st.movie_id JOIN cinema c ON c.id = st.cinema_id
       WHERE st.id = $1 AND st.starts_at > clock_timestamp()`, [input.screeningId]);
     if (!screening) throw new HttpError(409, 'Visningen finns inte längre eller har redan startat.');
+    if (screening.startsAt.getTime() <= Date.now() + 15 * 60_000) {
+      throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
+    }
     const { rows: tickets } = await db.query<{ seatId: number; priceGroupId: number; row: string; number: number; price: number; name: string }>(`
       SELECT s.id AS "seatId", pg.id AS "priceGroupId", s.row_label AS row, s.seat_number AS number, pg.price, pg.name
       FROM jsonb_array_elements($1::jsonb) WITH ORDINALITY AS t(value, position)
@@ -48,13 +53,17 @@ export function createGuestBookingService(dependencies: {
       FROM jsonb_to_recordset($1::jsonb) AS i("itemId" int, quantity int)
       JOIN menu_item mi ON mi.id = i."itemId" AND mi.is_available`, [JSON.stringify(input.items ?? [])]);
     if (items.length !== (input.items ?? []).length) throw new HttpError(400, 'En kioskprodukt är inte längre tillgänglig. Gör ett nytt val.');
-    return { email: intent.email, guestName: input.guestName, expiresAt: intent.expiresAt, screening, tickets, items,
+    return { email: intent.email, guestName: input.guestName, expiresAt: intent.expiresAt, screening, tickets, items, reservationStatus,
       totalPrice: tickets.reduce((total, ticket) => total + Number(ticket.price), 0) + items.reduce((total, item) => total + Number(item.price) * item.quantity, 0) };
   }
 
   async function request(input: CreateBookingInput, requestKey: string) {
     if (!canSendEmail()) throw new HttpError(503, 'E-posttjänsten är tillfälligt otillgänglig. Försök igen senare.');
     const email = normalizeBookingEmail(input.email);
+    // Do not expose warning history or the exact block expiry before the email
+    // link is verified. The generic denial only describes the unavailable action.
+    const warningStatus = await getReservationWarningStatus(email, null, db);
+    if (warningStatus.blockedUntil) throw new HttpError(403, RESERVATION_BLOCKED_MESSAGE);
     const payload = { ...input, email };
     const { rows: [existing] } = await db.query<{ requestKey: string; payload: CreateBookingInput; sentAt: Date | null }>(
       'SELECT request_key AS "requestKey", payload, sent_at AS "sentAt" FROM guest_booking_intent WHERE email = $1 AND expires_at > clock_timestamp()', [email]);

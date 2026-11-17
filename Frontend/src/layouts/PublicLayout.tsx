@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import { Outlet } from 'react-router'
 import BottomNav from '../components/BottomNav'
 import Footer from '../components/Footer'
@@ -6,9 +7,10 @@ import Navbar from '../components/Navbar'
 import EmailVerificationNotice from '../components/auth/EmailVerificationNotice'
 
 export default function PublicLayout() {
+  const { t } = useTranslation()
   return (
     <div className="d-flex flex-column min-vh-100 bg-body text-body">
-      <a href="#main-content" className="fv-skip-link">Hoppa till huvudinnehåll</a>
+      <a href="#main-content" className="fv-skip-link">{t('common.skipToContent')}</a>
       <Navbar />
       <MobileDrawer />
       <EmailVerificationNotice />

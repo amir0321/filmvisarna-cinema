@@ -1,3 +1,8 @@
+import { translate } from '../../i18n'
+import type { Locale } from '../../utils/locale'
+import { translateApiError } from '../../i18n/mappers'
+import { sv } from '../../i18n/sv'
+import { useTranslation } from '../../context/LocaleContext'
 import { useState, type FormEvent } from 'react'
 import apiClient from '../../api/client'
 import type { CinemaSummary, Movie, Screening } from '../../types'
@@ -43,7 +48,7 @@ function getInitialValues(screening: Screening | null): FormValues {
     movieId: screening.movieId,
     cinemaId: screening.cinemaId,
     date: toCinemaIsoDate(screening.startsAt),
-    time: formatTime(screening.startsAt),
+    time: formatTime(screening.startsAt, 'sv'),
   }
 }
 
@@ -60,8 +65,8 @@ function addMinutesToTime(time: string, minutes: number): string {
 }
 
 // "Stora Salongen" -> "Salong 1 — Stora"
-function getCinemaTitle(cinema: CinemaSummary): string {
-  return `Salong ${cinema.id} — ${cinema.name.replace(/\s*salongen$/i, '')}`
+function getCinemaTitle(cinema: CinemaSummary, locale: Locale): string {
+  return translate(locale, 'admin.screenings.cinemaTitle', { id: cinema.id, name: cinema.name.replace(/\s*salongen$/i, '') })
 }
 
 export default function ScreeningFormModal({
@@ -71,6 +76,7 @@ export default function ScreeningFormModal({
   onClose,
   onSaved,
 }: ScreeningFormModalProps) {
+  const { t, locale } = useTranslation()
   const [values, setValues] = useState(() => getInitialValues(screening))
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -100,33 +106,33 @@ export default function ScreeningFormModal({
     try {
       if (isEditing) {
         await apiClient.put(`/screenings/${screening.id}`, isLocked ? { movieId: body.movieId } : body)
-        onSaved('Ändringarna har sparats.')
+        onSaved(sv['admin.screenings.saved'])
       } else {
         await apiClient.post('/screenings', body)
-        onSaved('Visningen har schemalagts.')
+        onSaved(sv['admin.screenings.created'])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Det gick inte att spara visningen.')
+      setError(err instanceof Error ? err.message : sv['admin.screenings.saveError'])
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={isEditing ? 'Redigera visning' : 'Schemalägg ny visning'} size="md">
+    <Modal isOpen onClose={onClose} title={isEditing ? t('admin.screenings.edit') : t('admin.screenings.add')} size="md">
       <form className="screening-form" onSubmit={handleSubmit}>
         <Modal.Body>
-          {error && <InlineFeedback variant="danger" message={error} className="mb-3" />}
+          {error && <InlineFeedback variant="danger" message={translateApiError(error, locale)} className="mb-3" />}
           {isLocked && (
             <InlineFeedback
               variant="info"
-              message="Visningen har bokningar, så salong, datum och tid kan inte ändras."
+              message={t('admin.screenings.locked')}
               className="mb-3"
             />
           )}
 
           <fieldset className="screening-form__group">
-            <legend className="screening-form__label">Välj film</legend>
+            <legend className="screening-form__label">{t('admin.screenings.chooseMovie')}</legend>
             <div className="screening-form__movies">
               {movies.map((movie) => {
                 const isSelected = movie.id === values.movieId
@@ -147,7 +153,7 @@ export default function ScreeningFormModal({
                     <span className="screening-option__text">
                       <span className="screening-option__title">{movie.title}</span>
                       <span className="screening-option__meta">
-                        {formatDuration(movie.duration_minutes)} · {formatAgeRating(movie.age_rating)}
+                        {formatDuration(movie.duration_minutes)} · {formatAgeRating(movie.age_rating, locale)}
                       </span>
                     </span>
                     {isSelected && <i className="bi bi-check-lg screening-option__check" aria-hidden="true"></i>}
@@ -158,7 +164,7 @@ export default function ScreeningFormModal({
           </fieldset>
 
           <fieldset className="screening-form__group" disabled={isLocked}>
-            <legend className="screening-form__label">Välj salong</legend>
+            <legend className="screening-form__label">{t('admin.screenings.chooseCinema')}</legend>
             <div className="screening-form__cinemas">
               {cinemas.map((cinema) => {
                 const isSelected = cinema.id === values.cinemaId
@@ -172,9 +178,9 @@ export default function ScreeningFormModal({
                       onChange={() => update('cinemaId', cinema.id)}
                     />
                     <span className="screening-option__text">
-                      <span className="screening-option__title">{getCinemaTitle(cinema)}</span>
+                      <span className="screening-option__title">{getCinemaTitle(cinema, locale)}</span>
                       <span className="screening-option__meta">
-                        {cinema.total_seats} platser{cinema.format ? `, ${cinema.format}` : ''}
+                        {cinema.total_seats}  {t('about.seatsUnit')}{cinema.format ? `, ${cinema.format}` : ''}
                       </span>
                     </span>
                   </label>
@@ -186,7 +192,7 @@ export default function ScreeningFormModal({
           <div className="row g-3">
             <div className="col-12 col-sm-6">
               <label htmlFor="screening-date" className="screening-form__label">
-                Datum
+                {t('filter.date')}
               </label>
               <select
                 id="screening-date"
@@ -197,14 +203,14 @@ export default function ScreeningFormModal({
               >
                 {getDateOptions(values.date).map((date) => (
                   <option key={date} value={date}>
-                    {capitalize(formatShowtimeDayLabel(date))}
+                    {capitalize(formatShowtimeDayLabel(date, locale))}
                   </option>
                 ))}
               </select>
             </div>
             <div className="col-12 col-sm-6">
               <label htmlFor="screening-time" className="screening-form__label">
-                Starttid
+                {t('admin.screenings.start')}
               </label>
               <input
                 id="screening-time"
@@ -222,18 +228,18 @@ export default function ScreeningFormModal({
           {selectedMovie && values.time && (
             <p className="screening-form__summary">
               <i className="bi bi-clock" aria-hidden="true"></i>
-              Beräknad sluttid:{' '}
+              {t('admin.screenings.estimatedEnd')}{' '}
               <strong>
                 {addMinutesToTime(values.time, selectedMovie.duration_minutes + CLEANING_MINUTES)}
               </strong>
-              <small>(inkl. {CLEANING_MINUTES} min städning)</small>
+              <small>{t('admin.screenings.cleaning', { minutes: CLEANING_MINUTES })}</small>
             </p>
           )}
         </Modal.Body>
 
         <Modal.Footer>
           <button type="button" className="btn screening-form__cancel" onClick={onClose} disabled={isSaving}>
-            Avbryt
+            {t('admin.abort')}
           </button>
           <button type="submit" className="btn btn-danger screening-form__submit" disabled={isSaving || !isComplete}>
             {isSaving ? (
@@ -241,7 +247,7 @@ export default function ScreeningFormModal({
             ) : (
               <i className={`bi ${isEditing ? 'bi-check-lg' : 'bi-plus-lg'} me-2`} aria-hidden="true"></i>
             )}
-            {isEditing ? 'Spara ändringar' : 'Publicera visning'}
+            {isEditing ? t('profile.save') : t('admin.screenings.publish')}
           </button>
         </Modal.Footer>
       </form>

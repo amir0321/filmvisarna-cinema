@@ -5,6 +5,7 @@
 - **Route:** `/admin/visningar`, med alias `/admin/schema` och `/admin/screenings`. Kräver administratör.
 - **Aktuell implementation:** `Frontend/src/pages/admin/AdminScreenings.tsx`, `Frontend/src/components/admin/{AdminPageHeader,ScreeningsTable,ScreeningFormModal}.tsx`, `DatePickerPopover.tsx` och `Frontend/src/styles/components/admin/_admin-screenings.scss`.
 - Beskrivningen gäller den implementerade appen och ersätter prototypens `SchemaTab`.
+- **Tema och språk (`dark`/`light` samt `sv`/`en`):** Sidan använder semantiska tematokens från [design/tokens.md](../tokens.md) för både mörkt och ljust tema. Vid språkutbyggnad och fortsatta ändringar ska alla rubriker, brödsmulor, periodfilter, tabellkolumner, statusbadges, modalens fält/felmeddelanden och `aria-label`-attribut gå via det gemensamma översättningssystemet (`sv` / `en`) och formatera datum/tider enligt valt språk (`sv-SE` / `en-GB`, tidszon `Europe/Stockholm`).
 
 #### Gemensamt sidhuvud
 

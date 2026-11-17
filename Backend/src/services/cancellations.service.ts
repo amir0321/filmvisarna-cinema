@@ -69,9 +69,17 @@ export function validateCancellationDeadline(
   screeningStartsAt: Date | string,
   now: Date | number = Date.now(),
   deadlineHours = config.cancellationDeadlineHours ?? 2,
+  isPaid = true,
 ): void {
   const startsAt = new Date(screeningStartsAt).getTime();
   const currentTime = typeof now === "number" ? now : now.getTime();
+
+  if (!isPaid) {
+    if (startsAt - currentTime <= 15 * 60_000) {
+      throw new HttpError(400, 'Reservationen har redan släppts och kan inte avbokas.');
+    }
+    return;
+  }
 
   if (startsAt <= currentTime) {
     throw new HttpError(
@@ -118,7 +126,7 @@ export async function cancelBooking(
       throw new HttpError(400, "Bokningen är redan avbokad.");
     }
 
-    validateCancellationDeadline(booking.starts_at);
+    validateCancellationDeadline(booking.starts_at, Date.now(), undefined, booking.is_paid);
 
     if (booking.is_paid && booking.user_id) {
       const pointsToDeduct = Math.round(Number(booking.total_price) || 0);
@@ -158,7 +166,7 @@ export async function getBookingCancelPreview(
   await limitCancellationAttempts(credentials);
 
   const { rows } = await pool.query(
-    `SELECT b.id, b.booking_reference, b.status,
+    `SELECT b.id, b.booking_reference, b.status, b.is_paid,
             COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) AS booking_email,
             m.title, m.poster_url, c.name AS cinema_name, st.starts_at
      FROM booking b
@@ -177,7 +185,7 @@ export async function getBookingCancelPreview(
     throw new HttpError(400, "Denna bokning är redan avbokad.");
   }
 
-  validateCancellationDeadline(booking.starts_at);
+  validateCancellationDeadline(booking.starts_at, Date.now(), undefined, booking.is_paid);
 
   const seatRows = await pool.query(
     `SELECT s.row_label, s.seat_number
@@ -233,7 +241,7 @@ export async function cancelBookingByToken(
       throw new HttpError(400, "Bokningen är redan avbokad.");
     }
 
-    validateCancellationDeadline(booking.starts_at);
+    validateCancellationDeadline(booking.starts_at, Date.now(), undefined, booking.is_paid);
 
     if (booking.is_paid && booking.user_id) {
       const pointsToDeduct = Math.round(Number(booking.total_price) || 0);

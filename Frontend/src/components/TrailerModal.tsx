@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../context/LocaleContext";
 import { getYouTubeEmbedUrl } from "../utils/movie";
 
 interface TrailerModalProps {
@@ -14,6 +15,7 @@ export default function TrailerModal({
   trailerUrl,
   movieTitle,
 }: TrailerModalProps) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const embedUrl = getYouTubeEmbedUrl(trailerUrl);
 
@@ -38,12 +40,12 @@ export default function TrailerModal({
       <div className="trailer-modal__content">
         <div className="d-flex align-items-center justify-content-between mb-2">
           <h2 id="trailer-modal-title" className="h6 mb-0 text-body">
-            Trailer: {movieTitle}
+            {t("trailer.heading", { title: movieTitle })}
           </h2>
           <button
             type="button"
             className="btn-close"
-            aria-label="Stäng trailer"
+            aria-label={t("trailer.close")}
             onClick={onClose}
           />
         </div>
@@ -54,21 +56,21 @@ export default function TrailerModal({
             <div className="ratio ratio-16x9 rounded-3 overflow-hidden bg-black">
               <iframe
                 src={embedUrl}
-                title={`Trailer för ${movieTitle}`}
+                title={t("trailer.iframeTitle", { title: movieTitle })}
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen
               />
             </div>
           ) : (
             <p className="text-body mb-0">
-              Trailern kan inte visas här.{" "}
+              {t("trailer.unavailable")}{" "}
               <a
                 href={trailerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="link-danger"
               >
-                Öppna trailern i en ny flik
+                {t("trailer.openInNewTab")}
               </a>
             </p>
           ))}

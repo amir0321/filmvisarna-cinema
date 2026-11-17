@@ -5,6 +5,7 @@
 - **Route:** `/admin/filmer`, med alias `/admin/movies`. Kräver administratör.
 - **Aktuell implementation:** `Frontend/src/pages/admin/AdminMovies.tsx`, `Frontend/src/components/admin/{AdminPageHeader,MoviesTable,MovieFormModal,CastMemberEditor}.tsx` och `Frontend/src/styles/components/admin/_admin-movies.scss`.
 - Beskrivningen gäller den implementerade appen och ersätter prototypens `FilmarkivTab`.
+- **Tema och språk (`dark`/`light` samt `sv`/`en`):** Sidan använder semantiska tematokens från [design/tokens.md](../tokens.md) för både mörkt och ljust tema. Vid språkutbyggnad och fortsatta ändringar ska alla rubriker, brödsmulor, sökfält, tabellkolumner, formuläretiketter, TMDB-statusmeddelanden, personregistertexter och `aria-label`-attribut gå via det gemensamma översättningssystemet (`sv` / `en`).
 
 #### Gemensamt sidhuvud och navigering
 

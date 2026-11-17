@@ -1,3 +1,6 @@
+import { translateApiError, translateGenre } from '../../i18n/mappers'
+import { sv } from '../../i18n/sv'
+import { useTranslation } from '../../context/LocaleContext'
 import { useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { Movie } from '../../types/movie'
@@ -14,7 +17,7 @@ export interface MoviesTableProps {
   onDelete: (movie: Movie) => Promise<void>
 }
 
-const SCREENINGS_MESSAGE = 'Filmen har registrerade visningar och kan därför inte tas bort. Ta först bort filmens visningar. Även tidigare visningar räknas.'
+const SCREENINGS_MESSAGE = sv['admin.movies.hasScreenings']
 
 function hasScreenings(movie: Movie): boolean {
   return (movie.total_screenings_count ?? 0) > 0 || (movie.active_screenings_count ?? 0) > 0
@@ -25,20 +28,22 @@ function MoviePoster({ movie }: { movie: Movie }) {
 }
 
 function MovieGenres({ movie }: { movie: Movie }) {
+  const { locale } = useTranslation()
   return (
     <div className="admin-movie-genres">
-      {[...new Set(movie.genres)].map(genre => <Badge key={genre} variant="genre" pill>{genre}</Badge>)}
+      {[...new Set(movie.genres)].map(genre => <Badge key={genre} variant="genre" pill>{translateGenre(genre, locale)}</Badge>)}
     </div>
   )
 }
 
 function ScreeningCount({ movie }: { movie: Movie }) {
+  const { t } = useTranslation()
   const upcoming = movie.active_screenings_count
   const total = movie.total_screenings_count
   return (
     <span className="admin-movie-count">
-      <span>{upcoming !== undefined ? `${upcoming} kommande` : total !== undefined ? `${total} totalt` : 'Antal saknas'}</span>
-      {upcoming !== undefined && total !== undefined ? <small>{total} totalt</small> : null}
+      <span>{upcoming !== undefined ? t('admin.movies.upcomingCount', { count: upcoming }) : total !== undefined ? t('admin.movies.totalCount', { count: total }) : t('admin.movies.missingCount')}</span>
+      {upcoming !== undefined && total !== undefined ? <small>{t('admin.movies.totalCount', { count: total })}</small> : null}
     </span>
   )
 }
@@ -49,29 +54,31 @@ function MovieActions({ movie, onEdit, onDelete, pending }: {
   onDelete: MoviesTableProps['onDelete']
   pending: boolean
 }) {
+  const { t } = useTranslation()
   const blocked = hasScreenings(movie)
   return (
     <div className="admin-movie-actions">
-      <fieldset className="admin-movie-actions__buttons" disabled={pending} aria-label={`Åtgärder för ${movie.title}`}>
+      <fieldset className="admin-movie-actions__buttons" disabled={pending} aria-label={t('admin.movies.actionsFor', { title: movie.title })}>
         <button type="button" className="btn btn-sm admin-table__edit" onClick={() => onEdit(movie)}>
-          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />Redigera
+          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />{t('admin.edit')}
         </button>
-        <InlineConfirmAction label="Ta bort" confirmLabel="Ja, ta bort" onConfirm={() => onDelete(movie)} disabled={blocked || pending} />
+        <InlineConfirmAction label={t('admin.delete')} confirmLabel={t('admin.confirmDelete')} onConfirm={() => onDelete(movie)} disabled={blocked || pending} />
       </fieldset>
-      {blocked ? <p className="admin-movie-actions__reason"><i className="bi bi-info-circle me-1" aria-hidden="true" />{SCREENINGS_MESSAGE}</p> : null}
+      {blocked ? <p className="admin-movie-actions__reason"><i className="bi bi-info-circle me-1" aria-hidden="true" />{t('admin.movies.hasScreenings')}</p> : null}
     </div>
   )
 }
 
 export default function MoviesTable({ movies, onEdit, onDelete }: MoviesTableProps) {
+  const { t, locale } = useTranslation()
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ title: string; message: string } | null>(null)
   const deleting = useRef(false)
 
   async function handleDelete(movie: Movie) {
     if (deleting.current) return
     if (hasScreenings(movie)) {
-      setError(`${movie.title}: ${SCREENINGS_MESSAGE}`)
+      setError({ title: movie.title, message: SCREENINGS_MESSAGE })
       return
     }
     deleting.current = true
@@ -82,26 +89,26 @@ export default function MoviesTable({ movies, onEdit, onDelete }: MoviesTablePro
     } catch (err) {
       const message = err instanceof ApiError
         ? err.status === 409 ? SCREENINGS_MESSAGE : err.message
-        : 'Det gick inte att ta bort filmen. Försök igen.'
-      setError(`${movie.title}: ${message}`)
+        : t('admin.movies.deleteError')
+      setError({ title: movie.title, message })
     } finally {
       deleting.current = false
       setPending(false)
     }
   }
 
-  if (movies.length === 0) return <EmptyState title="Inga filmer" description="Det finns inga filmer att visa för ditt urval." />
+  if (movies.length === 0) return <EmptyState title={t('admin.movies.empty')} description={t('admin.movies.emptySelection')} />
 
   return (
     <div className="admin-movies-list" aria-busy={pending}>
-      {error ? <InlineFeedback variant="danger" message={error} className="mb-3" /> : null}
+      {error ? <InlineFeedback variant="danger" message={t('admin.movies.errorFor', { title: error.title, error: translateApiError(error.message, locale) })} className="mb-3" /> : null}
       <div className="admin-table-card admin-movies-table d-none d-md-block">
         <div className="table-responsive">
           <table className="admin-table">
-            <caption className="visually-hidden">Filmarkiv med genrer, åldersgräns, speltid, regissör och visningar.</caption>
+            <caption className="visually-hidden">{t('admin.movies.tableCaption')}</caption>
             <thead><tr>
-              <th scope="col">Film</th><th scope="col">Ålder</th><th scope="col">Speltid</th>
-              <th scope="col">Regissör</th><th scope="col">Visningar</th><th scope="col" className="text-end">Åtgärder</th>
+              <th scope="col">{t('member.film')}</th><th scope="col">{t('admin.movies.age')}</th><th scope="col">{t('movie.duration')}</th>
+              <th scope="col">{t('admin.movies.director')}</th><th scope="col">{t('admin.movies.screenings')}</th><th scope="col" className="text-end">{t('admin.actions')}</th>
             </tr></thead>
             <tbody>
               {movies.map(movie => (
@@ -109,7 +116,7 @@ export default function MoviesTable({ movies, onEdit, onDelete }: MoviesTablePro
                   <th scope="row"><div className="admin-movie-heading"><MoviePoster movie={movie} /><div><span className="admin-table__title">{movie.title}</span><MovieGenres movie={movie} /></div></div></th>
                   <td><AgeBadge ageRating={movie.age_rating} variant="admin" /></td>
                   <td className="text-nowrap">{formatDuration(movie.duration_minutes)}</td>
-                  <td>{movie.director || 'Ej angiven'}</td>
+                  <td>{movie.director || t('movieDetails.notSpecified')}</td>
                   <td><ScreeningCount movie={movie} /></td>
                   <td><MovieActions movie={movie} onEdit={onEdit} onDelete={handleDelete} pending={pending} /></td>
                 </tr>
@@ -127,7 +134,7 @@ export default function MoviesTable({ movies, onEdit, onDelete }: MoviesTablePro
                 <div><h3>{movie.title}</h3><MovieGenres movie={movie} /></div>
               </header>
               <div className="admin-movie-card__meta"><AgeBadge ageRating={movie.age_rating} variant="admin" /><span>{formatDuration(movie.duration_minutes)}</span></div>
-              <dl><div><dt>Regissör</dt><dd>{movie.director || 'Ej angiven'}</dd></div><div><dt>Visningar</dt><dd><ScreeningCount movie={movie} /></dd></div></dl>
+              <dl><div><dt>{t('admin.movies.director')}</dt><dd>{movie.director || t('movieDetails.notSpecified')}</dd></div><div><dt>{t('admin.movies.screenings')}</dt><dd><ScreeningCount movie={movie} /></dd></div></dl>
               <MovieActions movie={movie} onEdit={onEdit} onDelete={handleDelete} pending={pending} />
             </article>
           </li>

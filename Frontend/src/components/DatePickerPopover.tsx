@@ -1,3 +1,5 @@
+import { useTranslation } from '../context/LocaleContext'
+
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import type { ScreeningProgramme } from '../hooks/useScreeningProgramme'
 import { getAvailableCalendarDate } from '../utils/screeningDates'
@@ -23,7 +25,7 @@ interface DatePickerPopoverProps {
   onClose: () => void
 }
 
-const WEEKDAYS = ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön']
+const WEEKDAYS = ['calendar.monday', 'calendar.tuesday', 'calendar.wednesday', 'calendar.thursday', 'calendar.friday', 'calendar.saturday', 'calendar.sunday'] as const
 const GAP = 8
 
 function clampDate(date: string, min: string, max: string): string {
@@ -54,6 +56,7 @@ export default function DatePickerPopover({
   onSelect,
   onClose,
 }: DatePickerPopoverProps) {
+  const { t, locale } = useTranslation()
   const popoverRef = useRef<HTMLDivElement>(null)
   const shouldFocusDay = useRef(true)
   const { today, dates: availableDates, availableDates: availableDateSet, loading, error, refetch } = programme
@@ -89,7 +92,7 @@ export default function DatePickerPopover({
       window.removeEventListener('scroll', updatePosition, { capture: true })
       window.removeEventListener('resize', updatePosition)
     }
-  }, [anchorRef, loading, error, monthStart])
+  }, [anchorRef, loading, error, monthStart, locale])
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -141,7 +144,7 @@ export default function DatePickerPopover({
       ref={popoverRef}
       id={id}
       role="dialog"
-      aria-label="Välj datum"
+      aria-label={t('calendar.chooseDate')}
       aria-describedby={`${id}-availability`}
       aria-busy={loading}
       tabIndex={-1}
@@ -160,19 +163,19 @@ export default function DatePickerPopover({
         <button
           type="button"
           className="date-picker-popover__nav"
-          aria-label="Föregående månad"
+          aria-label={t('calendar.previousMonth')}
           disabled={loading || Boolean(error) || !previousMonthDate}
           onClick={() => focusDate(previousMonthDate)}
         >
           <i className="bi bi-chevron-left" aria-hidden="true"></i>
         </button>
         <p className="date-picker-popover__month mb-0" aria-live="polite">
-          {capitalize(formatMonthYear(monthStart))}
+          {capitalize(formatMonthYear(monthStart, locale))}
         </p>
         <button
           type="button"
           className="date-picker-popover__nav"
-          aria-label="Nästa månad"
+          aria-label={t('calendar.nextMonth')}
           disabled={loading || Boolean(error) || !nextMonthDate}
           onClick={() => focusDate(nextMonthDate)}
         >
@@ -181,13 +184,13 @@ export default function DatePickerPopover({
       </div>
 
       <div id={`${id}-availability`} className="date-picker-popover__availability">
-        {loading ? <p role="status">Hämtar visningsdatum...</p>
+        {loading ? <p role="status">{t('calendar.loading')}</p>
           : error ? <div role="alert">
-            <p>Kunde inte hämta visningsdatum.</p>
-            <button type="button" className="btn btn-secondary-outline btn-sm" onClick={() => void refetch()}>Försök igen</button>
+            <p>{t('calendar.error')}</p>
+            <button type="button" className="btn btn-secondary-outline btn-sm" onClick={() => void refetch()}>{t('common.retry')}</button>
           </div>
-            : availableDates.length === 0 ? <p role="status">Inga planerade visningar under perioden.</p>
-              : <p className="date-picker-popover__legend">Markerade datum har visningar. Grå datum kan inte väljas.</p>}
+            : availableDates.length === 0 ? <p role="status">{t('calendar.empty')}</p>
+              : <p className="date-picker-popover__legend">{t('calendar.legend')}</p>}
       </div>
 
       <table className="date-picker-popover__grid" onKeyDown={handleKeyDown}>
@@ -195,7 +198,7 @@ export default function DatePickerPopover({
           <tr>
             {WEEKDAYS.map((weekday) => (
               <th key={weekday} scope="col">
-                {weekday}
+                {t(weekday)}
               </th>
             ))}
           </tr>
@@ -225,7 +228,7 @@ export default function DatePickerPopover({
                       disabled={disabled}
                       aria-pressed={isSelected}
                       aria-current={isToday ? 'date' : undefined}
-                      aria-label={`${capitalize(formatDateLong(date))}${!loading && !error ? hasScreenings ? ', visningar finns' : ', inga visningar' : ''}`}
+                      aria-label={`${capitalize(formatDateLong(date, locale))}${!loading && !error ? `, ${t(hasScreenings ? 'calendar.available' : 'calendar.unavailable')}` : ''}`}
                       onClick={() => {
                         if (disabled) return
                         onSelect(date)

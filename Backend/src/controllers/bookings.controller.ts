@@ -15,10 +15,11 @@ import { guestBookingService } from '../services/guestBookings.service.js';
 import { HttpError } from '../utils/httpErorr.js';
 import { config } from '../config.js';
 import { cancellationCredentialsSchema } from '../services/cancellations.service.js';
+import { getReservationWarningStatus } from '../services/bookingWarnings.service.js';
 
 export const listBookingsQuerySchema = z.object({
   screeningId: z.coerce.number().int().positive().optional(),
-  status: z.enum(["confirmed", "cancelled"]).optional(),
+  status: z.enum(["confirmed", "reserved", "cancelled", "expired"]).optional(),
   isPaid: z
     .preprocess((v) => {
       if (v === "true" || v === true) return true;
@@ -40,11 +41,13 @@ export const updateBookingSchema = z
   .object({
     isPaid: z.boolean().optional(),
     isCheckedIn: z.boolean().optional(),
+    seatIds: z.array(z.number().int().positive()).min(1).max(10)
+      .refine(ids => new Set(ids).size === ids.length, 'Välj olika platser.').optional(),
   })
   .refine(
     (data) => data.isPaid !== undefined || data.isCheckedIn !== undefined,
     { message: "Minst ett fält (isPaid eller isCheckedIn) måste anges." },
-  );
+  ).refine(data => !data.seatIds || data.isPaid === true, { message: 'Platsbyte kräver betalning.' });
 
 const createBookingSchema = z.object({
   screeningId: z.number().int().positive("Ogiltigt visnings-id."),
@@ -92,6 +95,10 @@ export async function getBookings(req: Request, res: Response) {
 export async function getMyBookings(req: Request, res: Response) {
   const bookings = await getUserBookings(req.user!.id);
   res.json(bookings);
+}
+
+export async function getMyReservationStatus(req: Request, res: Response) {
+  res.json(await getReservationWarningStatus(req.user!.email, req.user!.id));
 }
 
 export async function lookupBooking(req: Request, res: Response) {
@@ -166,7 +173,8 @@ export async function patchBooking(req: Request, res: Response) {
 
 export async function patchBookingPay(req: Request, res: Response) {
   const id = parseId(req.params.id, "boknings-ID");
-  const result = await updateBookingStatus(id, { isPaid: true });
+  const { seatIds } = updateBookingSchema.parse({ ...(req.body ?? {}), isPaid: true });
+  const result = await updateBookingStatus(id, { isPaid: true, seatIds });
   res.json({
     success: true,
     message: "Bokningen har markerats som betald.",

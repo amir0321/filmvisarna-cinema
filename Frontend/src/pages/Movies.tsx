@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { useTranslation, type Locale } from '../context/LocaleContext'
 import { useMovies } from '../hooks'
 import { useScreeningProgramme } from '../hooks/useScreeningProgramme'
+import { translateApiError, translateGenre } from '../i18n/mappers'
 import type { Movie, Screening } from '../types'
 import { MovieGridSkeleton } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
@@ -9,6 +11,7 @@ import { Tabs, TabsList, TabsPanel, TabsTrigger } from '../components/Tabs'
 import MovieFilters, { type MovieSort } from '../components/movies/MovieFilters'
 import MovieListCard from '../components/movies/MovieListCard'
 import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate } from '../utils/date'
+import { getIntlLocale } from '../utils/locale'
 import { getAgeLimit } from '../utils/movie'
 import Pagination from '../components/Pagination'
 import { usePagination } from '../hooks/usePagination'
@@ -18,12 +21,12 @@ type MoviesTab = 'now' | 'upcoming'
 
 const DAYS_SHOWN = 4
 
-function compareMovies(a: Movie, b: Movie, sort: MovieSort, bookedSeats: Map<number, number>) {
+function compareMovies(a: Movie, b: Movie, sort: MovieSort, bookedSeats: Map<number, number>, locale: Locale) {
   const ratingDiff = (b.imdb_rating ?? 0) - (a.imdb_rating ?? 0)
 
   switch (sort) {
     case 'title':
-      return a.title.localeCompare(b.title, 'sv')
+      return a.title.localeCompare(b.title, getIntlLocale(locale))
     case 'newest':
       return (b.release_date ?? '').localeCompare(a.release_date ?? '')
     case 'rating':
@@ -38,15 +41,19 @@ function isUpcoming(movie: Movie, today: string): boolean {
   return movie.release_date !== null && toCinemaIsoDate(movie.release_date) > today
 }
 
-function matchesSearch(movie: Movie, search: string): boolean {
+function matchesSearch(movie: Movie, search: string, locale: Locale): boolean {
   const query = search.trim().toLowerCase()
   if (!query) return true
-  return [movie.title, movie.director ?? '', ...movie.genres].some((text) =>
-    text.toLowerCase().includes(query),
-  )
+  return [
+    movie.title,
+    movie.director ?? '',
+    ...movie.genres,
+    ...movie.genres.map((genre) => translateGenre(genre, locale)),
+  ].some((text) => text.toLowerCase().includes(query))
 }
 
 export default function Movies() {
+  const { t, locale } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const programme = useScreeningProgramme()
@@ -98,16 +105,16 @@ export default function Movies() {
   const tabMovies = tab === 'now' ? nowShowing : upcoming
 
   const genres = [...new Set(tabMovies.flatMap((movie) => movie.genres))].sort((a, b) =>
-    a.localeCompare(b, 'sv'),
+    translateGenre(a, locale).localeCompare(translateGenre(b, locale), getIntlLocale(locale)),
   )
   const genreOptions = [
-    { value: 'all', label: 'Alla' },
-    ...genres.map((name) => ({ value: name, label: name })),
+    { value: 'all', label: t('common.all') },
+    ...genres.map((name) => ({ value: name, label: translateGenre(name, locale) })),
   ]
 
   const dateOptions = Array.from({ length: DAYS_SHOWN }, (_, index) => {
     const isoDate = addDaysToIsoDate(today, index)
-    return { value: isoDate, label: formatDayChipLabel(isoDate), disabled: programme.loading || Boolean(programme.error) || !programme.availableDates.has(isoDate) }
+    return { value: isoDate, label: formatDayChipLabel(isoDate, locale), disabled: programme.loading || Boolean(programme.error) || !programme.availableDates.has(isoDate) }
   })
 
   const screeningsByMovie = new Map<number, Screening[]>()
@@ -122,8 +129,8 @@ export default function Movies() {
     .filter((movie) => genre === 'all' || movie.genres.includes(genre))
     .filter((movie) => age === 'all' || getAgeLimit(movie.age_rating) <= Number(age))
     .filter((movie) => tab === 'upcoming' || screeningsByMovie.has(movie.id))
-    .filter((movie) => matchesSearch(movie, search))
-    .sort((a, b) => compareMovies(a, b, sort, bookedSeats))
+    .filter((movie) => matchesSearch(movie, search, locale))
+    .sort((a, b) => compareMovies(a, b, sort, bookedSeats, locale))
 
   const { page, totalPages, pageItems, setPage } = usePagination(filteredMovies, 10)
   const [paginationDate, setPaginationDate] = useState(date)
@@ -151,25 +158,25 @@ export default function Movies() {
     <Tabs value={tab} onChange={changeTab}>
       <header className="movies-header full-bleed px-3 px-md-5">
         <div className="container movies-container">
-          <h1 className="movies-header__title">Filmer &amp; Repertoar</h1>
+          <h1 className="movies-header__title">{t('movies.title')}</h1>
           <p className="movies-header__subtitle">
-            Vad vill du se?
+            {t('movies.subtitleQuestion')}
             {!loading &&
-              ` Vi spelar nu ${nowShowing.length} ${nowShowing.length === 1 ? 'film' : 'filmer'} på FILMVISARNA.`}
+              ` ${t(nowShowing.length === 1 ? 'movies.subtitlePlayingOne' : 'movies.subtitlePlayingMany', { count: nowShowing.length })}`}
           </p>
 
-          <TabsList ariaLabel="Filmer">
-            <TabsTrigger value="now">På bio nu</TabsTrigger>
+          <TabsList ariaLabel={t('nav.movies')}>
+            <TabsTrigger value="now">{t('movies.tabNow')}</TabsTrigger>
             <TabsTrigger
               value="upcoming"
               badge={
                 <span className="movies-header__count">
                   {upcoming.length}
-                  <span className="visually-hidden"> filmer</span>
+                  <span className="visually-hidden"> {t(upcoming.length === 1 ? 'movies.filmSingular' : 'movies.filmPlural')}</span>
                 </span>
               }
             >
-              Kommande premiärer
+              {t('movies.tabUpcoming')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -214,30 +221,30 @@ export default function Movies() {
           {error && (
             <EmptyState
               variant="error"
-              title="Kunde inte ladda filmer"
-              description={error}
-              actionLabel="Försök igen"
+              title={t('movies.loadErrorTitle')}
+              description={translateApiError(error, locale)}
+              actionLabel={t('common.retry')}
               onAction={refetch}
             />
           )}
 
           {!loading && !error && (
             <p className="movies-results__count" role="status">
-              Visar <strong>{filteredMovies.length}</strong> av {tabMovies.length}{' '}
-              {tabMovies.length === 1 ? 'film' : 'filmer'}
+              {t('movies.showingCountPrefix')} <strong>{filteredMovies.length}</strong>{' '}
+              {t(tabMovies.length === 1 ? 'movies.showingCountSuffixOne' : 'movies.showingCountSuffixMany', { total: tabMovies.length })}
             </p>
           )}
 
           {!loading && !error && filteredMovies.length === 0 && (
             <EmptyState
               variant="empty"
-              title="Inga filmer hittades"
+              title={t('movies.emptyTitle')}
               description={
                 hasActiveFilters
-                  ? 'Inga filmer matchar dina valda filter. Prova att återställa filtreringen.'
-                  : tab === 'now' ? 'Det finns inga återstående visningar för valt datum.' : 'Det finns inga filmer att visa här just nu.'
+                  ? t('movies.emptyFiltered')
+                  : tab === 'now' ? t('movies.emptyNoScreenings') : t('movies.emptyNone')
               }
-              actionLabel={hasActiveFilters ? 'Rensa filter' : undefined}
+              actionLabel={hasActiveFilters ? t('movies.clearFilters') : undefined}
               onAction={hasActiveFilters ? clearFilters : undefined}
             />
           )}
@@ -249,7 +256,7 @@ export default function Movies() {
                   <MovieListCard
                     movie={movie}
                     screenings={screeningsByMovie.get(movie.id) ?? []}
-                    dayLabel={tab === 'now' ? formatDayChipLabel(date) : null}
+                    dayLabel={tab === 'now' ? formatDayChipLabel(date, locale) : null}
                   />
                 </li>
               ))}
@@ -260,7 +267,7 @@ export default function Movies() {
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}
-              ariaLabel="Sidnumrering för filmer"
+              ariaLabel={t('movies.paginationLabel')}
             />
           )}
         </div>

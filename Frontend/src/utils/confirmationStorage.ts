@@ -18,3 +18,11 @@ export function loadConfirmation(ref: string): ConfirmationData | null {
     return null
   }
 }
+
+export function removeConfirmation(ref: string): void {
+  try {
+    sessionStorage.removeItem(keyFor(ref))
+  } catch {
+    // Cancellation still succeeds when browser storage is unavailable.
+  }
+}

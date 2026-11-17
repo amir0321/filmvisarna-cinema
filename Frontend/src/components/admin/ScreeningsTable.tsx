@@ -1,3 +1,6 @@
+import { translate } from '../../i18n'
+import type { Locale } from '../../utils/locale'
+import { useTranslation } from '../../context/LocaleContext'
 import type { CinemaSummary } from '../../types/cinema'
 import type { Screening } from '../../types/screening'
 import { AuditoriumBadge, Badge, StatusBadge } from '../Badge'
@@ -11,12 +14,12 @@ interface ScreeningsTableProps {
   onCancel: (screening: Screening) => Promise<void>
 }
 
-function formatDayLabel(isoDateTime: string): string {
+function formatDayLabel(isoDateTime: string, locale: Locale): string {
   const date = toCinemaIsoDate(isoDateTime)
   const today = todayIsoDate()
-  if (date === today) return 'Idag'
-  if (date === addDaysToIsoDate(today, 1)) return 'Imorgon'
-  return capitalize(formatDateShort(date))
+  if (date === today) return translate(locale, 'date.today')
+  if (date === addDaysToIsoDate(today, 1)) return translate(locale, 'date.tomorrow')
+  return capitalize(formatDateShort(date, locale))
 }
 
 // "4K Dolby Atmos" -> "4K"
@@ -29,21 +32,22 @@ function ScreeningActions({ screening, onEdit, onCancel }: {
   onEdit: ScreeningsTableProps['onEdit']
   onCancel: ScreeningsTableProps['onCancel']
 }) {
+  const { t, locale } = useTranslation()
   const hasBookings = (screening.bookedSeats ?? 0) > 0
   return (
     <div className="admin-screening-actions">
       <div className="admin-screening-actions__buttons">
         <button type="button" className="btn btn-sm admin-table__edit" onClick={() => onEdit(screening)}
-          aria-label={`Redigera ${screening.movieTitle} ${formatTime(screening.startsAt)}`}>
-          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />Redigera
+          aria-label={t('admin.screenings.editAria', { title: screening.movieTitle, time: formatTime(screening.startsAt, locale) })}>
+          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />{t('admin.edit')}
         </button>
         {hasBookings ? (
           <button type="button" className="btn btn-outline-danger btn-sm" disabled>
-            Ställ in<span className="visually-hidden"> (har bokningar)</span>
+            {t('admin.screenings.cancel')}<span className="visually-hidden">  {t('admin.screenings.hasBookings')}</span>
           </button>
-        ) : <InlineConfirmAction label="Ställ in" confirmLabel="Ja, ställ in" cancelLabel="Avbryt" onConfirm={() => onCancel(screening)} />}
+        ) : <InlineConfirmAction label={t('admin.screenings.cancel')} confirmLabel={t('admin.screenings.confirmCancel')} cancelLabel={t('admin.abort')} onConfirm={() => onCancel(screening)} />}
       </div>
-      {hasBookings ? <p className="admin-screening-actions__reason">Visningen har bokningar och kan inte ställas in.</p> : null}
+      {hasBookings ? <p className="admin-screening-actions__reason">{t('admin.screenings.cannotCancel')}</p> : null}
     </div>
   )
 }
@@ -61,16 +65,18 @@ function SoldSeats({ sold, total }: { sold: number; total: number }) {
 }
 
 function ScreeningStatus({ sold, total }: { sold: number; total: number }) {
-  return total > 0 && sold >= total ? <Badge variant="warning">Fullbokad</Badge> : <StatusBadge status="active" />
+  const { t } = useTranslation()
+  return total > 0 && sold >= total ? <Badge variant="warning">{t('screening.soldOut')}</Badge> : <StatusBadge status="active" />
 }
 
 export default function ScreeningsTable({ screenings, cinemas, onEdit, onCancel }: ScreeningsTableProps) {
+  const { t, locale } = useTranslation()
   return (
     <>
     <div className="admin-table-card admin-screenings-table d-none d-xl-block">
       <div className="table-responsive">
         <table className="admin-table">
-          <caption className="visually-hidden">Filmvisningar med datum, tider, salong, bokade platser och åtgärder.</caption>
+          <caption className="visually-hidden">{t('admin.screenings.caption')}</caption>
           <colgroup>
             <col className="admin-screenings-table__date" /><col className="admin-screenings-table__time" />
             <col className="admin-screenings-table__cinema" /><col />
@@ -80,16 +86,16 @@ export default function ScreeningsTable({ screenings, cinemas, onEdit, onCancel 
           </colgroup>
           <thead>
             <tr>
-              <th scope="col">Datum</th>
-              <th scope="col">Starttid</th>
-              <th scope="col">Salong</th>
-              <th scope="col">Film</th>
-              <th scope="col">Format</th>
-              <th scope="col">Sålda platser</th>
-              <th scope="col">Sluttid</th>
-              <th scope="col">Status</th>
+              <th scope="col">{t('filter.date')}</th>
+              <th scope="col">{t('admin.screenings.start')}</th>
+              <th scope="col">{t('admin.auditorium')}</th>
+              <th scope="col">{t('member.film')}</th>
+              <th scope="col">{t('admin.screenings.format')}</th>
+              <th scope="col">{t('admin.screenings.sold')}</th>
+              <th scope="col">{t('admin.screenings.end')}</th>
+              <th scope="col">{t('admin.screenings.status')}</th>
               <th scope="col" className="text-end">
-                Åtgärder
+                {t('admin.actions')}
               </th>
             </tr>
           </thead>
@@ -101,10 +107,10 @@ export default function ScreeningsTable({ screenings, cinemas, onEdit, onCancel 
 
               return (
                 <tr key={screening.id}>
-                  <td>{formatDayLabel(screening.startsAt)}</td>
-                  <td className="admin-table__time">{formatTime(screening.startsAt)}</td>
+                  <td>{formatDayLabel(screening.startsAt, locale)}</td>
+                  <td className="admin-table__time">{formatTime(screening.startsAt, locale)}</td>
                   <td>
-                    <AuditoriumBadge auditorium={`Salong ${screening.cinemaId}`} />
+                    <AuditoriumBadge auditorium={String(screening.cinemaId)} />
                   </td>
                   <th scope="row" className="admin-table__title admin-screenings-table__title">
                     {screening.movieTitle}
@@ -115,7 +121,7 @@ export default function ScreeningsTable({ screenings, cinemas, onEdit, onCancel 
                   <td>
                     <SoldSeats sold={sold} total={total} />
                   </td>
-                  <td className="admin-table__time">{formatTime(screening.endsAt)}</td>
+                  <td className="admin-table__time">{formatTime(screening.endsAt, locale)}</td>
                   <td>
                     <ScreeningStatus sold={sold} total={total} />
                   </td>
@@ -129,24 +135,24 @@ export default function ScreeningsTable({ screenings, cinemas, onEdit, onCancel 
         </table>
       </div>
     </div>
-    <ul className="admin-screening-cards d-xl-none" aria-label="Filmvisningar">
+    <ul className="admin-screening-cards d-xl-none" aria-label={t('admin.screenings.list')}>
       {screenings.map(screening => {
         const cinema = cinemas.find(item => item.id === screening.cinemaId)
         const sold = screening.bookedSeats ?? 0
         const total = screening.totalSeats ?? cinema?.total_seats ?? 0
         return (
           <li key={screening.id}>
-            <article className="admin-screening-card" aria-label={`${screening.movieTitle}, ${formatDayLabel(screening.startsAt)} ${formatTime(screening.startsAt)}`}>
+            <article className="admin-screening-card" aria-label={`${screening.movieTitle}, ${formatDayLabel(screening.startsAt, locale)} ${formatTime(screening.startsAt, locale)}`}>
               <header>
-                <span className="admin-screening-card__date">{formatDayLabel(screening.startsAt)}</span>
+                <span className="admin-screening-card__date">{formatDayLabel(screening.startsAt, locale)}</span>
                 <ScreeningStatus sold={sold} total={total} />
               </header>
               <h2>{screening.movieTitle}</h2>
               <dl className="admin-screening-card__details">
-                <div><dt>Tid</dt><dd className="admin-table__time">{formatTime(screening.startsAt)}–{formatTime(screening.endsAt)}</dd></div>
-                <div><dt>Salong</dt><dd>{screening.cinema || cinema?.name || `Salong ${screening.cinemaId}`}</dd></div>
-                <div><dt>Format</dt><dd><span className="admin-table__format">{getFormat(cinema)}</span></dd></div>
-                <div><dt>Sålda platser</dt><dd><SoldSeats sold={sold} total={total} /></dd></div>
+                <div><dt>{t('admin.screenings.time')}</dt><dd className="admin-table__time">{formatTime(screening.startsAt, locale)}–{formatTime(screening.endsAt, locale)}</dd></div>
+                <div><dt>{t('admin.auditorium')}</dt><dd>{screening.cinema || cinema?.name || t('movies.auditoriumNumber', { id: screening.cinemaId })}</dd></div>
+                <div><dt>{t('admin.screenings.format')}</dt><dd><span className="admin-table__format">{getFormat(cinema)}</span></dd></div>
+                <div><dt>{t('admin.screenings.sold')}</dt><dd><SoldSeats sold={sold} total={total} /></dd></div>
               </dl>
               <ScreeningActions screening={screening} onEdit={onEdit} onCancel={onCancel} />
             </article>

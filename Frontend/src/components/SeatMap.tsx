@@ -1,3 +1,5 @@
+import { useTranslation } from '../context/LocaleContext'
+import type { SimpleTranslationKey } from '../i18n'
 import { useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { ScreeningSeatStatus } from '../types'
 
@@ -9,11 +11,11 @@ interface Props {
 
 type SeatState = 'free' | 'selected' | 'booked' | 'wheelchair'
 
-const LABELS: Record<SeatState, string> = {
-  free: 'Ledig',
-  selected: 'Vald',
-  booked: 'Upptagen',
-  wheelchair: 'Rullstol',
+const LABELS: Record<SeatState, SimpleTranslationKey> = {
+  free: 'seatMap.free',
+  selected: 'seatMap.selected',
+  booked: 'seatMap.booked',
+  wheelchair: 'seatMap.wheelchair',
 }
 
 function seatState(seat: ScreeningSeatStatus, selected: boolean): SeatState {
@@ -23,6 +25,7 @@ function seatState(seat: ScreeningSeatStatus, selected: boolean): SeatState {
 }
 
 export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
+  const { t } = useTranslation()
   const rows = [...new Set(seats.map(s => s.row_label))].sort()
   const columns = Math.max(1, ...rows.map(row => seats.filter(seat => seat.row_label === row).length))
   const orderedSeats = [...seats].sort((a, b) =>
@@ -70,18 +73,16 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
   }
 
   return (
-    <div className={`fv-seatmap fv-seatmap--columns-${columns}`} role="region" aria-label="Salongskarta" aria-describedby={instructionsId}>
+    <div className={`fv-seatmap fv-seatmap--columns-${columns}`} role="region" aria-label={t('seatMap.title')} aria-describedby={instructionsId}>
       <p id={instructionsId} className="visually-hidden">
-        Använd piltangenterna för att navigera mellan rader och lediga stolar.
-        Home och End går till första och sista lediga stolen på raden.
-        Välj eller avmarkera med mellanslag eller Enter. Tab går vidare från salongskartan.
+        {t('seatMap.instructions')}
       </p>
-      <div className="fv-seatmap__screen" aria-hidden="true">BIODUK</div>
+      <div className="fv-seatmap__screen" aria-hidden="true">{t('seatMap.screen')}</div>
 
       <div className="fv-seatmap__scroll">
         <div className="fv-seatmap__rows">
           {rows.map(row => (
-            <div key={row} className="fv-seatmap__row" role="group" aria-label={`Rad ${row}`}>
+            <div key={row} className="fv-seatmap__row" role="group" aria-label={t('seatMap.row', { row })}>
               <span className="fv-seatmap__label" aria-hidden="true">{row}</span>
               <div className="fv-seatmap__seats">
                 {orderedSeats
@@ -101,7 +102,7 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
                         disabled={state === 'booked'}
                         tabIndex={s.id === activeId ? 0 : -1}
                         aria-pressed={state === 'selected'}
-                        aria-label={`Rad ${row}, stol ${s.seat_number}, ${wheelchair ? 'Rullstolsplats, ' : ''}${state === 'wheelchair' ? LABELS.free : LABELS[state]}`}
+                        aria-label={t(wheelchair ? 'seatMap.wheelchairAria' : 'seatMap.seatAria', { row, seat: s.seat_number, status: t(state === 'wheelchair' ? LABELS.free : LABELS[state]) })}
                         onFocus={() => setFocusedId(s.id)}
                         onKeyDown={event => navigate(event, s)}
                         onClick={() => onToggle(s.id)}
@@ -121,7 +122,7 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
         {(Object.keys(LABELS) as SeatState[]).map(state => (
           <li key={state}>
             <span className={`fv-seat fv-seatmap__dot fv-seat--${state}`} aria-hidden="true" />
-            {LABELS[state]}
+            {t(LABELS[state])}
           </li>
         ))}
       </ul>

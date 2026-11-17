@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import type { Seat } from '../types/seat'
 
 interface Props {
@@ -5,6 +6,7 @@ interface Props {
 }
 
 export function MiniAuditoriumMap({ seats }: Props) {
+  const { t } = useTranslation()
   // Group the flat seat list into rows: A -> [seats], B -> [seats] ...
   const grouped = new Map<string, Seat[]>()
   for (const seat of seats) {
@@ -24,9 +26,9 @@ export function MiniAuditoriumMap({ seats }: Props) {
   const exampleRow = rows.length > 3 ? 3 : Math.max(0, Math.ceil(rows.length / 2) - 1)
 
   return (
-    <div className="fv-minimap" role="img" aria-label="Salongskarta">
-      <p className="fv-minimap__title">Salongskarta</p>
-      <div className="fv-minimap__screen">BIODUK</div>
+    <div className="fv-minimap" role="img" aria-label={t('salonger.minimap.title')}>
+      <p className="fv-minimap__title">{t('salonger.minimap.title')}</p>
+      <div className="fv-minimap__screen">{t('salonger.minimap.screen')}</div>
 
       <div className="fv-minimap__rows">
         {rows.map((row, r) => (
@@ -50,9 +52,9 @@ export function MiniAuditoriumMap({ seats }: Props) {
       </div>
 
       <div className="fv-minimap__legend">
-        <span><i className="fv-minimap__dot" /> Ledig</span>
-        <span><i className="fv-minimap__dot fv-minimap__dot--example" /> Exempelval</span>
-        <span><i className="fv-minimap__dot fv-minimap__dot--wheelchair" /> Rullstol</span>
+        <span><i className="fv-minimap__dot" /> {t('salonger.minimap.available')}</span>
+        <span><i className="fv-minimap__dot fv-minimap__dot--example" /> {t('salonger.minimap.example')}</span>
+        <span><i className="fv-minimap__dot fv-minimap__dot--wheelchair" /> {t('salonger.minimap.wheelchair')}</span>
       </div>
     </div>
   )

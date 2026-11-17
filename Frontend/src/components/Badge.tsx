@@ -1,4 +1,6 @@
+import type { SimpleTranslationKey } from '../i18n'
 import React from 'react'
+import { useTranslation } from '../context/LocaleContext'
 
 export type BadgeVariant =
   | 'primary'
@@ -53,6 +55,7 @@ export function AgeBadge({
   variant = 'poster-filmer',
   className = '',
 }: AgeBadgeProps) {
+  const { t } = useTranslation()
   const rawStr = ageRating != null ? String(ageRating).trim() : ''
   const parsedNum = parseInt(rawStr, 10)
   const isAll =
@@ -66,24 +69,24 @@ export function AgeBadge({
 
   if (variant === 'poster-home') {
     if (isAll) {
-      label = 'Alla'
+      label = t('common.all')
       badgeClass = 'fv-age-badge-poster-home age-all'
     } else {
-      label = `${age} år`
+      label = t('movie.age', { age })
       badgeClass = 'fv-age-badge-poster-home age-restricted'
     }
   } else if (variant === 'admin') {
     if (isAll) {
-      label = 'Alla'
+      label = t('common.all')
       badgeClass = 'fv-age-badge-admin age-all'
     } else {
-      label = `${age} år`
+      label = t('movie.age', { age })
       badgeClass = 'fv-age-badge-admin age-restricted'
     }
   } else {
     // poster-filmer default
     if (isAll) {
-      label = 'Alla'
+      label = t('common.all')
       badgeClass = 'fv-age-badge-poster-filmer age-all'
     } else if (age >= 15) {
       label = `${age}`
@@ -115,18 +118,19 @@ export interface StatusBadgeProps {
 
 const STATUS_CONFIG: Record<
   BookingOrEntityStatus,
-  { label: string; modifier: string }
+  { label: SimpleTranslationKey; modifier: string }
 > = {
-  paid: { label: 'Betald', modifier: 'status-paid' },
-  pending: { label: 'Inväntar', modifier: 'status-pending' },
-  active: { label: 'Aktiv', modifier: 'status-active' },
-  cancelled: { label: 'Inställd', modifier: 'status-cancelled' },
-  member: { label: 'Aktiv medlem', modifier: 'status-member' },
-  'guest-member': { label: 'Gästmedlem', modifier: 'status-guest-member' },
-  verified: { label: 'VERIFIERAD', modifier: 'status-verified' },
+  paid: { label: 'status.paid', modifier: 'status-paid' },
+  pending: { label: 'status.pending', modifier: 'status-pending' },
+  active: { label: 'status.active', modifier: 'status-active' },
+  cancelled: { label: 'status.cancelled', modifier: 'status-cancelled' },
+  member: { label: 'status.member', modifier: 'status-member' },
+  'guest-member': { label: 'status.guestMember', modifier: 'status-guest-member' },
+  verified: { label: 'status.verified', modifier: 'status-verified' },
 }
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
+  const { t } = useTranslation()
   const config = STATUS_CONFIG[status]
   const combinedClass = [
     'fv-status-badge',
@@ -136,7 +140,7 @@ export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
     .filter(Boolean)
     .join(' ')
 
-  return <span className={combinedClass}>{config.label}</span>
+  return <span className={combinedClass}>{t(config.label)}</span>
 }
 
 export interface AuditoriumBadgeProps {
@@ -148,12 +152,13 @@ export function AuditoriumBadge({
   auditorium,
   className = '',
 }: AuditoriumBadgeProps) {
+  const { t } = useTranslation()
   const isSalong2 =
     auditorium === 2 ||
     auditorium === 'Salong 2' ||
     String(auditorium).toLowerCase().includes('2')
 
-  const label = isSalong2 ? 'Salong 2' : 'Salong 1'
+  const label = isSalong2 ? t('salonger.hall2.title') : t('salonger.hall1.title')
   const modifier = isSalong2 ? 'auditorium-2' : 'auditorium-1'
 
   const combinedClass = ['fv-auditorium-badge', modifier, className]
@@ -193,6 +198,7 @@ export function PremiereBanner({
   premiereDate,
   className = '',
 }: PremiereBannerProps) {
+  const { t } = useTranslation()
   const combinedClass = ['fv-badge-premiere', className].filter(Boolean).join(' ')
-  return <div className={combinedClass}>PREMIÄR {premiereDate.toUpperCase()}</div>
+  return <div className={combinedClass}>{t('status.premiere', { date: premiereDate.toUpperCase() })}</div>
 }

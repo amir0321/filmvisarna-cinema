@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import { useTheme } from '../context/ThemeContext'
 
 interface ThemeToggleProps {
@@ -5,8 +6,9 @@ interface ThemeToggleProps {
 }
 
 export default function ThemeToggle({ variant = 'icon' }: ThemeToggleProps) {
+  const { t } = useTranslation()
   const { theme, toggleTheme } = useTheme()
-  const label = theme === 'dark' ? 'Byt till ljust tema' : 'Byt till mörkt tema'
+  const label = t(theme === 'dark' ? 'theme.switchToLight' : 'theme.switchToDark')
   const icon = theme === 'dark' ? 'bi-sun' : 'bi-moon-stars'
 
   return (

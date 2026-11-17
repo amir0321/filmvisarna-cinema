@@ -1,5 +1,5 @@
 import apiClient from "./client";
-import type { Booking, BookingCreatedResult, BookingRequestPayload, GuestBookingPreview } from "../types/booking";
+import type { Booking, BookingCreatedResult, BookingRequestPayload, GuestBookingPreview, ReservationWarningStatus } from "../types/booking";
 
 interface BookingApiResponse {
   id: number;
@@ -69,6 +69,10 @@ function mapBooking(data: BookingApiResponse): Booking {
 export async function getMyBookings(signal?: AbortSignal): Promise<Booking[]> {
   const response = await apiClient.get<BookingApiResponse[]>("/bookings/me", { signal });
   return response.map(mapBooking);
+}
+
+export function getMyReservationStatus(signal?: AbortSignal): Promise<ReservationWarningStatus> {
+  return apiClient.get('/bookings/reservation-status', { signal });
 }
 
 export interface CancelMyBookingResponse {

@@ -1,6 +1,8 @@
+import { useTranslation } from '../context/LocaleContext'
 import type { Booking } from "../types/booking";
 import { Poster } from "./Poster";
 import { canCancelBooking, getBookingState } from "../utils/bookings";
+import { getIntlLocale } from '../utils/locale';
 import { formatSek } from '../utils/price';
 
 export interface MyBookingCardProps {
@@ -18,6 +20,7 @@ export default function MyBookingCard({
   currentTime,
   posterUrl,
 }: MyBookingCardProps) {
+  const { t, locale } = useTranslation()
   const {
     bookingRef,
     movieTitle,
@@ -30,31 +33,34 @@ export default function MyBookingCard({
 
   const hasKioskPreorder = (items?.length ?? 0) > 0;
 
-  const cinemaHall = cinemaName ?? "Salong ej angiven";
+  const cinemaHall = cinemaName ?? t('member.cinemaUnspecified');
 
   const startsAt = new Date(screeningStartsAt ?? '');
   const showtime = Number.isFinite(startsAt.getTime())
-    ? new Intl.DateTimeFormat("sv-SE", {
+    ? new Intl.DateTimeFormat(getIntlLocale(locale), {
         dateStyle: "medium",
         timeStyle: "short",
+        hour12: false,
         timeZone: "Europe/Stockholm",
       }).format(startsAt)
-    : "Tid ej angiven";
+    : t('member.timeUnspecified');
   const bookingState = getBookingState(booking, currentTime);
   const statusLabel = {
-    upcoming: "Kommande föreställning",
-    past: "Tidigare föreställning",
-    cancelled: "Avbokad",
-    unknown: "Tid ej angiven",
+    upcoming: t('member.upcomingScreening'),
+    ongoing: t('member.ongoingScreening'),
+    past: t('member.pastScreening'),
+    cancelled: t('member.cancelled'),
+    expired: t('member.expired'),
+    unknown: t('member.timeUnspecified'),
   }[bookingState];
-  const formattedPrice = formatSek(totalPrice);
+  const formattedPrice = formatSek(totalPrice, locale);
 
   const seats = tickets.map((ticket) => {
     if (ticket.row && ticket.seatNumber != null) {
-      return `Rad ${ticket.row}, plats ${ticket.seatNumber}`;
+      return t('seatMap.seat', { row: ticket.row, seat: ticket.seatNumber });
     }
 
-    return `Plats-ID ${ticket.seatId}`;
+    return t('seatMap.seatId', { id: ticket.seatId });
   });
   const canCancel = canCancelBooking(booking, currentTime);
   const deadlineId = `booking-${booking.id}-cancel-deadline`;
@@ -62,7 +68,7 @@ export default function MyBookingCard({
     <article className={`fv-my-booking-card card mb-3 overflow-hidden fv-my-booking-card--${bookingState}`}>
       <div className="fv-my-booking-card__status d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2">
         <span className="fw-semibold small">
-          {statusLabel}
+          {(bookingState === 'upcoming' || bookingState === 'ongoing') && !booking.isPaid ? t('member.reserved') : statusLabel}
         </span>
 
         <span className="small fw-semibold">{bookingRef}</span>
@@ -74,15 +80,15 @@ export default function MyBookingCard({
           >
             <Poster
               src={posterUrl}
-              alt={movieTitle ?? "Filmposter"}
-              title={movieTitle ?? "Film"}
+              alt={movieTitle ?? t('member.poster')}
+              title={movieTitle ?? t('member.film')}
               aspectRatio="2/3"
               className="w-100 h-100"
             />
           </div>
 
           <div className="fv-my-booking-card__details flex-grow-1">
-            <h3 className="h5 fw-bold mb-1">{movieTitle ?? "Okänd film"}</h3>
+            <h3 className="h5 fw-bold mb-1">{movieTitle ?? t('ticket.unknownMovie')}</h3>
             <p className="text-secondary small mb-0">
               {cinemaHall} · {showtime}
             </p>
@@ -91,31 +97,37 @@ export default function MyBookingCard({
 
         <div className="row g-3 mb-3">
           <div className="col-md-6">
-            <p className="text-secondary mb-1">Platser</p>
-            <p className="fw-semibold mb-0">{seats.join(", ") || "Inga platser registrerade"}</p>
+            <p className="text-secondary mb-1">{t('member.seats')}</p>
+            <p className="fw-semibold mb-0">{seats.join(", ") || t('member.noSeats')}</p>
           </div>
 
           <div className="col-md-6">
-            <p className="text-secondary mb-1">Totalt pris</p>
+            <p className="text-secondary mb-1">{t('member.totalPrice')}</p>
             <p className="fw-semibold mb-0">{formattedPrice}</p>
           </div>
         </div>
 
+        {bookingState !== 'cancelled' && (
+          <p className="small text-secondary mb-3">
+            {t(bookingState === 'expired' ? 'member.expiredNote' : booking.isPaid ? 'member.paidNote' : 'member.unpaidNote')}
+          </p>
+        )}
+
         {hasKioskPreorder && (
           <span className="fv-my-booking-card__kiosk badge">
-            Kioskförbeställning ingår
+            {t('member.kioskIncluded')}
           </span>
         )}
         <div className="d-flex flex-wrap gap-2 mt-3">
-          {booking.status === "confirmed" && onViewTicket && (
+          {(booking.status === 'confirmed' || booking.status === 'reserved') && bookingState !== 'expired' && onViewTicket && (
             <button
               type="button"
               className="btn btn-secondary-outline"
               onClick={() => onViewTicket?.(booking)}
-              aria-label={`Visa biljett för ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
+              aria-label={t('member.viewTicketAria', { title: movieTitle ?? t('ticket.unknownMovie'), reference: bookingRef })}
               disabled={!onViewTicket}
             >
-              Visa biljett
+              {t('member.viewTicket')}
             </button>
           )}
 
@@ -124,17 +136,17 @@ export default function MyBookingCard({
               type="button"
               className="btn btn-danger"
               onClick={() => onCancel?.(booking)}
-              aria-label={`Avboka ${movieTitle ?? 'Okänd film'}, bokningskod ${bookingRef}`}
+              aria-label={t('member.cancelAria', { title: movieTitle ?? t('ticket.unknownMovie'), reference: bookingRef })}
               disabled={!canCancel || !onCancel}
               aria-describedby={!canCancel ? deadlineId : undefined}
             >
-              Avboka
+              {t('member.cancel')}
             </button>
           )}
         </div>
         {bookingState === "upcoming" && onCancel && !canCancel && (
           <p id={deadlineId} className="small text-secondary mt-2 mb-0">
-            Avbokning måste ske minst två timmar före visningen.
+            {t('cancellation.deadline')}
           </p>
         )}
       </div>
