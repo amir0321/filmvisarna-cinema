@@ -1,3 +1,5 @@
+import { getIntlLocale, readLocale, type Locale } from './locale.ts'
+
 export interface PriceLine {
   price: number
   quantity: number
@@ -17,5 +19,5 @@ export function assignTickets(
   return seatIds.map((seatId, i) => ({ seatId, priceGroupId: groupIds[i] }))
 }
 
-export const formatSek = (n: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 }).format(n)
+export const formatSek = (n: number, locale: Locale = readLocale()) =>
+  new Intl.NumberFormat(getIntlLocale(locale), { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 }).format(n)

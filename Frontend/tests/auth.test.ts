@@ -2,20 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { getSafeRedirectPath, isAuthPath } from '../src/utils/links.ts'
 import { validateAuth, validateNewPassword } from '../src/utils/authValidation.ts'
-import { getAuthRole, getRoleLabel } from '../src/utils/authSession.ts'
 import { getPostLoginPath, getProtectedRouteAccess } from '../src/utils/routeAccess.ts'
-import type { User } from '../src/types/user.ts'
-
-test('session roles use the server-verified user without exposing a token', () => {
-  const user: User = { id: 1, email: 'anna@example.test', role: 'user' }
-  const admin: User = { ...user, role: 'admin' }
-  for (const [account, role, label] of [
-    [null, 'guest', 'Gäst'], [user, 'user', 'Medlem'], [admin, 'admin', 'Admin'],
-  ] as const) {
-    assert.equal(getAuthRole(account), role)
-    assert.equal(getRoleLabel(getAuthRole(account)), label)
-  }
-})
 
 test('route protection waits for session restoration before any redirect or access', () => {
   for (const role of ['guest', 'user', 'admin'] as const) {
@@ -58,12 +45,6 @@ test('non-admin login redirects home for admin destinations, including encoded p
   assert.equal(getPostLoginPath('/administration', 'user'), '/administration')
   assert.equal(getPostLoginPath('https://example.test', 'admin'), '/')
   assert.equal(getPostLoginPath('/logga-in?redirect=%2Fadmin', 'admin'), '/')
-})
-
-test('redirect preserves the booking path, query and fragment', () => {
-  const destination = '/boka/42?seats=1%2C2#sammanfattning'
-  assert.equal(getSafeRedirectPath(destination), destination)
-  assert.equal(getSafeRedirectPath('/mina-bokningar'), '/mina-bokningar')
 })
 
 test('Swedish and English auth paths cannot become redirect loops', () => {

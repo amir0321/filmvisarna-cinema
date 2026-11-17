@@ -2,8 +2,10 @@ import { useSearchParams } from 'react-router'
 import FilterStrip from '../components/home/FilterStrip'
 import HeroSection, { HeroSectionSkeleton } from '../components/home/HeroSection'
 import RepertoireSection from '../components/home/RepertoireSection'
+import { useTranslation, type Locale } from '../context/LocaleContext'
 import { useMovies } from '../hooks'
 import { useScreeningProgramme } from '../hooks/useScreeningProgramme'
+import type { Translator } from '../i18n'
 import type { ScreeningWhen } from '../types'
 import { capitalize, formatDateLong, toCinemaIsoDate } from '../utils/date'
 import { getAgeLimit } from '../utils/movie'
@@ -11,19 +13,20 @@ import { getDateFilterRange, readAgeFilter, readHomeDateFilter, setAgeFilter, se
 
 const HERO_MOVIE_COUNT = 5
 
-const DATE_PRESET_HEADINGS: Record<ScreeningWhen, string> = {
-  today: 'Idag',
-  tomorrow: 'Imorgon',
-  weekend: 'I helgen',
-}
+const DATE_PRESET_HEADINGS = {
+  today: 'date.today',
+  tomorrow: 'date.tomorrow',
+  weekend: 'date.weekend',
+} as const satisfies Record<ScreeningWhen, string>
 
-function getDateHeading(filter: DateFilter): string {
+function getDateHeading(filter: DateFilter, t: Translator, locale: Locale): string {
   return filter.kind === 'preset'
-    ? DATE_PRESET_HEADINGS[filter.when]
-    : capitalize(formatDateLong(filter.date))
+    ? t(DATE_PRESET_HEADINGS[filter.when])
+    : capitalize(formatDateLong(filter.date, locale))
 }
 
 export default function Home() {
+  const { t, locale } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const programme = useScreeningProgramme()
   const dateFilter = readHomeDateFilter(searchParams, programme.today, programme.dates)
@@ -54,7 +57,7 @@ export default function Home() {
 
       <RepertoireSection
         key={`${dateFilter.kind === 'preset' ? dateFilter.when : dateFilter.date}:${ageFilter ?? 'all'}`}
-        heading={`Repertoar — ${getDateHeading(dateFilter)}`}
+        heading={t('home.repertoireHeading', { date: getDateHeading(dateFilter, t, locale) })}
         movies={movies ?? []}
         screenings={screenings}
         loading={moviesLoading || programme.loading}

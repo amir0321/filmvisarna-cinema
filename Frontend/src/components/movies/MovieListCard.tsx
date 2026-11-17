@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { useTranslation } from '../../context/LocaleContext'
+import { translateGenre } from '../../i18n/mappers'
 import type { Movie, Screening } from '../../types'
 import { AgeBadge, Badge, StarRatingBadge } from '../Badge'
 import { Poster } from '../Poster'
@@ -15,6 +17,7 @@ interface MovieListCardProps {
 }
 
 export default function MovieListCard({ movie, screenings, dayLabel }: MovieListCardProps) {
+  const { t, locale } = useTranslation()
   const movieUrl = getMovieUrl(movie.id)
 
   return (
@@ -27,14 +30,14 @@ export default function MovieListCard({ movie, screenings, dayLabel }: MovieList
         hoverZoom
         topLeftBadge={
           <>
-            <span className="visually-hidden">Åldersgräns </span>
+            <span className="visually-hidden">{t('filter.ageLimit')} </span>
             <AgeBadge ageRating={movie.age_rating} variant="poster-filmer" />
           </>
         }
         topRightBadge={
           <Badge variant="runtime">
             <span aria-hidden="true">{formatDuration(movie.duration_minutes)}</span>
-            <span className="visually-hidden">Speltid {formatDurationLong(movie.duration_minutes)}</span>
+            <span className="visually-hidden">{t('movie.duration')} {formatDurationLong(movie.duration_minutes, locale)}</span>
           </Badge>
         }
       />
@@ -47,9 +50,9 @@ export default function MovieListCard({ movie, screenings, dayLabel }: MovieList
         </h2>
 
         {movie.genres.length > 0 && (
-          <ul className="movie-list-card__genres" aria-label="Genrer">
+          <ul className="movie-list-card__genres" aria-label={t('movie.genres')}>
             {movie.genres.map((genre) => (
-              <li key={genre}>{genre}</li>
+              <li key={genre}>{translateGenre(genre, locale)}</li>
             ))}
           </ul>
         )}
@@ -70,14 +73,14 @@ export default function MovieListCard({ movie, screenings, dayLabel }: MovieList
         ) : (
           movie.release_date && (
             <p className="movie-list-card__premiere">
-              Premiär {formatDateLong(toCinemaIsoDate(movie.release_date))}
+              {t('movies.premiereDate', { date: formatDateLong(toCinemaIsoDate(movie.release_date), locale) })}
             </p>
           )
         )}
 
         <Link to={movieUrl} className="btn btn-danger movie-list-card__button">
-          {dayLabel ? 'Köp biljetter' : 'Läs mer'}
-          <span className="visually-hidden"> till {movie.title}</span>
+          {t(dayLabel ? 'movies.buyTickets' : 'movies.readMore')}
+          <span className="visually-hidden"> {t('movies.forMovie', { title: movie.title })}</span>
         </Link>
       </div>
     </article>
@@ -85,16 +88,17 @@ export default function MovieListCard({ movie, screenings, dayLabel }: MovieList
 }
 
 function ShowtimeLink({ screening }: { screening: Screening }) {
-  const time = formatTime(screening.startsAt)
+  const { t, locale } = useTranslation()
+  const time = formatTime(screening.startsAt, locale)
   const seatsLeft = screening.availableSeats
   const isSoldOut = seatsLeft === 0
   const isLowOnSeats = !isSoldOut && seatsLeft !== undefined && seatsLeft <= LOW_SEATS_THRESHOLD
-  const salong = `Salong ${screening.cinemaId}`
+  const salong = t('movies.auditoriumNumber', { id: screening.cinemaId })
 
   if (isSoldOut) {
     return (
       <span className="movie-list-card__time movie-list-card__time--sold-out">
-        {time} {salong} (Fullbokad)
+        {time} {salong} ({t('screening.soldOut')})
       </span>
     )
   }
@@ -103,10 +107,10 @@ function ShowtimeLink({ screening }: { screening: Screening }) {
     <Link
       to={getBookingUrl(screening.id)}
       className="movie-list-card__time"
-      aria-label={`Boka ${time} i ${screening.cinema}${isLowOnSeats ? `, ${seatsLeft} platser kvar` : ''}`}
+      aria-label={isLowOnSeats && seatsLeft !== undefined ? t('movies.bookShowtimeLowAria', { time, cinema: screening.cinema, count: seatsLeft }) : t('movies.bookShowtimeAria', { time, cinema: screening.cinema })}
     >
       {time} {salong}
-      {isLowOnSeats && <span className="movie-list-card__seats"> ({seatsLeft} kvar)</span>}
+      {isLowOnSeats && seatsLeft !== undefined && <span className="movie-list-card__seats"> ({t('screening.seatsLeftShort', { count: seatsLeft })})</span>}
     </Link>
   )
 }

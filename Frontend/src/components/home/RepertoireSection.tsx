@@ -1,3 +1,4 @@
+import { useTranslation } from '../../context/LocaleContext'
 import type { Movie, Screening } from '../../types'
 import MovieCard from './MovieCard'
 import Pagination from '../Pagination'
@@ -47,12 +48,13 @@ export default function RepertoireSection({
   error,
   onRetry,
 }: RepertoireSectionProps) {
+  const { t } = useTranslation()
   const groups = groupScreeningsByMovie(movies, screenings)
   const { page, totalPages, pageItems, setPage } = usePagination(groups, 8)
 
   let statusMessage = ''
-  if (loading) statusMessage = 'Laddar visningar…'
-  else if (!error) statusMessage = `${groups.length} ${groups.length === 1 ? 'film' : 'filmer'} visas`
+  if (loading) statusMessage = t('home.loadingScreenings')
+  else if (!error) statusMessage = t(groups.length === 1 ? 'home.moviesShowingOne' : 'home.moviesShowingMany', { count: groups.length })
 
   return (
     <section className="container home-container py-5" aria-labelledby="repertoire-heading">
@@ -66,8 +68,8 @@ export default function RepertoireSection({
 
       {error && (
         <div className="alert alert-danger" role="alert">
-          Det gick inte att hämta repertoaren. Försök igen om en stund.
-          {onRetry && <button type="button" className="btn btn-secondary-outline btn-sm ms-2" onClick={onRetry}>Försök igen</button>}
+          {t('home.repertoireError')}
+          {onRetry && <button type="button" className="btn btn-secondary-outline btn-sm ms-2" onClick={onRetry}>{t('common.retry')}</button>}
         </div>
       )}
 
@@ -91,7 +93,7 @@ export default function RepertoireSection({
       {!error && !loading && groups.length === 0 && (
         <div className="repertoire-section__empty text-center py-5">
           <i className="bi bi-calendar-x fs-1 d-block mb-3 opacity-50" aria-hidden="true"></i>
-          <p className="mb-0">Inga visningar hittades för vald dag och åldersgräns.</p>
+          <p className="mb-0">{t('home.repertoireEmpty')}</p>
         </div>
       )}
 
@@ -109,7 +111,7 @@ export default function RepertoireSection({
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}
-          ariaLabel="Sidnumrering för repertoaren"
+          ariaLabel={t('home.repertoirePagination')}
         />
       )}
     </section>

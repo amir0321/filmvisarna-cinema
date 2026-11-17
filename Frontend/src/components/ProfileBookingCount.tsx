@@ -1,7 +1,9 @@
+import { useTranslation } from '../context/LocaleContext'
 
 import { useBookings } from '../hooks/useBookings'
 
 export default function ProfileBookingCount() {
+  const { t } = useTranslation()
   const { bookings, loading, error } = useBookings()
 
   return (
@@ -9,7 +11,7 @@ export default function ProfileBookingCount() {
       <strong className="fs-4">
         {error ? '–' : loading ? '…' : bookings.length}
       </strong>
-      <p className="small text-secondary mb-0">Bokningar</p>
+      <p className="small text-secondary mb-0">{t('nav.bookings')}</p>
     </div>
   )
 }

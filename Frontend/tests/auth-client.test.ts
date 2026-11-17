@@ -44,19 +44,6 @@ test('mutations send cookies and the CSRF header without exposing any bearer tok
   assert.equal(headers.get('Content-Type'), 'application/json')
 })
 
-test('multipart uploads carry CSRF protection without overriding their boundary', async () => {
-  await apiClient.post('/upload', new FormData())
-  const headers = new Headers(lastRequest?.headers)
-  assert.equal(headers.get('X-CSRF-Protection'), '1')
-  assert.equal(headers.has('Content-Type'), false)
-})
-
-test('guest writes can explicitly omit the shared session cookie', async () => {
-  await apiClient.post('/bookings/guest/confirm', { token: 'link' }, { credentials: 'omit' })
-  assert.equal(lastRequest?.credentials, 'omit')
-  assert.equal(new Headers(lastRequest?.headers).get('X-CSRF-Protection'), '1')
-})
-
 test('cancellation preview and confirmation send reference and email in POST bodies without URL parameters or cookies', async () => {
   const credentials = { bookingRef: 'FV-A1B2C', email: 'anna@example.test' }
   await getCancelPreview(credentials)

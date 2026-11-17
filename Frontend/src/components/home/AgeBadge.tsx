@@ -1,3 +1,4 @@
+import { useTranslation } from '../../context/LocaleContext'
 import { formatAgeRating, getAgeRatingVariant } from '../../utils/movie'
 
 interface AgeBadgeProps {
@@ -6,10 +7,11 @@ interface AgeBadgeProps {
 }
 
 export default function AgeBadge({ ageRating, className = '' }: AgeBadgeProps) {
+  const { t, locale } = useTranslation()
   return (
     <span className={`age-badge age-badge--${getAgeRatingVariant(ageRating)} ${className}`.trim()}>
-      <span className="visually-hidden">Åldersgräns: </span>
-      {formatAgeRating(ageRating)}
+      <span className="visually-hidden">{t('movie.ageLimitPrefix')} </span>
+      {formatAgeRating(ageRating, locale)}
     </span>
   )
 }

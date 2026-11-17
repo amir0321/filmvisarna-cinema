@@ -1,3 +1,6 @@
+import { translate } from '../i18n/index.ts'
+import { readLocale, type Locale } from './locale.ts'
+
 export type AgeRatingVariant = 'success' | 'warning' | 'danger'
 
 // "2h 45m"
@@ -9,12 +12,12 @@ export function formatDuration(minutes: number): string {
 }
 
 // "2 timmar 45 minuter"
-export function formatDurationLong(minutes: number): string {
+export function formatDurationLong(minutes: number, locale: Locale = readLocale()): string {
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
   const parts: string[] = []
-  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'timme' : 'timmar'}`)
-  if (rest > 0) parts.push(`${rest} ${rest === 1 ? 'minut' : 'minuter'}`)
+  if (hours > 0) parts.push(translate(locale, hours === 1 ? 'movie.hourOne' : 'movie.hourMany', { count: hours }))
+  if (rest > 0) parts.push(translate(locale, rest === 1 ? 'movie.minuteOne' : 'movie.minuteMany', { count: rest }))
   return parts.join(' ')
 }
 
@@ -24,9 +27,9 @@ export function getAgeLimit(ageRating: string | null): number {
 }
 
 // "15" -> "15 år", "0" or null -> "Barntillåten"
-export function formatAgeRating(ageRating: string | null): string {
+export function formatAgeRating(ageRating: string | null, locale: Locale = readLocale()): string {
   const limit = getAgeLimit(ageRating)
-  return limit === 0 ? 'Barntillåten' : `${limit} år`
+  return limit === 0 ? translate(locale, 'movie.allAges') : translate(locale, 'movie.age', { age: limit })
 }
 
 export function getAgeRatingVariant(ageRating: string | null): AgeRatingVariant {

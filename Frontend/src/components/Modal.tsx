@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import React, { createContext, use, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -168,6 +169,7 @@ export function ModalHeader({
   children,
   className = '',
 }: ModalHeaderProps) {
+  const { t } = useTranslation()
   const { onClose: contextOnClose, titleId } = useModalContext()
   const handleClose = customOnClose || contextOnClose
 
@@ -186,7 +188,7 @@ export function ModalHeader({
         type="button"
         className="fv-modal-close"
         onClick={handleClose}
-        aria-label="Stäng"
+        aria-label={t('common.close')}
       >
         <i className="bi bi-x-lg" aria-hidden="true" />
       </button>

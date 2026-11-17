@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import { AuthProvider } from "./context/AuthContext";
 import { BookingsProvider } from "./context/BookingsContext";
+import { LocaleProvider } from "./context/LocaleContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -20,12 +21,14 @@ function handleUnauthorized() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider onUnauthorized={handleUnauthorized}>
-        <BookingsProvider>
-          <RouterProvider router={router} />
-        </BookingsProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <AuthProvider onUnauthorized={handleUnauthorized}>
+          <BookingsProvider>
+            <RouterProvider router={router} />
+          </BookingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   </StrictMode>,
 );
