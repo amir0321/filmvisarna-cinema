@@ -1,7 +1,7 @@
 import apiClient from "./client";
 import type { Booking, BookingCreatedResult, BookingRequestPayload, GuestBookingPreview, ReservationWarningStatus } from "../types/booking";
 
-interface BookingApiResponse {
+export interface BookingApiResponse {
   id: number;
   reference: string;
   status: Booking["status"];
@@ -33,7 +33,7 @@ interface BookingApiResponse {
   createdAt: string;
 }
 
-function mapBooking(data: BookingApiResponse): Booking {
+export function mapBooking(data: BookingApiResponse): Booking {
   return {
     id: data.id,
     bookingRef: data.reference,
