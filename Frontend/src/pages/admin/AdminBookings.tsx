@@ -1,16 +1,41 @@
 import { useTranslation } from '../../context/LocaleContext'
+import { useState, useCallback } from 'react'
 import { getIntlLocale } from '../../utils/locale'
-import { getAdminStats, type AdminStats } from '../../api/adminBookings'
+import { getAdminStats, type AdminStats, getAdminBookings } from '../../api/adminBookings'
 import { useFetch } from '../../hooks/useFetch'
+import { useScreenings } from '../../hooks/useScreenings'
 import AdminPageHeader from '../../components/admin/AdminPageHeader'
 import { EmptyState } from '../../components/EmptyState'
 import QuickCheckIn from '../../components/admin/QuickCheckIn'
+import BookingsTable from '../../components/admin/BookingsTable'
+import type { Booking } from '../../types/booking'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
   const { data: stats, error } = useFetch<AdminStats>((signal) => getAdminStats(signal))
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
+  const [screeningId, setScreeningId] = useState('')
+  const { data: screenings } = useScreenings()
+  const fetchBookings = useCallback(
+ (signal: AbortSignal) =>
+     getAdminBookings(screeningId ? { screeningId: Number(screeningId) } : {}, signal),
+  [screeningId],
+ )
+  const {
+    data: bookings,
+    loading: bookingsLoading,
+     error: bookingsError,
+    refetch: refetchBookings,
+    } = useFetch<Booking[]>(fetchBookings, { deps: [screeningId] })
 
+  const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
+   weekday: 'short',
+   day: 'numeric',
+   month: 'short',
+   hour: '2-digit',
+   minute: '2-digit',
+   timeZone: 'Europe/Stockholm',
+  })
   const cards = stats
     ? [
         {
@@ -60,6 +85,41 @@ export default function AdminBookings() {
           </div>
         ))}
       </div>
+            <div className="fv-screening-filter">
+        <label htmlFor="fv-screening-filter" className="fv-screening-filter__label">
+          {t('admin.bookings.filter.label')}
+        </label>
+        <select
+          id="fv-screening-filter"
+          className="fv-screening-filter__select"
+          value={screeningId}
+          onChange={(event) => setScreeningId(event.target.value)}
+        >
+          <option value="">{t('admin.bookings.filter.all')}</option>
+          {(screenings ?? []).map((screening) => (
+            <option key={screening.id} value={screening.id}>
+              {dateTime.format(new Date(screening.startsAt))} — {screening.movieTitle}, {screening.cinema}
+            </option>
+          ))}
+        </select>
+        <span className="fv-screening-filter__live">
+          <span className="fv-screening-filter__dot" aria-hidden="true" />
+          {t('admin.bookings.filter.live')}
+        </span>
+      </div>
+            {bookingsLoading && !bookings && <p role="status">{t('admin.bookings.table.loading')}</p>}
+      {bookingsError && (
+        <EmptyState
+          variant="error"
+          title={t('admin.bookings.table.error')}
+          actionLabel={t('admin.bookings.table.retry')}
+          onAction={refetchBookings}
+        />
+      )}
+      {bookings && bookings.length === 0 && (
+        <EmptyState title={t('admin.bookings.table.empty')} />
+      )}
+      {bookings && bookings.length > 0 && <BookingsTable bookings={bookings} />}
     </div>
   )
 }
