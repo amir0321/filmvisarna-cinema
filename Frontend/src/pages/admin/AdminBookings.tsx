@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/EmptyState'
 import QuickCheckIn from '../../components/admin/QuickCheckIn'
 import BookingsTable from '../../components/admin/BookingsTable'
 import type { Booking } from '../../types/booking'
+import BookingsSidePanel from '../../components/admin/BookingsSidePanel'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
@@ -95,7 +96,9 @@ function handleCancel() {
       <AdminPageHeader title={t('nav.bookingsCashier')} subtitle={t('admin.bookings.subtitle')} />
 
       {error && <EmptyState variant="error" title={t('admin.bookings.stats.error')} />}
-      <QuickCheckIn />
+      <div className="fv-admin-bookings">
+        <div className="fv-admin-bookings__main">
+        <QuickCheckIn /> 
       <div className="fv-kpi-grid">
         {cards.map((card) => (
           <div key={card.key} className={`fv-kpi fv-kpi--${card.tone}`}>
@@ -150,6 +153,11 @@ function handleCancel() {
       {bookings && bookings.length > 0 && (
        <BookingsTable bookings={bookings} payingId={payingId} onPay={handlePay} onCancel={handleCancel} />
      )}
+     </div>
+       <div className="fv-admin-bookings__side">
+          <BookingsSidePanel stats={stats ?? null} />
+        </div>
+      </div>
     </div>
   )
 }
