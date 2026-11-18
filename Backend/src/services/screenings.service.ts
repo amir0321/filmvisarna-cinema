@@ -109,13 +109,13 @@ export async function listUpcomingScreenings(
              FROM ticket t
              JOIN booking b ON b.id = t.booking_id
              WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-               AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '15 minutes')) AS "bookedSeats",
+               AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')) AS "bookedSeats",
             ((SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) -
              (SELECT COUNT(*)::int
               FROM ticket t
               JOIN booking b ON b.id = t.booking_id
               WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-                AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '15 minutes')))::int AS "availableSeats"
+                AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')))::int AS "availableSeats"
      FROM screening_times st
      JOIN movie m  ON m.id = st.movie_id
      JOIN cinema c ON c.id = st.cinema_id
@@ -170,7 +170,7 @@ export async function getScreeningSeats(
            AND t.seat_id = s.id
            AND b.status = 'confirmed'
            AND t.is_active
-           AND (b.is_paid OR sc.starts_at > statement_timestamp() + interval '15 minutes')
+           AND (b.is_paid OR sc.starts_at > statement_timestamp() + interval '1 hour')
        )
        THEN 'booked'
        ELSE 'available'

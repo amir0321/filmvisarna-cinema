@@ -72,10 +72,10 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
     (bookingData.kioskItems.length > 0 ? `Kioskvaror:\n${kioskText}\n\n` : '') +
     `Totalt att betala: ${total} SEK\n\n` +
     (cancelUrl
-      ? `Avboka din bokning här: ${cancelUrl}\nAnge bokningsnummer och e-postadressen som användes vid bokningen. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps 15 minuter före start.\n\n`
+      ? `Avboka din bokning här: ${cancelUrl}\nAnge bokningsnummer och e-postadressen som användes vid bokningen. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps en timme före start.\n\n`
       : `Kontakta biografen om du vill avboka din bokning.\n\n`) +
     `Visa bokningsreferensen i kassan vid ankomst!\n` +
-    `Betala i kassan senast 15 minuter före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.`
+    `Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.`
   );
 }
 
@@ -202,9 +202,9 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
           ${cancelUrl ? `<a href="${cancelUrl}"
             style="display: block; padding: 12px 0; font-size: 13px; font-weight: 600; color: #EF4444; text-decoration: none; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05); margin-bottom: 12px;">
             Avboka biljett
-          </a><p style="font-size: 12px; color: #94A3B8;">Ange bokningsnummer och e-postadressen som användes vid bokningen på avbokningssidan. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps 15 minuter före start.</p>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
+          </a><p style="font-size: 12px; color: #94A3B8;">Ange bokningsnummer och e-postadressen som användes vid bokningen på avbokningssidan. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps en timme före start.</p>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
           <div style="font-size: 12px; color: #94A3B8;">
-            Betala i kassan senast 15 minuter före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.
+            Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.
           </div>
         </div>
 

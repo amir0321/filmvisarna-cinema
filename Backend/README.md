@@ -481,13 +481,13 @@ Standardvärden och framtida adminkrav finns i [design/booking-security.md](../d
 
 Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen.
 
-Obetalda bokningar visas som `reserved` tills 15 minuter före filmstart. Därefter blir de `expired` och platserna släpps. Nya obetalda nätreservationer stoppas vid samma gräns. Betalda bokningar behåller sina platser även vid sen ankomst. Sen betalning i kassan kräver en ny ledighetskontroll och kan göras före filmens sluttid: `PATCH /api/bookings/:id/pay` återtar de ursprungliga platserna om de är lediga, eller tar emot `seatIds` med lika många andra lediga platser. Samma stöd finns i den generella admin-PATCH-rutten med `isPaid: true`. Incheckning kräver betalning. All platstilldelning och betalning sker atomärt; konflikter ger 409 utan betalning eller poäng.
+Obetalda bokningar visas som `reserved` tills en timme före filmstart. Därefter blir de `expired` och platserna släpps. Nya obetalda nätreservationer stoppas vid samma gräns. Betalda bokningar behåller sina platser även vid sen ankomst. Sen betalning i kassan kräver en ny ledighetskontroll och kan göras före filmens sluttid: `PATCH /api/bookings/:id/pay` återtar de ursprungliga platserna om de är lediga, eller tar emot `seatIds` med lika många andra lediga platser. Samma stöd finns i den generella admin-PATCH-rutten med `isPaid: true`. Incheckning kräver betalning. All platstilldelning och betalning sker atomärt; konflikter ger 409 utan betalning eller poäng.
 
 Kör `npm run migrate:bookings` före start med denna version. Migreringen lägger till `ticket.is_active`, behåller historiska biljettuppgifter och säkrar med ett unikt index att en stol bara kan ha en aktiv biljett per visning. API och platskartor kontrollerar tidsgränsen även om städjobbet inte körts. Serverns befintliga minutjobb släpper reservationerna i databasen. Obetalda utgångna bokningar behålls till sju dagar efter filmens sluttid och raderas sedan med biljetter och kioskbeställningar via befintliga kaskadregler. Betalda och avbokade bokningar behålls. Idempotensnyckeln följer bokningen tills den rensas.
 
 Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_URL` och körs i ett eget slumpmässigt schema. De skickar inga riktiga mejl och använder aldrig applikationens databas som reserv. Adminfunktioner för flaggning och avbokning är enbart dokumenterade framtida krav i denna ändring.
 
-Kundavbokning använder betalstatus: betalda bokningar har två timmars avbokningsgräns; obetalda reservationer kan avbokas fram tills stolarna släpps 15 minuter före start. Vid själva frisläppningstidpunkten kan de inte längre avbokas.
+Kundavbokning använder betalstatus: betalda bokningar har två timmars avbokningsgräns; obetalda reservationer kan avbokas fram tills stolarna släpps en timme före start. Vid själva frisläppningstidpunkten kan de inte längre avbokas.
 
 ### Automatiska uteblivandevarningar och reservationsspärrar
 
@@ -541,7 +541,7 @@ Spärren kontrolleras före medlemsbokning, gästförfrågan och gästbekräftel
 - **Åtkomst:** Admin (`requireAdmin`)
 - **Beskrivning:** Registrerar betalning som redan tagits emot i kassan (`is_paid = true`, `status = 'confirmed'`, första `paid_at` bevaras). Anropet tar inte betalt via en betaltjänst och checkar inte in kunden.
 - **Body:** Valfri `{ "seatIds": [41, 42] }` för andra platser på en obetald bokning. Utan `seatIds` används de ursprungliga platserna. Antal och biljettkategorier behålls; stolarna måste vara olika och tillhöra rätt salong. Backend matchar listan mot befintliga biljetter i stigande `seat_id`-ordning.
-- **Sen kund:** Från 15 minuter före filmstart är obetalda reservationer släppta. Betalning kan registreras före filmens sluttid endast om samtliga önskade platser kan tilldelas atomärt. Samma genomförda betalningsanrop med samma platser kan upprepas utan nya poäng. En redan betald bokning kan inte byta platser genom denna åtgärd.
+- **Sen kund:** Från en timme före filmstart är obetalda reservationer släppta. Betalning kan registreras före filmens sluttid endast om samtliga önskade platser kan tilldelas atomärt. Samma genomförda betalningsanrop med samma platser kan upprepas utan nya poäng. En redan betald bokning kan inte byta platser genom denna åtgärd.
 - **Lojalitetspoäng:** Om bokningen tillhör en registrerad medlem (`user_id IS NOT NULL`) tilldelas medlemmen automatiskt 1 lojalitetspoäng per krona (1 SEK = 1 poäng baserat på `totalPrice`). Idempotent: om bokningen redan är betald delas inga dubbla poäng ut (`pointsAwarded: 0`). Gästbokningar ger 0 poäng till användarkonton.
 - **`200 OK`**: `{ success: true, message: "Bokningen har markerats som betald.", booking, pointsAwarded: number }`
 - **`400 Bad Request`**: Avbokad bokning eller ogiltigt platsval.

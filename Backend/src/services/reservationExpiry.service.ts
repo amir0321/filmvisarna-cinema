@@ -7,7 +7,7 @@ export async function releaseExpiredReservations(db: pg.Pool | pg.PoolClient = p
   await db.query(`WITH due AS (
     SELECT b.id FROM booking b JOIN screening st ON st.id = b.screening_id
     WHERE b.status = 'confirmed' AND NOT b.is_paid
-      AND st.starts_at <= statement_timestamp() + interval '15 minutes'
+      AND st.starts_at <= statement_timestamp() + interval '1 hour'
       AND ($1::int IS NULL OR b.screening_id = $1)
     ORDER BY b.id FOR UPDATE OF b SKIP LOCKED
   ), expired AS (

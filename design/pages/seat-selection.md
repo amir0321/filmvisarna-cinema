@@ -53,7 +53,7 @@
        - `{childCount}× Barn` / `{childCount * 80} kr` (om `childCount > 0`)
        - Avdelare + rad: `Totalt` / `{totalPrice} kr` (`font-weight: 600`).
      - **Gul kassapolicy-notis:**
-       - `Betala i kassan senast 15 minuter före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser.`
+       - `Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser.`
      - **E-postfält (visas när `totalTickets > 0 && selectedSeats.length === totalTickets`):**
        - Etikett: `E-post för bokningsbekräftelse`
        - Input (`type="email"`): placeholder `din@epost.se`.
