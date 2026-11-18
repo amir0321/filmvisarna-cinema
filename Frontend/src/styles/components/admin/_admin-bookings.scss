@@ -237,3 +237,19 @@
   &--expired { --tone: #{$fv-muted-fg}; }
   &--cancelled { --tone: #{$fv-primary}; }
 }
+.fv-feedback {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: $fv-radius-lg;
+  border: 1px solid var(--tone);
+  color: $fv-fg;
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+
+  &--success { --tone: #{$fv-success}; }
+  &--error { --tone: #{$fv-primary}; }
+}
+
+.fv-bookings-table__paid {
+  font-weight: 600;
+  color: $fv-success;
+}

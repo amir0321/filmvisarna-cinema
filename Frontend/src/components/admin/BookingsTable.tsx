@@ -19,8 +19,12 @@ function ticketTypes(tickets: TicketItem[]) {
   }
   return [...counts].map(([type, count]) => `${count}x ${type}`).join(', ')
 }
-
-export default function BookingsTable({ bookings }: { bookings: Booking[] }) {
+interface BookingsTableProps{
+  bookings: Booking[]
+  payingId: number | null
+  onPay: (booking: Booking) => void
+}
+export default function BookingsTable({ bookings, payingId, onPay }: BookingsTableProps) {
   const { t, locale } = useTranslation()
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
   const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
@@ -43,6 +47,7 @@ export default function BookingsTable({ bookings }: { bookings: Booking[] }) {
             <th scope="col">{t('admin.bookings.table.auditorium')}</th>
             <th scope="col">{t('admin.bookings.table.seats')}</th>
             <th scope="col">{t('admin.bookings.table.amount')}</th>
+            <th scope="col">{t('admin.bookings.table.action')}</th>
           </tr>
         </thead>
         <tbody>
@@ -75,6 +80,20 @@ export default function BookingsTable({ bookings }: { bookings: Booking[] }) {
                     <span className="fv-badge fv-badge--checkedIn">{t('admin.bookings.status.checkedIn')}</span>
                   )}
                 </td>
+                <td>
+                 {booking.status === 'confirmed' ? (
+                   <span className="fv-bookings-table__paid">{t('admin.bookings.action.paid')}</span>
+                 ) : booking.status !== 'cancelled' ? (
+                    <button
+                     type="button"
+                     className="btn btn-sm btn-outline-success"
+                     disabled={payingId !== null}
+                     onClick={() => onPay(booking)}
+                   >
+                     {t('admin.bookings.action.markPaid')}
+                   </button>
+                 ) : null}
+               </td>
               </tr>
             )
           })}

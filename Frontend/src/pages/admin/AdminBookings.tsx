@@ -1,7 +1,8 @@
 import { useTranslation } from '../../context/LocaleContext'
 import { useState, useCallback } from 'react'
 import { getIntlLocale } from '../../utils/locale'
-import { getAdminStats, type AdminStats, getAdminBookings } from '../../api/adminBookings'
+import { getAdminStats, type AdminStats, getAdminBookings, payBooking } from '../../api/adminBookings'
+import { ApiError } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
 import { useScreenings } from '../../hooks/useScreenings'
 import AdminPageHeader from '../../components/admin/AdminPageHeader'
@@ -12,7 +13,7 @@ import type { Booking } from '../../types/booking'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
-  const { data: stats, error } = useFetch<AdminStats>((signal) => getAdminStats(signal))
+  const { data: stats, error, refetch: refetchStats } = useFetch<AdminStats>((signal) => getAdminStats(signal))
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
   const [screeningId, setScreeningId] = useState('')
   const { data: screenings } = useScreenings()
@@ -27,6 +28,27 @@ export default function AdminBookings() {
      error: bookingsError,
     refetch: refetchBookings,
     } = useFetch<Booking[]>(fetchBookings, { deps: [screeningId] })
+
+      const [payingId, setPayingId] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+
+  async function handlePay(booking: Booking) {
+    if (payingId !== null) return
+    setPayingId(booking.id)
+    setFeedback(null)
+    try {
+      const result = await payBooking(booking.id)
+      const points = result.pointsAwarded > 0 ? ` ${t('admin.bookings.action.points', { points: result.pointsAwarded })}` : ''
+      setFeedback({ kind: 'success', text: `${t('admin.bookings.action.paidDone', { ref: booking.bookingRef })}${points}` })
+      refetchStats()
+    } catch (err) {
+      const conflict = err instanceof ApiError && err.status === 409
+      setFeedback({ kind: 'error', text: t(conflict ? 'admin.bookings.action.conflict' : 'admin.bookings.action.error') })
+    } finally {
+      refetchBookings()
+      setPayingId(null)
+    }
+  }
 
   const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
    weekday: 'short',
@@ -119,7 +141,12 @@ export default function AdminBookings() {
       {bookings && bookings.length === 0 && (
         <EmptyState title={t('admin.bookings.table.empty')} />
       )}
-      {bookings && bookings.length > 0 && <BookingsTable bookings={bookings} />}
+      {feedback && (
+       <p role="status" className={`fv-feedback fv-feedback--${feedback.kind}`}>{feedback.text}</p>
+      )}
+      {bookings && bookings.length > 0 && (
+       <BookingsTable bookings={bookings} payingId={payingId} onPay={handlePay} />
+     )}
     </div>
   )
 }
