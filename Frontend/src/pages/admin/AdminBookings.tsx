@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import { getIntlLocale } from '../../utils/locale'
 import { getAdminStats, type AdminStats, getAdminBookings, payBooking } from '../../api/adminBookings'
 import { ApiError } from '../../api/client'
+import { getScreeningSeats } from '../../api/screeningSeats'
 import { useFetch } from '../../hooks/useFetch'
 import { useScreenings } from '../../hooks/useScreenings'
 import AdminPageHeader from '../../components/admin/AdminPageHeader'
@@ -10,12 +11,21 @@ import { EmptyState } from '../../components/EmptyState'
 import QuickCheckIn from '../../components/admin/QuickCheckIn'
 import BookingsTable from '../../components/admin/BookingsTable'
 import type { Booking } from '../../types/booking'
+import type { SeatsResponse } from '../../types/screeningSeat'
 import BookingsSidePanel from '../../components/admin/BookingsSidePanel'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
   const { data: stats, error, refetch: refetchStats } = useFetch<AdminStats>((signal) => getAdminStats(signal))
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
+  const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Stockholm',
+  })
   const [screeningId, setScreeningId] = useState('')
   const { data: screenings } = useScreenings()
   const fetchBookings = useCallback(
@@ -32,6 +42,20 @@ export default function AdminBookings() {
 
       const [payingId, setPayingId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error' |'info'; text: string } | null>(null)
+
+    const fetchSeats = useCallback(
+    () => (screeningId ? getScreeningSeats(Number(screeningId)) : Promise.resolve(null)),
+    [screeningId],
+  )
+  const { data: seatData, error: seatsError } = useFetch<SeatsResponse | null>(fetchSeats, { deps: [screeningId] })
+
+  const pendingSeatIds = (bookings ?? [])
+    .filter((booking) => booking.status === 'reserved')
+    .flatMap((booking) => booking.tickets.map((ticket) => ticket.seatId))
+  const selectedScreening = (screenings ?? []).find((screening) => String(screening.id) === screeningId)
+  const mapSubtitle = selectedScreening
+    ? `${selectedScreening.cinema} · ${dateTime.format(new Date(selectedScreening.startsAt))}`
+    : null
 
   async function handlePay(booking: Booking) {
     if (payingId !== null) return
@@ -54,14 +78,6 @@ function handleCancel() {
     setFeedback({ kind: 'info', text: t('admin.bookings.action.cancelUnavailable') })
   }
 
-  const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
-   weekday: 'short',
-   day: 'numeric',
-   month: 'short',
-   hour: '2-digit',
-   minute: '2-digit',
-   timeZone: 'Europe/Stockholm',
-  })
   const cards = stats
     ? [
         {
@@ -155,7 +171,13 @@ function handleCancel() {
      )}
      </div>
        <div className="fv-admin-bookings__side">
-          <BookingsSidePanel stats={stats ?? null} />
+          <BookingsSidePanel
+            stats={stats ?? null}
+            seats={seatData?.seats ?? null}
+            pendingSeatIds={pendingSeatIds}
+            subtitle={mapSubtitle}
+            seatsError={Boolean(seatsError)}
+          />
         </div>
       </div>
     </div>

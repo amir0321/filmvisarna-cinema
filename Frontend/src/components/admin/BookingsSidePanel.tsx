@@ -1,8 +1,53 @@
 import { useTranslation } from '../../context/LocaleContext'
 import { getIntlLocale } from '../../utils/locale'
 import type { AdminStats } from '../../api/adminBookings'
+import type { ScreeningSeatStatus } from '../../types'
 
-export default function BookingsSidePanel({ stats }: { stats: AdminStats | null }) {
+function MiniSeatMap({ seats, pendingSeatIds }: { seats: ScreeningSeatStatus[]; pendingSeatIds: number[] }) {
+  const { t } = useTranslation()
+  const pending = new Set(pendingSeatIds)
+  const rows = [...new Set(seats.map((seat) => seat.row_label))].sort()
+  const stateOf = (seat: ScreeningSeatStatus) =>
+    seat.status === 'available' ? 'free' : pending.has(seat.id) ? 'pending' : 'booked'
+  const legend = [
+    ['free', 'admin.bookings.side.legendFree'],
+    ['booked', 'admin.bookings.side.legendBooked'],
+    ['pending', 'admin.bookings.side.legendPending'],
+  ] as const
+
+  return (
+    <div className="fv-minimap-admin">
+      <div className="fv-minimap-admin__rows" role="img" aria-label={t('admin.bookings.side.mapTitle')}>
+        {rows.map((row) => (
+          <div key={row} className="fv-minimap-admin__row">
+            {seats
+              .filter((seat) => seat.row_label === row)
+              .sort((a, b) => a.seat_number - b.seat_number)
+              .map((seat) => (
+                <span key={seat.id} className={`fv-minimap-admin__seat fv-minimap-admin__seat--${stateOf(seat)}`} />
+              ))}
+          </div>
+        ))}
+      </div>
+      <ul className="fv-minimap-admin__legend">
+        {legend.map(([state, key]) => (
+          <li key={state}>
+            <span className={`fv-minimap-admin__seat fv-minimap-admin__seat--${state}`} aria-hidden="true" />
+            {t(key)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+interface BookingsSidePanelProps {
+   stats: AdminStats | null
+   seats: ScreeningSeatStatus[] | null
+   pendingSeatIds: number[]
+   subtitle: string | null
+   seatsError: boolean
+ }
+export default function BookingsSidePanel({ stats, seats, pendingSeatIds, subtitle, seatsError }: BookingsSidePanelProps) {
   const { t, locale } = useTranslation()
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
   if (!stats) return null
@@ -14,6 +59,17 @@ export default function BookingsSidePanel({ stats }: { stats: AdminStats | null 
 
   return (
     <aside className="fv-side">
+      <section className="fv-side__card" aria-labelledby="fv-side-map">
+     <h2 id="fv-side-map" className="fv-side__heading">{t('admin.bookings.side.mapTitle')}</h2>
+       {subtitle && <p className="fv-side__muted">{subtitle}</p>}
+       {seatsError ? (
+         <p className="fv-side__muted">{t('admin.bookings.side.mapError')}</p>
+      ) : seats ? (
+         <MiniSeatMap seats={seats} pendingSeatIds={pendingSeatIds} />
+      ) : (
+         <p className="fv-side__muted">{t('admin.bookings.side.mapEmpty')}</p>
+       )}
+     </section>
       <section className="fv-side__card" aria-labelledby="fv-side-occupancy">
         <div className="fv-side__row">
           <h2 id="fv-side-occupancy" className="fv-side__heading">{t('admin.bookings.side.occupancy')}</h2>

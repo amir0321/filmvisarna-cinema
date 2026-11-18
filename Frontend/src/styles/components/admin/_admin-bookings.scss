@@ -406,3 +406,48 @@
   .fv-bookings-count { display: block; }
   .fv-booking-cards { display: flex; }
 }
+// Live seat map in the side panel
+.fv-minimap-admin {
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    margin-block: 0.75rem;
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+  }
+
+  &__seat {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.15rem;
+    background: $fv-seat-available;
+
+    &--free { background: $fv-seat-available; }
+    &--booked { background: $fv-primary; }
+    &--pending { background: $fv-success; }
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: $fv-muted-fg;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+}
