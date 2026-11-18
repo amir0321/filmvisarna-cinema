@@ -50,3 +50,78 @@
     line-height: 1.1;
   }
 }
+.fv-checkin {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  &__title {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  &__field {
+    position: relative;
+    flex: 1 1 16rem;
+
+    i {
+      position: absolute;
+      top: 50%;
+      left: 1rem;
+      transform: translateY(-50%);
+      color: $fv-muted-fg;
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      color: $fv-fg;
+      background: $fv-muted-bg;
+      border: 1px solid $fv-border;
+      border-radius: $fv-radius-lg;
+
+      &:focus-visible {
+        outline: 2px solid $fv-primary;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+  }
+
+  &__message {
+    margin: 0.75rem 0 0;
+    color: $fv-muted-fg;
+  }
+
+  &__result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid $fv-border;
+    color: $fv-fg;
+
+    strong {
+      font-family: $fv-font-mono;
+    }
+  }
+}
