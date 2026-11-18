@@ -40,10 +40,10 @@ export type {
 };
 
 // DB status tracks held seats. API status also distinguishes unpaid reservations
-// and expiry 15 minutes before start, independently of the cleanup schedule.
+// and expiry one hour before start, independently of the cleanup schedule.
 const BOOKING_STATUS_SQL = `CASE
   WHEN b.status = 'confirmed' AND NOT b.is_paid THEN
-    CASE WHEN st.starts_at <= statement_timestamp() + interval '15 minutes' THEN 'expired' ELSE 'reserved' END
+    CASE WHEN st.starts_at <= statement_timestamp() + interval '1 hour' THEN 'expired' ELSE 'reserved' END
   ELSE b.status::text END`;
 
 // SQL för att hämta kompletta bokningsdetaljer med film, salong, biljetter och kioskvaror
@@ -416,7 +416,7 @@ export function createBookingService(dependencies: {
       FROM booking b JOIN screening_times s ON s.id = b.screening_id
       LEFT JOIN app_user u ON u.id = b.user_id LEFT JOIN ticket t ON t.booking_id = b.id
       WHERE b.status = 'confirmed' AND s.ends_at > clock_timestamp()
-        AND (b.is_paid OR s.starts_at > clock_timestamp() + interval '15 minutes')
+        AND (b.is_paid OR s.starts_at > clock_timestamp() + interval '1 hour')
         AND (COALESCE(b.identity_email, lower(trim(COALESCE(b.guest_email, u.email)))) = $1 OR b.user_id = $2)`,
     [email, userId ?? null, screeningId]);
     if (Number(usage.screeningSeats) + tickets.length > config.bookingLimits.seatsPerScreening) {
@@ -438,7 +438,7 @@ export function createBookingService(dependencies: {
     if (new Date(screening.rows[0].starts_at) <= new Date()) {
       throw new HttpError(409, "Visningen har redan startat.");
     }
-    if (new Date(screening.rows[0].starts_at).getTime() <= Date.now() + 15 * 60_000) {
+    if (new Date(screening.rows[0].starts_at).getTime() <= Date.now() + 60 * 60_000) {
       throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
     }
 
@@ -510,7 +510,7 @@ export function createBookingService(dependencies: {
     }
 
     const stillOpen = await client.query(`SELECT 1 FROM screening WHERE id = $1
-      AND starts_at > clock_timestamp() + interval '15 minutes'`, [screeningId]);
+      AND starts_at > clock_timestamp() + interval '1 hour'`, [screeningId]);
     if (!stillOpen.rowCount) throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
     if (!userId) {
       await client.query('UPDATE guest_booking_intent SET booking_id = $1, payload = $2 WHERE token_hash = $3',

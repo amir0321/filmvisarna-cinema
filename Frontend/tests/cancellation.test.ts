@@ -27,8 +27,8 @@ test('started screenings and missing or invalid dates cannot be cancelled', () =
   }
 })
 
-test('unpaid reservations can be cancelled until seats release fifteen minutes before start', () => {
-  const booking = { status: 'reserved' as const, isPaid: false, screeningStartsAt: new Date(now + 15 * 60_000).toISOString() }
+test('unpaid reservations can be cancelled until seats release one hour before start', () => {
+  const booking = { status: 'reserved' as const, isPaid: false, screeningStartsAt: new Date(now + 60 * 60_000).toISOString() }
   assert.equal(canCancelBooking(booking, now - 1), true)
   assert.equal(canCancelBooking(booking, now), false)
   assert.equal(canCancelBooking(booking, now + 1), false)

@@ -39,7 +39,7 @@ export function createGuestBookingService(dependencies: {
       FROM screening_times st JOIN movie m ON m.id = st.movie_id JOIN cinema c ON c.id = st.cinema_id
       WHERE st.id = $1 AND st.starts_at > clock_timestamp()`, [input.screeningId]);
     if (!screening) throw new HttpError(409, 'Visningen finns inte längre eller har redan startat.');
-    if (screening.startsAt.getTime() <= Date.now() + 15 * 60_000) {
+    if (screening.startsAt.getTime() <= Date.now() + 60 * 60_000) {
       throw new HttpError(409, 'Nätreservationen har stängt. Köp lediga platser i biografens kassa.');
     }
     const { rows: tickets } = await db.query<{ seatId: number; priceGroupId: number; row: string; number: number; price: number; name: string }>(`

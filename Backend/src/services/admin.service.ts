@@ -8,9 +8,9 @@ export async function getAdminStats(): Promise<AdminStatsResult> {
   const bookingStats = await pool.query(`
     SELECT
       COUNT(*)::int AS total_bookings,
-      COUNT(*) FILTER (WHERE b.status = 'confirmed' AND NOT b.is_paid AND s.starts_at > statement_timestamp() + interval '15 minutes')::int AS waiting_bookings,
+      COUNT(*) FILTER (WHERE b.status = 'confirmed' AND NOT b.is_paid AND s.starts_at > statement_timestamp() + interval '1 hour')::int AS waiting_bookings,
       COUNT(*) FILTER (WHERE b.status = 'confirmed' AND b.is_paid)::int AS paid_bookings,
-      COALESCE(SUM(bt.total_price) FILTER (WHERE b.status = 'confirmed' AND (b.is_paid OR s.starts_at > statement_timestamp() + interval '15 minutes')), 0)::float AS expected_revenue,
+      COALESCE(SUM(bt.total_price) FILTER (WHERE b.status = 'confirmed' AND (b.is_paid OR s.starts_at > statement_timestamp() + interval '1 hour')), 0)::float AS expected_revenue,
       COALESCE(SUM(bt.total_price) FILTER (WHERE b.status = 'confirmed' AND b.is_paid), 0)::float AS paid_revenue
     FROM booking b
     JOIN booking_totals bt ON bt.booking_id = b.id
@@ -32,7 +32,7 @@ export async function getAdminStats(): Promise<AdminStatsResult> {
          FROM ticket tk
          JOIN booking bk ON bk.id = tk.booking_id
          WHERE tk.screening_id = s.id AND tk.is_active AND bk.status = 'confirmed'
-           AND (bk.is_paid OR s.starts_at > statement_timestamp() + interval '15 minutes')) AS booked_seats
+           AND (bk.is_paid OR s.starts_at > statement_timestamp() + interval '1 hour')) AS booked_seats
       FROM screening_times s
       WHERE (s.starts_at AT TIME ZONE '${tz}')::date = (now() AT TIME ZONE '${tz}')::date
     ) sub

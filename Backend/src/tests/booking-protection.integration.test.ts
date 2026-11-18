@@ -375,15 +375,15 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await db.query('SELECT points FROM app_user WHERE id = 1')).rows[0].points, 500);
   });
 
-  test('unpaid member and guest reservations can be cancelled within two hours, until the fifteen-minute release deadline', async () => {
+  test('unpaid member and guest reservations can be cancelled within two hours, until the one-hour release deadline', async () => {
     const guest = await seedCancellation({ guest: true }, 1, 1);
     const member = await seedCancellation({ user: 1 }, 2, 1);
-    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '30 minutes' WHERE id = 1");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '90 minutes' WHERE id = 1");
     assert.equal((await request('/cancel-preview', guest)).status, 200);
     assert.equal((await request('/cancel-by-token', guest)).status, 200);
     assert.equal((await request(`/${member.id}`, {}, { user: 1, method: 'DELETE' })).status, 200);
     const released = await seedCancellation({}, 3, 2);
-    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '15 minutes' WHERE id = 2");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '1 hour' WHERE id = 2");
     assert.equal((await request('/cancel-preview', released)).status, 400);
     assert.equal((await request(`/${released.id}`, {}, { user: 1, method: 'DELETE' })).status, 400);
     assert.equal(Number((await db.query("SELECT count(*) FROM booking WHERE status = 'cancelled'")).rows[0].count), 2);
@@ -707,14 +707,14 @@ describe('booking protection with PostgreSQL', { skip: !databaseUrl }, () => {
     assert.equal((await updateBookingStatus(paidId, { isCheckedIn: true })).booking.isCheckedIn, true);
   });
 
-  test('unpaid seats release fifteen minutes before start without cleanup; late payment must acquire available seats', async () => {
+  test('unpaid seats release one hour before start without cleanup; late payment must acquire available seats', async () => {
     const { getScreeningSeats, listUpcomingScreenings } = await import('../services/screenings.service.js');
     const { updateBookingStatus, getUserBookings } = await import('../services/bookings.service.js');
     const id = await seedBooking([1, 2], 1, { user: 1 });
     const paid = await seedBooking([3], 1, { user: 2, paid: true });
-    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '16 minutes' WHERE id = 1");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '61 minutes' WHERE id = 1");
     assert.equal((await getScreeningSeats(1)).seats.filter(seat => seat.status === 'booked').length, 3);
-    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '15 minutes' WHERE id = 1");
+    await db.query("UPDATE screening SET starts_at = clock_timestamp() + interval '1 hour' WHERE id = 1");
     assert.equal((await getScreeningSeats(1)).seats.filter(seat => seat.status === 'booked').length, 1);
     assert.equal((await listUpcomingScreenings({})).find(screening => screening.id === 1)!.bookedSeats, 1);
     assert.equal((await getUserBookings(1)).find(booking => booking.id === id)!.status, 'expired');

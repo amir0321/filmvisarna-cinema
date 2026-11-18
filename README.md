@@ -2,6 +2,8 @@
 
 A modern full-stack cinema booking application built with React, TypeScript, Express 5, and PostgreSQL.
 
+For a single Node server serving both the API and built frontend, run `npm run setup`, `npm run build` and `npm start` from the repository root. See [Gå live: build, images, screening refill and VPS deployment](deploy/README.md) for configuration and the team checklist.
+
 ---
 
 ## Tech Stack
