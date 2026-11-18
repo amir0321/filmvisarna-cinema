@@ -1,0 +1,52 @@
+.fv-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .fv-kpi:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+.fv-kpi {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  &--info { --tone: #{$fv-info}; }
+  &--success { --tone: #{$fv-success}; }
+  &--warning { --tone: #{$fv-warning}; }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: $fv-radius-lg;
+    font-size: 1.25rem;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 18%, transparent);
+  }
+
+  &__label,
+  &__detail {
+    color: $fv-muted-fg;
+    font-size: 0.875rem;
+  }
+
+  &__value {
+    color: $fv-fg;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+}
