@@ -4,6 +4,7 @@ import { getAdminStats, type AdminStats } from '../../api/adminBookings'
 import { useFetch } from '../../hooks/useFetch'
 import AdminPageHeader from '../../components/admin/AdminPageHeader'
 import { EmptyState } from '../../components/EmptyState'
+import QuickCheckIn from '../../components/admin/QuickCheckIn'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
@@ -44,7 +45,7 @@ export default function AdminBookings() {
       <AdminPageHeader title={t('nav.bookingsCashier')} subtitle={t('admin.bookings.subtitle')} />
 
       {error && <EmptyState variant="error" title={t('admin.bookings.stats.error')} />}
-
+      <QuickCheckIn />
       <div className="fv-kpi-grid">
         {cards.map((card) => (
           <div key={card.key} className={`fv-kpi fv-kpi--${card.tone}`}>
