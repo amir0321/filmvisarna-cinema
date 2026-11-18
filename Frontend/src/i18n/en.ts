@@ -651,6 +651,8 @@ export const en = {
   "admin.bookings.action.points": "+{points} points",
   "admin.bookings.action.error": "Could not register the payment.",
   "admin.bookings.action.conflict": "The seats are no longer available or the film has ended. The list has been reloaded.",
+  "admin.bookings.action.cancel": "Cancel",
+  "admin.bookings.action.cancelUnavailable": "Admin cancellation is not available yet. The backend has no admin endpoint for cancelling other customers' bookings.",
   "admin.cinemas.intro": "Manage auditorium settings, seating rows and accessibility.",
   "admin.cinemas.title": "Auditorium configuration",
   "admin.cinemas.unfinished": "The auditorium settings and seating overview module is under development.",

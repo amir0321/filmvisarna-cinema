@@ -30,7 +30,7 @@ export default function AdminBookings() {
     } = useFetch<Booking[]>(fetchBookings, { deps: [screeningId] })
 
       const [payingId, setPayingId] = useState<number | null>(null)
-  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ kind: 'success' | 'error' |'info'; text: string } | null>(null)
 
   async function handlePay(booking: Booking) {
     if (payingId !== null) return
@@ -48,6 +48,9 @@ export default function AdminBookings() {
       refetchBookings()
       setPayingId(null)
     }
+  }
+function handleCancel() {
+    setFeedback({ kind: 'info', text: t('admin.bookings.action.cancelUnavailable') })
   }
 
   const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
@@ -145,7 +148,7 @@ export default function AdminBookings() {
        <p role="status" className={`fv-feedback fv-feedback--${feedback.kind}`}>{feedback.text}</p>
       )}
       {bookings && bookings.length > 0 && (
-       <BookingsTable bookings={bookings} payingId={payingId} onPay={handlePay} />
+       <BookingsTable bookings={bookings} payingId={payingId} onPay={handlePay} onCancel={handleCancel} />
      )}
     </div>
   )

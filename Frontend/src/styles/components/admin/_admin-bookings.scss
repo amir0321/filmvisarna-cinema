@@ -238,18 +238,21 @@
   &--cancelled { --tone: #{$fv-primary}; }
 }
 .fv-feedback {
+  position: sticky;
+  top: calc(#{$fv-admin-nav-height} + 0.75rem);
+  z-index: $fv-z-sticky;
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
-  border-radius: $fv-radius-lg;
-  border: 1px solid var(--tone);
   color: $fv-fg;
-  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  background-color: $fv-card-bg;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--tone) 15%, transparent),
+    color-mix(in srgb, var(--tone) 15%, transparent)
+  );
+  border: 1px solid var(--tone);
+  border-radius: $fv-radius-lg;
 
   &--success { --tone: #{$fv-success}; }
   &--error { --tone: #{$fv-primary}; }
-}
-
-.fv-bookings-table__paid {
-  font-weight: 600;
-  color: $fv-success;
+  &--info { --tone: #{$fv-info}; }
 }

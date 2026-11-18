@@ -23,8 +23,9 @@ interface BookingsTableProps{
   bookings: Booking[]
   payingId: number | null
   onPay: (booking: Booking) => void
+  onCancel: (booking: Booking) => void
 }
-export default function BookingsTable({ bookings, payingId, onPay }: BookingsTableProps) {
+export default function BookingsTable({ bookings, payingId, onPay, onCancel }: BookingsTableProps) {
   const { t, locale } = useTranslation()
   const nf = new Intl.NumberFormat(getIntlLocale(locale))
   const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
@@ -94,6 +95,31 @@ export default function BookingsTable({ bookings, payingId, onPay }: BookingsTab
                    </button>
                  ) : null}
                </td>
+                               <td>
+                  <div className="fv-bookings-table__actions">
+                    {booking.status === 'confirmed' ? (
+                      <span className="fv-bookings-table__paid">{t('admin.bookings.action.paid')}</span>
+                    ) : booking.status !== 'cancelled' ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success"
+                        disabled={payingId !== null}
+                        onClick={() => onPay(booking)}
+                      >
+                        {t('admin.bookings.action.markPaid')}
+                      </button>
+                    ) : null}
+                    {booking.status !== 'cancelled' && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => onCancel(booking)}
+                      >
+                        {t('admin.bookings.action.cancel')}
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
             )
           })}

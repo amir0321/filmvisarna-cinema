@@ -649,6 +649,8 @@ export const sv = {
   "admin.bookings.action.points": "+{points} poäng",
   "admin.bookings.action.error": "Kunde inte registrera betalningen.",
   "admin.bookings.action.conflict": "Platserna är inte längre lediga eller filmen har slutat. Listan har laddats om.",
+  "admin.bookings.action.cancel": "Avboka",
+  "admin.bookings.action.cancelUnavailable": "Adminavbokning är inte tillgänglig ännu. Backend saknar ett adminanrop för att avboka andras bokningar.",
   "admin.cinemas.intro": "Hantera salongskonfigurationer   , stolsrader och tillgänglighetsanpassning.",
   "admin.cinemas.title": "Salongskonfiguration ",
   "admin.cinemas.unfinished": "Salongsmodulen för konfiguration och stolsöversikt är under utveckling.",
