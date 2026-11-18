@@ -1,0 +1,7 @@
+$kind: http-request
+name: Filter kiosk items by combos
+url: http://localhost:3000/api/kiosk?is_combo=true
+method: GET
+queryParams:
+  is_combo: "true"
+order: 4000

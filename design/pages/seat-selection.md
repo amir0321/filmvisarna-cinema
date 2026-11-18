@@ -1,0 +1,68 @@
+> Bygger på: [design/tokens.md](../tokens.md), [design/components.md](../components.md) (3.1 Knappar, 3.6 Formulär, 3.10 Platskarta, 3.11 Antal-väljare & StepIndicator), [design/layout.md](../layout.md) och [design/flows.md](../flows.md). Index: [DESIGN.md](../../DESIGN.md).
+
+### 5.4 Stolsväljaren & Bokning (`SeatSelectionScreen`)
+
+- **Föreslagen route:** `/boka/:visningId` (Föreslagen)
+- **Skärm-ID:** `'seats'`
+- **Källfiler:** `src/components/SeatSelectionScreen.tsx`, `src/data.ts`, `src/index.css`, `src/imports/pasted_text/filmvisarna-booking-spec.md`, `src/imports/pasted_text/cinema-app-screens.md`
+
+#### Fullbokning och tillgänglighet (`ScreeningDetail.tsx`)
+
+- Platskartans faktiska `status === 'available'` styr tillgängligheten. Vid noll lediga platser ersätts biljettval, platsval, kiosk och checkout med `Visningen är fullbokad`, förklaringen `Det finns inga lediga platser till den här visningen. Välj en annan visning för att boka biljetter.` och länken `Se andra visningstider` till filmens sida (eller `/filmer`). Detta gäller också direkta länkar och förvalda URL-biljetter.
+- Vid 1–10 lediga platser annonseras antalet och maxantalet biljetter med `role="status"`. Alla kategorier delar gränsen `min(10, lediga platser)`; ingen kategori kan kringgå den. `limitTicketCounts` begränsar även URL-förval och antal när tillgängligheten minskar.
+- Platskartan uppdateras var femte sekund. Om sista platsen bokas av någon annan växlar sidan till fullbokat-läget. Om platser blir lediga igen visas bokningsflödet igen. `handleConfirm` kontrollerar att samtliga valda platser fortfarande är tillgängliga; backend avgör vid samtidig bokning.
+- Seed-scenarier använder endast Stora Salongen (A–H × 1–10) och Lilla Salongen (A–E × 1–8). Platskartan renderas dynamiskt från API:t.
+
+#### Bokningsskydd och gästbekräftelse – gällande implementation
+
+- Följ [bokningssäkerhet](../booking-security.md), som har företräde framför prototypbeskrivningen nedan.
+- Medlemmar måste ha verifierad e-post. För en overifierad medlem visas förklaringen och `Jag har verifierat min e-post`, som uppdaterar profilinformationen. Utskick av nytt verifieringsmejl görs via det gemensamma verifieringsmeddelandet. Backend avgör alltid behörigheten.
+- Gästen klickar `Skicka bekräftelsemejl`. Sidan visar laddningsstatus och resultat/fel utan att påstå att bokningen är bekräftad. Platserna reserveras inte av förfrågan. Länken gäller i högst 10 minuter.
+- `/bekrafta-gastbokning#token=...` öppnar en sammanfattning från API:t med film, tid, salong, biljetter, kiosk, serverberäknat pris och e-post. Token tas bort ur URL:en. Endast ett uttryckligt klick på `Bekräfta bokning` skapar bokningen.
+- Vid platskonflikt kan gästen välja andra lediga platser till samma visning utan ny e-postverifiering, så länge länken är giltig. Backend kontrollerar prisgrupper, ledighet och kvoter på nytt.
+- Dubbelklick spärras under anrop. Samma inskick återanvänder sin idempotensnyckel. Kvotfel, utgångna länkar och SMTP-fel visas på svenska; bokningen får inte rapporteras som lyckad vid sådana fel.
+- Först efter lyckad bekräftelse sparas kvittot från API-svaret och användaren skickas till `/bekraftelse/:kod`. Priser och platser på kvittot kommer från serverns skapade bokning.
+
+#### Struktur uppifrån och ned (`max-width: 1152px`, `padding-top: 96px`)
+1. **Topprad:**
+   - Vänster: Tillbaka-knapp med vänsterchevron och filmens titel `{movie.title}` (`14px`, `#94A3B8`, går tillbaka till `'detail'`).
+   - Höger: `StepIndicator` med stegen `1. Biljetter`, `2. Välj platser`, `3. Bekräftelse`.
+2. **Film-mini-info (`#161F30`, `border-radius: 12px`, `padding: 16px`, `margin-bottom: 32px`):**
+   - Liten poster (`48×72px`, `border-radius: 8px`), filmtitel (`16px`, `Poppins`) och undertill `{auditorium} · {time}–{endTime} · {format}` (`14px`, `#94A3B8`).
+3. **Huvudgrid (1 kolumn på `< 1024px`, 3 kolumner `lg:grid-cols-3` på `>= 1024px`, `gap: 32px`):**
+   - **Vänster/Mitten (`lg:col-span-2`, `space-y-6`):**
+     - **Kort 1 – Biljettval (`#161F30`, `border-radius: 16px`, `padding: 24px`):**
+       - Rubrik (`h2`): `1. Välj biljetter` (`18px`, `Poppins`).
+       - Underrubrik: `Välj antal biljetter per kategori` (`12px`, `#94A3B8`).
+       - Tre `TicketCounter`-rader (priser från `TICKET_PRICES` — Exempeldata):
+         - `Vuxen` — `140 kr`
+         - `Pensionär` — `120 kr`
+         - `Barn (under 12 år)` — `80 kr`
+       - **Grön totalsummeringsruta (visas när `totalTickets > 0`):** Bakgrund `rgba(16, 185, 129, 0.1)`, kantlinje `1px solid rgba(16, 185, 129, 0.2)`, bockikon till höger och text i `#10B981`:
+         - `Totalt: {totalPrice} kr för {totalTickets} biljett` (om 1) respektive `Totalt: {totalPrice} kr för {totalTickets} biljetter` (om > 1).
+     - **Kort 2 – Platskarta (visas endast när `totalTickets > 0`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
+       - Rubrik (`h2`): `2. Välj platser` (`18px`, `Poppins`).
+       - Underrubrik: `Bästa tillgängliga platser är förvalda — klicka för att ändra` (`12px`, `#94A3B8`).
+       - Bioduk (`BIODUK`), salongens dynamiska stolsmatris och legend (`Ledig`, `Vald`, `Upptagen`, `Rullstol`) enligt sektion 3.10.
+   - **Höger – Checkout-panel (`lg:col-span-1`, `position: sticky`, `top: 96px`, `#161F30`, `border-radius: 16px`, `padding: 24px`):**
+     - Rubrik (`h2`): `Din bokning` (`16px`, `Poppins`).
+     - **Valda platser-ruta (visas när `selectedSeats.length > 0`):** Visar `{screening.auditorium}` (`12px`, `#94A3B8`) och sorterad lista `Rad {rad}, Stol {stol}` separerade med ` · ` (`14px`, `#F8FAFC`).
+     - **Prisuppdelning (visas när `totalTickets > 0`):**
+       - `{adultCount}× Vuxen` / `{adultCount * 140} kr` (om `adultCount > 0`)
+       - `{seniorCount}× Pensionär` / `{seniorCount * 120} kr` (om `seniorCount > 0`)
+       - `{childCount}× Barn` / `{childCount * 80} kr` (om `childCount > 0`)
+       - Avdelare + rad: `Totalt` / `{totalPrice} kr` (`font-weight: 600`).
+     - **Gul kassapolicy-notis:**
+       - `Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser.`
+     - **E-postfält (visas när `totalTickets > 0 && selectedSeats.length === totalTickets`):**
+       - Etikett: `E-post för bokningsbekräftelse`
+       - Input (`type="email"`): placeholder `din@epost.se`.
+     - **Primär CTA-knapp (dynamisk etikett och disabled-status):**
+       - Om `totalTickets === 0`: `Välj biljetter` (`disabled`, `opacity: 0.4`)
+       - Om `selectedSeats.length < totalTickets`: `Välj {totalTickets - selectedSeats.length} platser till` (`disabled`, `opacity: 0.4`)
+       - Om `selectedSeats.length === totalTickets` (`> 0`): `Slutför bokning` (aktiv; klick sparar e-post, genererar bokningskod `FV-XXXXX` och navigerar till `'confirm'`).
+
+#### Algoritm för automatiskt platsval
+- När `totalTickets` ändras väljer prototypen automatiskt sammanhängande lediga platser genom att söka i radordningen `['E', 'F', 'D', 'G', 'C', 'H', 'B', 'I', 'A', 'J']` från stol `1` till `12`. Om inga sammanhängande platser ryms på en rad plockas enskilda lediga stolar i samma radordning.
+- Vid klick på en ledig stol: om stolen redan är vald avmarkeras den; om färre än `totalTickets` är valda läggs den till; om `selectedSeats.length === totalTickets` ersätts den senast valda stolen (`[...selected.slice(0, -1), seatId]`).
+

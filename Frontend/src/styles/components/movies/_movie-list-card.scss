@@ -1,0 +1,139 @@
+.movie-list-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid $border-strong;
+  border-radius: $radius-card;
+  background-color: $color-surface;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: $white-overlay-25;
+  }
+}
+
+.movie-list-card .fv-poster {
+  border-radius: 0;
+}
+
+.movie-list-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $space-1;
+  padding: 14px;
+}
+
+.movie-list-card__title {
+  margin: 0;
+  font-size: $font-size-16;
+
+  a {
+    color: $text-heading;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.movie-list-card__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 2px 7px;
+    border-radius: $radius-sm;
+    background-color: $color-surface-2;
+    color: $text-secondary;
+    font-size: $font-size-11;
+  }
+}
+
+.movie-list-card__showtimes {
+  margin-top: 4px;
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.movie-list-card__day {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  margin-bottom: $space-1;
+  color: $text-muted;
+  font-size: $font-size-10;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: $border-strong;
+  }
+}
+
+.movie-list-card__time {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid $white-overlay-25;
+  border-radius: $radius-md;
+  background-color: $color-surface-chip;
+  color: $text-heading;
+  font-size: $font-size-12;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: $color-surface-chip-hover;
+    color: $text-heading;
+  }
+
+  &--sold-out,
+  &--sold-out:hover {
+    border-color: $border-default;
+    background-color: transparent;
+    color: $text-muted;
+    text-decoration: line-through;
+  }
+}
+
+.movie-list-card__seats {
+  color: $color-warning;
+}
+
+.movie-list-card__premiere {
+  margin: 4px 0 0;
+  color: $text-secondary;
+  font-size: $font-size-13;
+}
+
+.movie-list-card__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: auto;
+  border-radius: $radius-lg;
+  font-size: $font-size-14;
+  font-weight: 700;
+}

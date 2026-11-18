@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get price groups
+url: http://localhost:3000/api/price-groups
+method: GET
+order: 1000

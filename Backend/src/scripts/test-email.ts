@@ -1,11 +1,12 @@
 import { sendBookingConfirmation } from '../services/emailService.js';
+import { generateBookingRefCode } from '../utils/bookingRef.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const sampleBookingData = {
   email: "kund@example.com",
-  bookingRef: "FV-8K49P",
+  bookingRef: generateBookingRefCode(),
   movieTitle: "Interstellar",
   posterUrl: "https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg",
   screeningDate: "2026-10-15",

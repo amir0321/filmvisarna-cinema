@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get all movies
+url: http://localhost:3000/api/movies
+method: GET
+order: 1791983313901

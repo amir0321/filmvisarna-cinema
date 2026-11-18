@@ -1,0 +1,151 @@
+// ============================================================================
+// Filmvisarna – Toast, Inline-feedback & Knappar (_feedback.scss)
+// Follows design/tokens.md and design/components.md §3.1 & §3.9
+// ============================================================================
+
+.fv-inline-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: $radius-md;
+  font-size: 13px;
+  line-height: 1.4;
+
+  &.feedback-success {
+    color: $fv-success;
+    background: tint($fv-success, 0.12);
+    border: 1px solid tint($fv-success, 0.25);
+  }
+
+  &.feedback-info {
+    color: $fv-info-light;
+    background: tint($fv-info, 0.12);
+    border: 1px solid tint($fv-info, 0.25);
+  }
+
+  &.feedback-warning {
+    color: $fv-warning;
+    background: tint($fv-warning, 0.12);
+    border: 1px solid tint($fv-warning, 0.25);
+  }
+
+  &.feedback-error {
+    color: $fv-danger-light;
+    background: tint($fv-primary, 0.12);
+    border: 1px solid tint($fv-primary, 0.25);
+  }
+}
+
+.btn-feedback-active {
+  background-color: $fv-success !important;
+  border-color: $fv-success !important;
+  color: var(--text-on-success) !important;
+}
+
+.btn-feedback-active-soft {
+  background-color: tint($fv-success, 0.15) !important;
+  border-color: tint($fv-success, 0.3) !important;
+  color: $fv-success !important;
+}
+
+.fv-inline-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  .btn-inline-cancel {
+    background: $white-overlay-05;
+    border: 1px solid tint($fv-muted-fg, 0.2);
+    color: $fv-muted-fg;
+    border-radius: $radius-base;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: $white-overlay-10;
+      color: $fv-fg;
+    }
+  }
+}
+
+// Button variants from design/components.md §3.1
+.btn-secondary-outline {
+  background: $white-overlay-04;
+  border: 1px solid tint($fv-muted-fg, 0.25);
+  color: $fv-fg;
+  border-radius: $radius-base;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: $white-overlay-08;
+    border-color: $white-overlay-20;
+    color: $fv-fg;
+  }
+}
+
+.btn-destructive-outline {
+  background: transparent;
+  border: 1px solid tint($fv-primary, 0.25);
+  color: $fv-danger-light;
+  border-radius: $radius-base;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: tint($fv-primary, 0.08);
+    border-color: tint($fv-primary, 0.4);
+    color: $fv-danger-light;
+  }
+}
+
+.btn-paid-action {
+  background: tint($fv-success, 0.15);
+  border: 1px solid tint($fv-success, 0.25);
+  color: $fv-success;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: tint($fv-success, 0.22);
+    border-color: tint($fv-success, 0.4);
+    color: $fv-success;
+  }
+
+  @media (max-width: ($fv-bp-md - 0.02px)) {
+    border-radius: 10px;
+    background: tint($fv-success, 0.12);
+    border-color: tint($fv-success, 0.3);
+  }
+}
+
+.badge-paid-confirmed {
+  background: tint($fv-success, 0.08);
+  border: 1px solid transparent;
+  color: $fv-success;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  @media (max-width: ($fv-bp-md - 0.02px)) {
+    border-radius: 10px;
+  }
+}

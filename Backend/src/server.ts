@@ -1,36 +1,60 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import pool, { initDb } from './db.js'
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { app } from './app.js';
+import { config } from './config.js';
+import { initDb, pool } from './db.js';
+import { cleanupBookingProtection } from './services/bookingLimits.service.js';
+import { deliverBookingWarningEmails } from './services/bookingWarnings.service.js';
+import { startScreeningScheduler } from './scheduler.js';
+import { frontendDistFolder } from './paths.js';
 
-dotenv.config()
+let cleaning = false;
+const cleanup = async () => {
+  if (cleaning) return;
+  cleaning = true;
+  try { await cleanupBookingProtection(); await deliverBookingWarningEmails(); }
+  catch { console.error('[Booking] Cleanup failed'); }
+  finally { cleaning = false; }
+};
 
-const app = express()
-const PORT = process.env.PORT || 3000
-
-app.use(express.json())
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Filmvisarna API is running' })
-})
-
-app.get('/api/movies', async (req, res) => {
-  try {
-    const { rows: movies } = await pool.query('SELECT * FROM movies ORDER BY id ASC')
-    res.json(movies)
-  } catch (error) {
-    console.error('Error fetching movies:', error)
-    res.status(500).json({ error: 'Failed to fetch movies' })
+async function start() {
+  if (config.nodeEnv === 'production' && !existsSync(path.join(frontendDistFolder, 'index.html'))) {
+    throw new Error('Frontend build is missing. Run npm run build from the repository root.');
   }
-})
+  let databaseOnline = true;
+  try { await initDb(); }
+  catch {
+    databaseOnline = false;
+    if (config.nodeEnv === 'production') throw new Error('Database unavailable; production server was not started.');
+  }
+  const cleanupTimer = setInterval(() => { void cleanup(); }, 60_000);
+  cleanupTimer.unref();
+  let stopScheduler = () => {};
+  const server = app.listen(config.port, () => {
+    console.log(`Server running on http://localhost:${config.port}${databaseOnline ? '' : ' (Database offline)'}`);
+    if (databaseOnline) {
+      void cleanup();
+      if (config.screeningsRefillEnabled) stopScheduler = startScreeningScheduler();
+    }
+  });
+  let stopping = false;
+  const shutdown = () => {
+    if (stopping) return;
+    stopping = true;
+    stopScheduler();
+    clearInterval(cleanupTimer);
+    const deadline = setTimeout(() => process.exit(1), 10_000);
+    deadline.unref();
+    server.close(() => {
+      void pool.end().finally(() => clearTimeout(deadline));
+    });
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+}
 
-initDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`)
-    })
-  })
-  .catch(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT} (Database offline)`)
-    })
-  })
+void start().catch(error => {
+  console.error(error instanceof Error ? error.message : 'Server startup failed');
+  process.exitCode = 1;
+  void pool.end();
+});

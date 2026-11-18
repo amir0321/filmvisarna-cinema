@@ -1,0 +1,7 @@
+$kind: http-request
+name: Filter kiosk items by category
+url: http://localhost:3000/api/kiosk?category=food
+method: GET
+queryParams:
+  category: food
+order: 3000

@@ -1,0 +1,16 @@
+$kind: http-request
+name: Register
+url: http://localhost:3000/api/auth/register
+method: POST
+headers:
+  X-CSRF-Protection: "1"
+body:
+  type: json
+  content: |-
+    {
+      "email": "ny.medlem@filmvisarna.se",
+      "password": "Password123!",
+      "firstName": "Ny",
+      "lastName": "Medlem"
+    }
+order: 1791983102483

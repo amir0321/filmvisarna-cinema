@@ -1,93 +1,277 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { useTranslation, type Locale } from '../context/LocaleContext'
+import { useMovies } from '../hooks'
+import { useScreeningProgramme } from '../hooks/useScreeningProgramme'
+import { translateApiError, translateGenre } from '../i18n/mappers'
+import type { Movie, Screening } from '../types'
+import { MovieGridSkeleton } from '../components/Skeleton'
+import { EmptyState } from '../components/EmptyState'
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from '../components/Tabs'
+import MovieFilters, { type MovieSort } from '../components/movies/MovieFilters'
+import MovieListCard from '../components/movies/MovieListCard'
+import { addDaysToIsoDate, formatDayChipLabel, toCinemaIsoDate } from '../utils/date'
+import { getIntlLocale } from '../utils/locale'
+import { getAgeLimit } from '../utils/movie'
+import Pagination from '../components/Pagination'
+import { usePagination } from '../hooks/usePagination'
+import { readAgeFilter, readMovieDateFilter, setAgeFilter } from '../utils/movieFilters'
 
-export const navTitle = 'Movies'
-export const navOrder = 2
+type MoviesTab = 'now' | 'upcoming'
 
-interface Movie {
-  id: number
-  title: string
-  genre: string | null
-  duration: number | null
-  created_at: string
+const DAYS_SHOWN = 4
+
+function compareMovies(a: Movie, b: Movie, sort: MovieSort, bookedSeats: Map<number, number>, locale: Locale) {
+  const ratingDiff = (b.imdb_rating ?? 0) - (a.imdb_rating ?? 0)
+
+  switch (sort) {
+    case 'title':
+      return a.title.localeCompare(b.title, getIntlLocale(locale))
+    case 'newest':
+      return (b.release_date ?? '').localeCompare(a.release_date ?? '')
+    case 'rating':
+      return ratingDiff
+    case 'popular':
+      // Most booked seats first, then rating
+      return (bookedSeats.get(b.id) ?? 0) - (bookedSeats.get(a.id) ?? 0) || ratingDiff
+  }
+}
+
+function isUpcoming(movie: Movie, today: string): boolean {
+  return movie.release_date !== null && toCinemaIsoDate(movie.release_date) > today
+}
+
+function matchesSearch(movie: Movie, search: string, locale: Locale): boolean {
+  const query = search.trim().toLowerCase()
+  if (!query) return true
+  return [
+    movie.title,
+    movie.director ?? '',
+    ...movie.genres,
+    ...movie.genres.map((genre) => translateGenre(genre, locale)),
+  ].some((text) => text.toLowerCase().includes(query))
 }
 
 export default function Movies() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { t, locale } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const programme = useScreeningProgramme()
+  const today = programme.today
+  const [tab, setTab] = useState<MoviesTab>('now')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<MovieSort>('popular')
+  const [genre, setGenre] = useState('all')
+  const age = String(readAgeFilter(searchParams) ?? 'all')
+  const date = readMovieDateFilter(searchParams, today, programme.dates)
+
+  function setAge(value: string) {
+    setSearchParams((previous) => setAgeFilter(previous, value === 'all' ? null : Number(value)))
+  }
+
+  function setDate(value: string) {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.delete('when')
+      next.set('date', value)
+      return next
+    })
+  }
+
+  const { data: movies, loading: moviesLoading, error: moviesError, refetch: refetchMovies } = useMovies()
+  const loading = moviesLoading || (tab === 'now' && programme.loading)
+  const error = moviesError ?? (tab === 'now' ? programme.error : null)
+  const refetch = () => { void refetchMovies(); void programme.refetch() }
+  const screenings = programme.screenings.filter(screening => toCinemaIsoDate(screening.startsAt) === date)
 
   useEffect(() => {
-    fetch('/api/movies')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch movies')
-        }
-        return res.json()
-      })
-      .then((data: Movie[]) => {
-        setMovies(data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error(err)
-        setError('Could not load movies from server.')
-        setLoading(false)
-      })
-  }, [])
+    if (searchParams.get('sok') !== '1' || !searchInputRef.current) return
+
+    searchInputRef.current.focus({ preventScroll: true })
+    searchInputRef.current.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      block: 'center',
+    })
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.delete('sok')
+      return next
+    }, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  const allMovies = movies ?? []
+  const nowShowing = allMovies.filter((movie) => !isUpcoming(movie, today))
+  const upcoming = allMovies.filter((movie) => isUpcoming(movie, today))
+  const tabMovies = tab === 'now' ? nowShowing : upcoming
+
+  const genres = [...new Set(tabMovies.flatMap((movie) => movie.genres))].sort((a, b) =>
+    translateGenre(a, locale).localeCompare(translateGenre(b, locale), getIntlLocale(locale)),
+  )
+  const genreOptions = [
+    { value: 'all', label: t('common.all') },
+    ...genres.map((name) => ({ value: name, label: translateGenre(name, locale) })),
+  ]
+
+  const dateOptions = Array.from({ length: DAYS_SHOWN }, (_, index) => {
+    const isoDate = addDaysToIsoDate(today, index)
+    return { value: isoDate, label: formatDayChipLabel(isoDate, locale), disabled: programme.loading || Boolean(programme.error) || !programme.availableDates.has(isoDate) }
+  })
+
+  const screeningsByMovie = new Map<number, Screening[]>()
+  const bookedSeats = new Map<number, number>()
+  for (const screening of screenings ?? []) {
+    const { movieId } = screening
+    screeningsByMovie.set(movieId, [...(screeningsByMovie.get(movieId) ?? []), screening])
+    bookedSeats.set(movieId, (bookedSeats.get(movieId) ?? 0) + (screening.bookedSeats ?? 0))
+  }
+
+  const filteredMovies = tabMovies
+    .filter((movie) => genre === 'all' || movie.genres.includes(genre))
+    .filter((movie) => age === 'all' || getAgeLimit(movie.age_rating) <= Number(age))
+    .filter((movie) => tab === 'upcoming' || screeningsByMovie.has(movie.id))
+    .filter((movie) => matchesSearch(movie, search, locale))
+    .sort((a, b) => compareMovies(a, b, sort, bookedSeats, locale))
+
+  const { page, totalPages, pageItems, setPage } = usePagination(filteredMovies, 10)
+  const [paginationDate, setPaginationDate] = useState(date)
+  if (paginationDate !== date) {
+    setPaginationDate(date)
+    if (tab === 'now') setPage(1)
+  }
+
+  const hasActiveFilters = search !== '' || genre !== 'all' || age !== 'all'
+
+  function changeTab(nextTab: string) {
+    setPage(1)
+    setTab(nextTab as MoviesTab)
+    setGenre('all')
+  }
+
+  function clearFilters() {
+    setPage(1)
+    setSearch('')
+    setGenre('all')
+    setAge('all')
+  }
 
   return (
-    <div className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold mb-1">Current Movies</h2>
-          <p className="text-secondary mb-0">Here are all movies currently showing.</p>
-        </div>
-      </div>
+    <Tabs value={tab} onChange={changeTab}>
+      <header className="movies-header full-bleed px-3 px-md-5">
+        <div className="container movies-container">
+          <h1 className="movies-header__title">{t('movies.title')}</h1>
+          <p className="movies-header__subtitle">
+            {t('movies.subtitleQuestion')}
+            {!loading &&
+              ` ${t(nowShowing.length === 1 ? 'movies.subtitlePlayingOne' : 'movies.subtitlePlayingMany', { count: nowShowing.length })}`}
+          </p>
 
-      {loading && (
-        <div className="text-center py-5">
-          <div className="spinner-border text-danger" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="alert alert-warning" role="alert">
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && movies.length === 0 && (
-        <div className="alert alert-info" role="alert">
-          No movies found.
-        </div>
-      )}
-
-      <div className="row g-4">
-        {movies.map((movie) => (
-          <div key={movie.id} className="col-12 col-md-6 col-lg-3">
-            <div className="card h-100 shadow-sm border-0 bg-dark text-light">
-              <div className="card-body d-flex flex-column">
-                <span className="badge bg-danger align-self-start mb-2">
-                  {movie.genre || 'Feature Film'}
+          <TabsList ariaLabel={t('nav.movies')}>
+            <TabsTrigger value="now">{t('movies.tabNow')}</TabsTrigger>
+            <TabsTrigger
+              value="upcoming"
+              badge={
+                <span className="movies-header__count">
+                  {upcoming.length}
+                  <span className="visually-hidden"> {t(upcoming.length === 1 ? 'movies.filmSingular' : 'movies.filmPlural')}</span>
                 </span>
-                <h5 className="card-title fw-bold text-white mb-2">{movie.title}</h5>
-                {movie.duration && (
-                  <p className="text-secondary small mb-3">
-                    ⏱ {movie.duration} minutes
-                  </p>
-                )}
-                <div className="mt-auto">
-                  <button className="btn btn-outline-danger w-100 btn-sm">
-                    Book Tickets
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+              }
+            >
+              {t('movies.tabUpcoming')}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+      </header>
+
+      <TabsPanel value={tab} className="container movies-container py-4">
+        <MovieFilters
+          programme={programme}
+          inputRef={searchInputRef}
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value)
+            setPage(1)
+          }}
+          sort={sort}
+          onSortChange={(value) => {
+            setSort(value)
+            setPage(1)
+          }}
+          genre={genre}
+          genreOptions={genreOptions}
+          onGenreChange={(value) => {
+            setGenre(value)
+            setPage(1)
+          }}
+          age={age}
+          onAgeChange={(value) => {
+            setAge(value)
+            setPage(1)
+          }}
+          date={tab === 'now' ? date : null}
+          dateOptions={dateOptions}
+          onDateChange={(value) => {
+            setDate(value)
+            setPage(1)
+          }}
+        />
+
+        <div className="pt-4">
+          {loading && <MovieGridSkeleton count={10} />}
+
+          {error && (
+            <EmptyState
+              variant="error"
+              title={t('movies.loadErrorTitle')}
+              description={translateApiError(error, locale)}
+              actionLabel={t('common.retry')}
+              onAction={refetch}
+            />
+          )}
+
+          {!loading && !error && (
+            <p className="movies-results__count" role="status">
+              {t('movies.showingCountPrefix')} <strong>{filteredMovies.length}</strong>{' '}
+              {t(tabMovies.length === 1 ? 'movies.showingCountSuffixOne' : 'movies.showingCountSuffixMany', { total: tabMovies.length })}
+            </p>
+          )}
+
+          {!loading && !error && filteredMovies.length === 0 && (
+            <EmptyState
+              variant="empty"
+              title={t('movies.emptyTitle')}
+              description={
+                hasActiveFilters
+                  ? t('movies.emptyFiltered')
+                  : tab === 'now' ? t('movies.emptyNoScreenings') : t('movies.emptyNone')
+              }
+              actionLabel={hasActiveFilters ? t('movies.clearFilters') : undefined}
+              onAction={hasActiveFilters ? clearFilters : undefined}
+            />
+          )}
+
+          {!loading && !error && filteredMovies.length > 0 && (
+            <ul className="list-unstyled row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 mb-0">
+              {pageItems.map((movie) => (
+                <li key={movie.id} className="col">
+                  <MovieListCard
+                    movie={movie}
+                    screenings={screeningsByMovie.get(movie.id) ?? []}
+                    dayLabel={tab === 'now' ? formatDayChipLabel(date, locale) : null}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          {!loading && !error && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              ariaLabel={t('movies.paginationLabel')}
+            />
+          )}
+        </div>
+      </TabsPanel>
+    </Tabs>
   )
 }

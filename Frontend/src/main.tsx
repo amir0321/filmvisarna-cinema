@@ -1,12 +1,34 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { RouterProvider } from 'react-router'
-import { router } from './routes.tsx'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-import './index.scss'
+import { getSafeRedirectPath, isAuthPath } from './utils/links';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router";
+import { AuthProvider } from "./context/AuthContext";
+import { BookingsProvider } from "./context/BookingsContext";
+import { LocaleProvider } from "./context/LocaleContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "./index.scss";
+import { router } from "./routes.tsx";
 
-createRoot(document.getElementById('root')!).render(
+function handleUnauthorized() {
+  const { pathname, search, hash } = router.state.location;
+  // Keep an existing auth destination and its redirect while clearing the session.
+  if (isAuthPath(pathname)) return;
+  const redirect = getSafeRedirectPath(pathname + search + hash);
+  void router.navigate(`/logga-in?redirect=${encodeURIComponent(redirect)}`, { replace: true });
+}
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <LocaleProvider>
+      <ThemeProvider>
+        <AuthProvider onUnauthorized={handleUnauthorized}>
+          <BookingsProvider>
+            <RouterProvider router={router} />
+          </BookingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   </StrictMode>,
-)
+);

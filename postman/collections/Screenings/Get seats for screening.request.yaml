@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get seats for screening
+url: http://localhost:3000/api/screenings/1/seats
+method: GET
+order: 3000

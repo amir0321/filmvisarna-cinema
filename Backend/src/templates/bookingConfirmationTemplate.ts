@@ -1,31 +1,22 @@
 // Types & Interfaces
-
-export interface TicketInfo {
-  type: string;
-  quantity: number;
-  price: number;
-}
-
-export interface KioskItemInfo {
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-export interface EmailPayload {
-  email: string;
-  bookingRef: string;
-  movieTitle: string;
-  screeningDate: string;
-  screeningTime: string;
-  cinemaName: string;
-  seats: string[];
-  tickets: TicketInfo[];
-  kioskItems: KioskItemInfo[];
-  posterUrl?: string;
-}
+import { TicketInfo, KioskItemInfo, EmailPayload } from "../interfaces/types.js";
+export type { TicketInfo, KioskItemInfo, EmailPayload };
 
 // Template & Calculation Helpers
+
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (ch) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[ch]!,
+  );
+}
 
 export function calculateBookingTotal(bookingData: EmailPayload): number {
   const ticketTotal = bookingData.tickets.reduce(
@@ -42,8 +33,8 @@ export function calculateBookingTotal(bookingData: EmailPayload): number {
 function renderTicketsHtml(tickets: TicketInfo[]): string {
   return tickets.map(t => `
     <div style="margin-bottom: 6px;">
-      <span style="color: #CBD5E1;">${t.quantity}x ${t.type}</span>
-      <span style="float: right; color: #FFFFFF;">${t.price * t.quantity} kr</span>
+      <span style="color: #CBD5E1;">${Number(t.quantity)}x ${escapeHtml(t.type)}</span>
+      <span style="float: right; color: #FFFFFF;">${Number(t.price) * Number(t.quantity)} kr</span>
     </div>
     <div style="clear: both;"></div>
   `).join('');
@@ -52,8 +43,8 @@ function renderTicketsHtml(tickets: TicketInfo[]): string {
 function renderKioskHtml(kioskItems: KioskItemInfo[]): string {
   return kioskItems.map(k => `
     <div style="margin-bottom: 6px;">
-      <span style="color: #F59E0B;">${k.quantity}x ${k.name}</span>
-      <span style="float: right; color: #F59E0B;">${k.price * k.quantity} kr</span>
+      <span style="color: #F59E0B;">${Number(k.quantity)}x ${escapeHtml(k.name)}</span>
+      <span style="float: right; color: #F59E0B;">${Number(k.price) * Number(k.quantity)} kr</span>
     </div>
     <div style="clear: both;"></div>
   `).join('');
@@ -67,19 +58,24 @@ export function generateBookingConfirmationText(bookingData: EmailPayload): stri
   const kioskText = bookingData.kioskItems
     .map(k => `- ${k.quantity}x ${k.name} (${k.price} SEK)`)
     .join('\n');
+  const cancelUrl = bookingData.cancelUrl;
 
   return (
-    `Thank you for your booking!\n\n` +
-    `Booking Reference: ${bookingData.bookingRef}\n` +
-    `Movie: ${bookingData.movieTitle}\n` +
-    `Date: ${bookingData.screeningDate}\n` +
-    `Time: ${bookingData.screeningTime}\n` +
-    `Cinema: ${bookingData.cinemaName}\n` +
-    `Seats: ${bookingData.seats.join(', ')}\n\n` +
-    `Tickets:\n${ticketsText}\n\n` +
-    (bookingData.kioskItems.length > 0 ? `Kiosk Items:\n${kioskText}\n\n` : '') +
-    `Total Amount: ${total} SEK\n\n` +
-    `Please show this booking reference at the counter upon arrival!`
+    `Tack för din bokning!\n\n` +
+    `Bokningsreferens: ${bookingData.bookingRef}\n` +
+    `Film: ${bookingData.movieTitle}\n` +
+    `Datum: ${bookingData.screeningDate}\n` +
+    `Tid: ${bookingData.screeningTime}\n` +
+    `Salong: ${bookingData.cinemaName}\n` +
+    `Platser: ${bookingData.seats.join(', ')}\n\n` +
+    `Biljetter:\n${ticketsText}\n\n` +
+    (bookingData.kioskItems.length > 0 ? `Kioskvaror:\n${kioskText}\n\n` : '') +
+    `Totalt att betala: ${total} SEK\n\n` +
+    (cancelUrl
+      ? `Avboka din bokning här: ${cancelUrl}\nAnge bokningsnummer och e-postadressen som användes vid bokningen. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps en timme före start.\n\n`
+      : `Kontakta biografen om du vill avboka din bokning.\n\n`) +
+    `Visa bokningsreferensen i kassan vid ankomst!\n` +
+    `Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.`
   );
 }
 
@@ -87,7 +83,14 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
   const total = calculateBookingTotal(bookingData);
   const ticketsHtml = renderTicketsHtml(bookingData.tickets);
   const kioskHtml = renderKioskHtml(bookingData.kioskItems);
-  const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel?ref=${bookingData.bookingRef}`;
+  const cancelUrl = bookingData.cancelUrl ? escapeHtml(bookingData.cancelUrl) : undefined;
+  const bookingRef = escapeHtml(bookingData.bookingRef);
+  const posterUrl = bookingData.posterUrl ? escapeHtml(bookingData.posterUrl) : undefined;
+  const movieTitle = escapeHtml(bookingData.movieTitle);
+  const cinemaName = escapeHtml(bookingData.cinemaName);
+  const screeningDate = escapeHtml(bookingData.screeningDate);
+  const screeningTime = escapeHtml(bookingData.screeningTime);
+  const seats = escapeHtml(bookingData.seats.join(', '));
 
   return `
     <div 
@@ -132,7 +135,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
             <div 
               style="font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; font-weight: 700; color: #FFFFFF; letter-spacing: 3px;"
             >
-              ${bookingData.bookingRef}
+              ${bookingRef}
             </div>
           </div>
         </div>
@@ -142,25 +145,25 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
           <div style="background-color: #111827; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px;">
             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
               <tr>
-                ${bookingData.posterUrl ? `
+                ${posterUrl ? `
                   <td width="72" valign="middle" style="padding-right: 18px;">
                     <img 
-                      src="${bookingData.posterUrl}" 
+                      src="${posterUrl}" 
                       width="72" 
-                      alt="Poster" 
+                      alt="Filmaffisch"
                       style="border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" 
                     />
                   </td>
                 ` : ''}
                 <td valign="middle">
                   <div style="font-family: 'Poppins', 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; line-height: 1.2;">
-                    ${bookingData.movieTitle}
+                    ${movieTitle}
                   </div>
                   <div style="font-size: 14px; color: #94A3B8; margin-bottom: 4px;">
-                    ${bookingData.cinemaName}
+                    ${cinemaName}
                   </div>
                   <div style="font-size: 13px; font-weight: 600; color: #CBD5E1;">
-                    ${bookingData.screeningDate} <span style="color: #64748B; margin: 0 4px;">&bull;</span> kl. ${bookingData.screeningTime}
+                    ${screeningDate} <span style="color: #64748B; margin: 0 4px;">&bull;</span> kl. ${screeningTime}
                   </div>
                 </td>
               </tr>
@@ -171,7 +174,7 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
         <!-- Platser, biljetter & sammanställning -->
         <div style="padding: 0 28px 20px 28px;">
           <div style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">
-            Platser: ${bookingData.seats.join(', ')}
+            Platser: ${seats}
           </div>
 
           <div style="font-size: 13px; color: #CBD5E1;">
@@ -196,12 +199,12 @@ export function generateBookingConfirmationHtml(bookingData: EmailPayload): stri
 
         <!-- Avbokning & instruktion -->
         <div style="padding: 0 28px; text-align: center;">
-          <a href="${cancelUrl}"
+          ${cancelUrl ? `<a href="${cancelUrl}"
             style="display: block; padding: 12px 0; font-size: 13px; font-weight: 600; color: #EF4444; text-decoration: none; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; background-color: rgba(239, 68, 68, 0.05); margin-bottom: 12px;">
             Avboka biljett
-          </a>
+          </a><p style="font-size: 12px; color: #94A3B8;">Ange bokningsnummer och e-postadressen som användes vid bokningen på avbokningssidan. Betalda bokningar avbokas senast 2 timmar före visningen. Obetalda reservationer kan avbokas fram tills platserna släpps en timme före start.</p>` : `<p style="font-size: 13px; color: #94A3B8;">Kontakta biografen om du vill avboka din bokning.</p>`}
           <div style="font-size: 12px; color: #94A3B8;">
-            Betalning sker på plats. Biljetter hämtas senast 15 min före start.
+            Betala i kassan senast en timme före filmstart för att behålla dina platser. Därefter släpps obetalda reservationer. Sena köp i kassan gäller endast lediga platser. Obetalda bokningar tas bort sju dagar efter filmens sluttid.
           </div>
         </div>
 

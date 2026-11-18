@@ -1,0 +1,42 @@
+// =====================================================================// Filmvisarna – Reusable Component Styles Index (_components.scss)
+// Follows design/tokens.md and design/components.md
+// Modular structure separating each component domain into its own stylesheet
+// =====================================================================
+@import './components/badges';
+@import './components/pills';
+@import './components/tabs';
+@import './components/pagination';
+@import './components/modals';
+@import './components/feedback';
+@import './components/skeleton';
+@import './components/empty-state';
+@import './components/poster';
+@import './components/booking';
+@import './components/date-picker-popover';
+@import './components/trailer-modal';
+@import './components/full-bleed';
+@import './components/cancel-booking';
+@import './components/my-bookings';
+@import './components/profile';
+@import './components/salonger';
+
+// Movies page
+@import './components/movies/movies-page';
+@import './components/movies/movie-list-card';
+@import './components/movie-details';
+
+// Home page
+@import './components/home/home-page';
+@import './components/home/age-badge';
+@import './components/home/filter-strip';
+@import './components/home/hero-section';
+@import './components/home/movie-card';
+@import './components/home/repertoire-section';
+
+@import './components/auth';
+//About page
+@import './components/about';
+
+// Admin
+@import './components/admin/admin-screenings';
+@import './components/admin/admin-movies';

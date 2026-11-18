@@ -1,0 +1,258 @@
+CREATE TABLE app_user (
+  id            int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email         text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  first_name    text,
+  last_name     text,
+  phone         text,
+  is_verified   boolean NOT NULL DEFAULT false,
+  points        int NOT NULL DEFAULT 0 CHECK (points >= 0),
+  role          text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  auth_version  integer NOT NULL DEFAULT 0,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE auth_action_token (
+  user_id integer NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  purpose text NOT NULL CHECK (purpose IN ('reset_password', 'verify_email')),
+  token_hash text NOT NULL UNIQUE,
+  expires_at timestamptz NOT NULL,
+  PRIMARY KEY (user_id, purpose)
+);
+
+CREATE TABLE auth_rate_limit (
+  key_hash text PRIMARY KEY,
+  window_start timestamptz NOT NULL,
+  attempts integer NOT NULL CHECK (attempts > 0)
+);
+CREATE INDEX auth_rate_limit_window_idx ON auth_rate_limit(window_start);
+
+CREATE TABLE auth_session (
+  token_hash text PRIMARY KEY,
+  user_id integer NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX auth_session_expires_idx ON auth_session(expires_at);
+CREATE INDEX auth_session_user_idx ON auth_session(user_id);
+
+-- ---------- MOVIE, GENRE, PERSON -------------------------------------
+CREATE TABLE movie (
+  id                  int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title               text NOT NULL,
+  description         text,
+  duration_minutes    int  NOT NULL CHECK (duration_minutes > 0),
+  age_rating          text,
+  poster_url          text,
+  landscape_image_url text,
+  trailer_url         text,
+  director            text,
+  imdb_rating         numeric(3, 1) CHECK (imdb_rating >= 0 AND imdb_rating <= 10),
+  release_date        date
+);
+
+CREATE TABLE genre (
+  id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text NOT NULL UNIQUE
+);
+
+CREATE TABLE movie_genre (
+  movie_id int NOT NULL REFERENCES movie (id) ON DELETE CASCADE,
+  genre_id int NOT NULL REFERENCES genre (id) ON DELETE CASCADE,
+  PRIMARY KEY (movie_id, genre_id)
+);
+
+CREATE TABLE person (
+  id   int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text NOT NULL,
+  photo_url text,
+  bio text,
+  tmdb_id int UNIQUE
+);
+
+CREATE TABLE movie_person (
+  movie_id  int  NOT NULL REFERENCES movie (id)  ON DELETE CASCADE,
+  person_id int  NOT NULL REFERENCES person (id) ON DELETE CASCADE,
+  role      text NOT NULL CHECK (role IN ('director', 'actor')),
+  character_name text,
+  billing_order int NOT NULL DEFAULT 0,
+  PRIMARY KEY (movie_id, person_id, role)
+);
+
+-- ---------- CINEMA, SEAT, SCREENING ----------------------------------
+CREATE TABLE cinema (
+  id          int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name        text NOT NULL UNIQUE,
+  format      text,
+  tech        text,
+  screen_size text,
+  opened_year int
+);
+
+CREATE TABLE seat (
+  id          int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  cinema_id   int  NOT NULL REFERENCES cinema (id) ON DELETE CASCADE,
+  row_label   text NOT NULL,
+  seat_number int  NOT NULL CHECK (seat_number > 0),
+  seat_type   text NOT NULL DEFAULT 'regular' CHECK (seat_type IN ('regular', 'wheelchair')),
+  UNIQUE (cinema_id, row_label, seat_number)
+);
+
+CREATE TABLE screening (
+  id        int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  movie_id  int         NOT NULL REFERENCES movie (id),
+  cinema_id int         NOT NULL REFERENCES cinema (id),
+  starts_at timestamptz NOT NULL,
+  UNIQUE (cinema_id, starts_at)
+);
+CREATE INDEX screening_movie_idx ON screening (movie_id, starts_at);
+
+-- ---------- PRICE_GROUP ----------------------------------------------
+CREATE TABLE price_group (
+  id    int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name  text NOT NULL UNIQUE CHECK (name IN ('child', 'adult', 'elder')),
+  price numeric(10, 2) NOT NULL CHECK (price >= 0)
+);
+
+-- ---------- BOOKING, TICKET ------------------------------------------
+CREATE TABLE booking (
+  id                int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           int  REFERENCES app_user (id),          -- NULL for guests
+  screening_id      int  NOT NULL REFERENCES screening (id),
+  booking_reference text NOT NULL UNIQUE,
+  guest_name        text,
+  guest_email       text,
+  status            text NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'expired')),
+  is_paid           boolean NOT NULL DEFAULT false,
+  paid_at           timestamptz,
+  is_checked_in     boolean NOT NULL DEFAULT false,
+  checked_in_at     timestamptz,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  identity_email    text,
+  request_key       uuid,
+  request_hash      text,
+  CONSTRAINT booking_has_owner CHECK (user_id IS NOT NULL OR guest_email IS NOT NULL),
+  UNIQUE (id, screening_id)
+);
+CREATE INDEX booking_user_idx ON booking (user_id);
+CREATE INDEX booking_identity_idx ON booking(identity_email);
+CREATE UNIQUE INDEX booking_request_idx ON booking(identity_email, request_key);
+
+CREATE TABLE booking_rate_limit (
+  key_hash text PRIMARY KEY,
+  attempts timestamptz[] NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX booking_rate_expiry_idx ON booking_rate_limit(expires_at);
+
+CREATE TABLE guest_booking_intent (
+  email text PRIMARY KEY,
+  token_hash text NOT NULL UNIQUE,
+  request_key uuid NOT NULL,
+  payload jsonb NOT NULL,
+  expires_at timestamptz NOT NULL,
+  sent_at timestamptz,
+  booking_id integer REFERENCES booking(id) ON DELETE CASCADE
+);
+CREATE INDEX guest_booking_expiry_idx ON guest_booking_intent(expires_at);
+
+CREATE TABLE ticket (
+  screening_id   int NOT NULL REFERENCES screening (id),
+  seat_id        int NOT NULL REFERENCES seat (id),
+  booking_id     int NOT NULL,
+  price_group_id int NOT NULL REFERENCES price_group (id),
+  is_active      boolean NOT NULL DEFAULT true,
+  CONSTRAINT ticket_pkey PRIMARY KEY (screening_id, seat_id, booking_id),
+  CONSTRAINT ticket_booking_fk FOREIGN KEY (booking_id, screening_id)
+    REFERENCES booking (id, screening_id) ON DELETE CASCADE
+);
+CREATE INDEX ticket_booking_idx ON ticket (booking_id);
+CREATE UNIQUE INDEX ticket_active_seat_idx ON ticket (screening_id, seat_id) WHERE is_active;
+
+-- ---------- MENU_ITEM, COMBO_ITEM, BOOKING_ITEM ----------------------
+CREATE TABLE menu_item (
+  id           int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name         text NOT NULL UNIQUE,
+  description  text,
+  category     text NOT NULL CHECK (category IN ('food', 'drink')),
+  price        numeric(10, 2) NOT NULL CHECK (price >= 0),
+  is_combo     boolean NOT NULL DEFAULT false,
+  image_url    text,
+  is_available boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE combo_item (
+  combo_id int NOT NULL REFERENCES menu_item (id) ON DELETE CASCADE,
+  item_id  int NOT NULL REFERENCES menu_item (id),
+  quantity int NOT NULL CHECK (quantity > 0),
+  PRIMARY KEY (combo_id, item_id),
+  CHECK (combo_id <> item_id)
+);
+
+CREATE FUNCTION check_combo_item() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT (SELECT is_combo FROM menu_item WHERE id = NEW.combo_id) THEN
+    RAISE EXCEPTION 'combo_id must point to a menu_item with is_combo = true';
+  END IF;
+  IF (SELECT is_combo FROM menu_item WHERE id = NEW.item_id) THEN
+    RAISE EXCEPTION 'a combo cannot contain another combo';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER combo_item_rules
+  BEFORE INSERT OR UPDATE ON combo_item
+  FOR EACH ROW EXECUTE FUNCTION check_combo_item();
+
+CREATE TABLE booking_item (
+  booking_id   int NOT NULL REFERENCES booking (id) ON DELETE CASCADE,
+  menu_item_id int NOT NULL REFERENCES menu_item (id),
+  quantity     int NOT NULL CHECK (quantity > 0),
+  PRIMARY KEY (booking_id, menu_item_id)
+);
+
+-- ---------- NO-SHOW WARNINGS AND RESERVATION BLOCKS ------------------
+
+CREATE TABLE IF NOT EXISTS booking_warning_policy (
+  id boolean PRIMARY KEY DEFAULT true CHECK (id),
+  activated_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+INSERT INTO booking_warning_policy(id) VALUES (true) ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS booking_reservation_block (
+  id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  identity_email text NOT NULL,
+  user_id int REFERENCES app_user(id) ON DELETE SET NULL,
+  starts_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  revocation_reason text,
+  CHECK (expires_at > starts_at)
+);
+CREATE INDEX IF NOT EXISTS booking_block_email_idx ON booking_reservation_block(identity_email, expires_at);
+CREATE INDEX IF NOT EXISTS booking_block_user_idx ON booking_reservation_block(user_id, expires_at);
+
+CREATE TABLE IF NOT EXISTS booking_warning (
+  id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  -- Deliberately no booking FK: warnings survive seven-day booking cleanup.
+  source_booking_id int NOT NULL UNIQUE,
+  booking_reference text NOT NULL,
+  identity_email text NOT NULL,
+  user_id int REFERENCES app_user(id) ON DELETE SET NULL,
+  screening_ended_at timestamptz NOT NULL,
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  block_id int REFERENCES booking_reservation_block(id),
+  revoked_at timestamptz,
+  revocation_reason text,
+  notification_count int NOT NULL DEFAULT 1,
+  notification_blocked_until timestamptz,
+  email_sent_at timestamptz,
+  email_next_attempt_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  email_attempts int NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS booking_warning_email_idx ON booking_warning(identity_email, screening_ended_at);
+CREATE INDEX IF NOT EXISTS booking_warning_user_idx ON booking_warning(user_id, screening_ended_at);
+CREATE INDEX IF NOT EXISTS booking_warning_delivery_idx ON booking_warning(email_next_attempt_at) WHERE email_sent_at IS NULL AND revoked_at IS NULL;
+
+ALTER TABLE booking_warning_policy ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_reservation_block ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_warning ENABLE ROW LEVEL SECURITY;

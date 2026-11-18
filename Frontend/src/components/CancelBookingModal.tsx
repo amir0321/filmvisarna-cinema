@@ -1,0 +1,194 @@
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
+import { translateSeatLabel } from '../utils/bookingPresentation'
+import React from 'react'
+import { Modal } from './Modal'
+import { Poster } from './Poster'
+import { capitalize, formatDateLong, formatTime, toCinemaIsoDate } from '../utils/date'
+import type { CancelBookingDetails } from '../types/booking'
+
+export interface CancelBookingModalProps {
+  isOpen: boolean
+  booking: CancelBookingDetails | null
+  isSubmitting?: boolean
+  canCancel?: boolean
+  error?: string | null
+  onConfirm: () => void | Promise<void>
+  onClose: () => void
+  confirmLabel?: string
+  cancelLabel?: string
+}
+
+export function CancelBookingModal({
+  isOpen,
+  booking,
+  isSubmitting = false,
+  canCancel = true,
+  error = null,
+  onConfirm,
+  onClose,
+  confirmLabel,
+  cancelLabel,
+}: CancelBookingModalProps) {
+  const { t, locale } = useTranslation()
+  if (!isOpen || !booking) {
+    return null
+  }
+
+  // Format date and time
+  let formattedDate: string
+  let formattedTime = ''
+  try {
+    const isoDate = toCinemaIsoDate(booking.screeningStartsAt)
+    formattedDate = capitalize(formatDateLong(isoDate, locale))
+    formattedTime = formatTime(booking.screeningStartsAt, locale)
+  } catch {
+    formattedDate = booking.screeningStartsAt
+  }
+
+  const handleConfirmClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    if (isSubmitting || !canCancel) return
+    await onConfirm()
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={isSubmitting ? () => {} : onClose}
+      size="md"
+      className="fv-cancel-booking-modal"
+      id="cancel-booking-modal"
+      labelledBy="cancel-booking-modal-title"
+    >
+      <Modal.Body className="p-4 p-md-4">
+        {/* Warning Icon & Heading */}
+        <div className="d-flex align-items-center gap-3 mb-3">
+          <div
+            className="fv-cancel-modal-icon-badge flex-shrink-0"
+            aria-hidden="true"
+          >
+            <i className="bi bi-exclamation-triangle-fill text-danger fs-4" />
+          </div>
+          <div>
+            <h2 id="cancel-booking-modal-title" className="h5 fw-bold mb-1 text-body">
+              {t('cancellation.question')}
+            </h2>
+            <p className="text-secondary small mb-0">
+              {t('cancellation.warning')}
+            </p>
+          </div>
+        </div>
+
+        {/* Booking Details Card */}
+        <div className="fv-cancel-booking-card p-3 rounded-3 mb-3 border">
+          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <span className="text-secondary small">{t('cancellation.reference')}</span>
+            <span className="font-monospace fw-bold text-body letter-spacing-1">
+              {booking.bookingRef}
+            </span>
+          </div>
+
+          <div className="d-flex gap-3 align-items-start mt-2">
+            {booking.posterUrl ? (
+              <div
+                className="fv-cancel-modal-poster flex-shrink-0 rounded overflow-hidden"
+              >
+                <Poster
+                  src={booking.posterUrl}
+                  alt={booking.movieTitle}
+                  aspectRatio="2/3"
+                  className="w-100 h-100"
+                />
+              </div>
+            ) : null}
+
+            <div className="fv-cancel-booking-card__details flex-grow-1">
+              <h3 className="h6 fw-bold text-body mb-1 text-truncate">
+                {booking.movieTitle}
+              </h3>
+
+              <div className="text-secondary small mb-1 d-flex align-items-center gap-2">
+                <i className="bi bi-calendar3" aria-hidden="true" />
+                <span>
+                  {formattedDate} {formattedTime ? `· ${t('common.atTime', { time: formattedTime })}` : ''}
+                </span>
+              </div>
+
+              <div className="text-secondary small mb-2 d-flex align-items-center gap-2">
+                <i className="bi bi-geo-alt" aria-hidden="true" />
+                <span>{booking.cinemaName}</span>
+              </div>
+
+              {booking.seats && booking.seats.length > 0 ? (
+                <div className="mt-2">
+                  <div className="text-secondary extra-small mb-1">{t('cancellation.selectedSeats')}</div>
+                  <div className="d-flex flex-wrap gap-1">
+                    {booking.seats.map((seat, index) => (
+                      <span
+                        key={index}
+                        className="badge bg-surface-2 text-body border fw-normal px-2 py-1"
+                      >
+                        {translateSeatLabel(seat, locale)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {/* Error notification if submit failed */}
+        {error ? (
+          <div
+            className="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 small mb-3"
+            role="alert"
+          >
+            <i className="bi bi-exclamation-octagon flex-shrink-0" aria-hidden="true" />
+            <div>{translateApiError(error, locale)}</div>
+          </div>
+        ) : null}
+
+        {/* Action Buttons */}
+        {!canCancel ? (
+          <p id="cancel-booking-deadline" className="small text-secondary" role="status">
+            {t('cancellation.deadline')}
+          </p>
+        ) : null}
+        <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 pt-2">
+          <button
+            type="button"
+            className="btn btn-secondary-outline px-4 py-2"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            {cancelLabel ?? t('cancellation.keep')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleConfirmClick}
+            disabled={isSubmitting || !canCancel}
+            aria-describedby={!canCancel ? 'cancel-booking-deadline' : undefined}
+          >
+            {isSubmitting ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+                <span>{t('cancellation.cancelling')}</span>
+              </>
+            ) : (
+              <span>{confirmLabel ?? t('cancellation.confirm')}</span>
+            )}
+          </button>
+        </div>
+      </Modal.Body>
+    </Modal>
+  )
+}
+
+export default CancelBookingModal

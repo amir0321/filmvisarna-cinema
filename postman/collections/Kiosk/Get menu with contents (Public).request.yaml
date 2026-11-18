@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get menu with contents (Public)
+url: http://localhost:3000/api/menu
+method: GET
+order: 1500

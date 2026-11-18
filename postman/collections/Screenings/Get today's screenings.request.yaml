@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get today's screenings
+url: http://localhost:3000/api/screenings/today
+method: GET
+order: 2000

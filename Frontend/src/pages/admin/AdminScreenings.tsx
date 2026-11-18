@@ -1,0 +1,223 @@
+import type { SimpleTranslationKey } from '../../i18n'
+import { translateApiError } from '../../i18n/mappers'
+import { sv } from '../../i18n/sv'
+import { useTranslation } from '../../context/LocaleContext'
+import { useRef, useState } from 'react'
+import apiClient from '../../api/client'
+import { useCinemas, useMovies, usePagination, useScreenings } from '../../hooks'
+import { useScreeningProgramme } from '../../hooks/useScreeningProgramme'
+import type { Screening } from '../../types'
+import DatePickerPopover from '../../components/DatePickerPopover'
+import { EmptyState } from '../../components/EmptyState'
+import Pagination from '../../components/Pagination'
+import { FilterPillGroup } from '../../components/Pills'
+import { CardListSkeleton } from '../../components/Skeleton'
+import { InlineFeedback, type InlineFeedbackVariant } from '../../components/Toast'
+import ScreeningFormModal from '../../components/admin/ScreeningFormModal'
+import ScreeningsTable from '../../components/admin/ScreeningsTable'
+import AdminPageHeader from '../../components/admin/AdminPageHeader'
+import { addDaysToIsoDate, formatDateShort, toCinemaIsoDate, todayIsoDate } from '../../utils/date'
+
+type Period = 'upcoming' | 'today' | 'tomorrow' | 'week'
+
+const PERIOD_OPTIONS: { value: Period; label: SimpleTranslationKey }[] = [
+  { value: 'upcoming', label: 'admin.screenings.allUpcoming' },
+  { value: 'today', label: 'date.today' },
+  { value: 'tomorrow', label: 'date.tomorrow' },
+  { value: 'week', label: 'admin.screenings.week' },
+]
+
+const PAGE_SIZE = 15
+
+function isInPeriod(screening: Screening, period: Period, today: string): boolean {
+  const date = toCinemaIsoDate(screening.startsAt)
+  switch (period) {
+    case 'upcoming':
+      return true
+    case 'today':
+      return date === today
+    case 'tomorrow':
+      return date === addDaysToIsoDate(today, 1)
+    case 'week':
+      return date <= addDaysToIsoDate(today, 6)
+  }
+}
+
+export default function AdminScreenings() {
+  const { t, locale } = useTranslation()
+  const today = todayIsoDate()
+  const [period, setPeriod] = useState<Period>('upcoming')
+  // Overrides the period chips
+  const [pickedDate, setPickedDate] = useState<string | null>(null)
+  const [cinemaId, setCinemaId] = useState('all')
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingScreening, setEditingScreening] = useState<Screening | null>(null)
+  const [feedback, setFeedback] = useState<{ variant: InlineFeedbackVariant; message: string; movieTitle?: string } | null>(null)
+  const datePickerButtonRef = useRef<HTMLButtonElement>(null)
+  const closeDatePicker = () => setIsDatePickerOpen(false)
+
+  const { data: screenings, loading, error, refetch } = useScreenings()
+  const { data: movies } = useMovies()
+  const { data: cinemas } = useCinemas()
+  const programme = useScreeningProgramme()
+
+  const filteredScreenings = (screenings ?? [])
+    .filter((screening) =>
+      pickedDate ? toCinemaIsoDate(screening.startsAt) === pickedDate : isInPeriod(screening, period, today),
+    )
+    .filter((screening) => cinemaId === 'all' || String(screening.cinemaId) === cinemaId)
+
+  const { page, totalPages, pageItems, setPage } = usePagination(filteredScreenings, PAGE_SIZE)
+
+  function choosePeriod(nextPeriod: Period) {
+    setPeriod(nextPeriod)
+    setPickedDate(null)
+    setPage(1)
+  }
+
+  function chooseDate(date: string) {
+    setPickedDate(date)
+    setPage(1)
+  }
+
+  function openForm(screening: Screening | null) {
+    setEditingScreening(screening)
+    setIsFormOpen(true)
+  }
+
+  async function handleSaved(message: string) {
+    setIsFormOpen(false)
+    setFeedback({ variant: 'success', message })
+    await refetch()
+  }
+
+  async function handleCancel(screening: Screening) {
+    try {
+      await apiClient.delete(`/screenings/${screening.id}`)
+      setFeedback({ variant: 'success', message: '', movieTitle: screening.movieTitle })
+      await refetch()
+    } catch (err) {
+      setFeedback({
+        variant: 'danger',
+        message: err instanceof Error ? err.message : sv['admin.screenings.cancelError'],
+      })
+    }
+  }
+
+  return (
+    <div className="admin-screenings">
+      <AdminPageHeader title={t('movieDetails.scheduleHeading')} subtitle={t('admin.screenings.subtitle')} />
+
+      <div className="admin-toolbar">
+        <div className="admin-toolbar__filters">
+          <FilterPillGroup<string>
+            ariaLabel={t('admin.screenings.period')}
+            options={PERIOD_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
+            value={pickedDate ? '' : period}
+            onChange={(value) => choosePeriod(value as Period)}
+          />
+
+          <button
+            ref={datePickerButtonRef}
+            type="button"
+            className={`chip admin-screenings__date-filter ${pickedDate ? 'chip-active' : 'chip-inactive'}`}
+            aria-pressed={pickedDate !== null}
+            aria-haspopup="dialog"
+            aria-expanded={isDatePickerOpen}
+            onClick={() => setIsDatePickerOpen((isOpen) => !isOpen)}
+          >
+            <i className="bi bi-calendar3 me-2" aria-hidden="true"></i>
+            {pickedDate ? formatDateShort(pickedDate, locale) : t('calendar.chooseDate')}
+          </button>
+          {isDatePickerOpen && (
+            <DatePickerPopover
+              id="admin-date-picker"
+              anchorRef={datePickerButtonRef}
+              selectedDate={pickedDate}
+              programme={programme}
+              minDate={programme.today}
+              maxDate={programme.maxDate}
+              onSelect={chooseDate}
+              onClose={closeDatePicker}
+            />
+          )}
+
+          <label htmlFor="admin-cinema-filter" className="visually-hidden">
+            {t('admin.auditorium')}
+          </label>
+          <select
+            id="admin-cinema-filter"
+            className="form-select admin-toolbar__select"
+            value={cinemaId}
+            onChange={(event) => {
+              setCinemaId(event.target.value)
+              setPage(1)
+            }}
+          >
+            <option value="all">{t('admin.screenings.allCinemas')}</option>
+            {(cinemas ?? []).map((cinema) => (
+              <option key={cinema.id} value={cinema.id}>
+                {cinema.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => openForm(null)}>
+          <i className="bi bi-plus-lg me-2" aria-hidden="true"></i>
+          {t('admin.screenings.add')}
+        </button>
+      </div>
+
+      {feedback && <InlineFeedback variant={feedback.variant} message={feedback.movieTitle !== undefined ? t('admin.screenings.cancelled', { title: feedback.movieTitle }) : translateApiError(feedback.message, locale)} className="mb-3" />}
+
+      {loading && <CardListSkeleton count={4} />}
+
+      {error && (
+        <EmptyState
+          variant="error"
+          title={t('admin.screenings.loadError')}
+          description={translateApiError(error, locale)}
+          actionLabel={t('common.retry')}
+          onAction={refetch}
+        />
+      )}
+
+      {!loading && !error && filteredScreenings.length === 0 && (
+        <EmptyState
+          icon="bi-calendar-x"
+          title={t('admin.screenings.empty')}
+          description={t('admin.screenings.emptyPeriod')}
+          actionLabel={t('admin.screenings.add')}
+          onAction={() => openForm(null)}
+        />
+      )}
+
+      {!loading && !error && filteredScreenings.length > 0 && (
+        <>
+          <p className="admin-screenings__count" role="status">
+            {t(filteredScreenings.length === 1 ? 'admin.screenings.countOne' : 'admin.screenings.countMany', { count: filteredScreenings.length })}
+          </p>
+          <ScreeningsTable
+            screenings={pageItems}
+            cinemas={cinemas ?? []}
+            onEdit={openForm}
+            onCancel={handleCancel}
+          />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-3" ariaLabel={t('admin.screenings.pagination')} />
+        </>
+      )}
+
+      {isFormOpen && (
+        <ScreeningFormModal
+          screening={editingScreening}
+          movies={movies ?? []}
+          cinemas={cinemas ?? []}
+          onClose={() => setIsFormOpen(false)}
+          onSaved={handleSaved}
+        />
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,107 @@
+# DESIGN.md — Filmvisarnas aktuella gränssnittsdesign
+
+Detta dokument är design- och gränssnittsspecifikationen för **Filmvisarna**. Figma Make-prototypen är utgångspunkt; dokumenterade projektbeslut och den aktuella implementationen i `Frontend/` och `Backend/` har företräde framför prototypens exempeldata.
+
+---
+
+## Gällande projektbeslut
+
+- FE-36: mörkt och ljust tema delas av publik vy och admin. Mörkt är standard; valet sparas som `dark` eller `light` i `localStorage` under `fv-theme`. Temaväljare finns vid sökknappen och i mobilmenyn. Se [tematokens](design/tokens.md#21-färger) och [temamotor](design/layout.md#411-temamotor-och-lagring-fe-36).
+- **FE-41 – språkval:** Svenska (`sv`, standard) och engelska (`en`) delar en typsäker ordlista i `Frontend/src/i18n/`. Valet sparas i `localStorage['fv-locale']`; `LocaleProvider` omsluter appen och tillhandahåller `useLocale()` och `useTranslation()`. `LanguageToggle` finns i gemensamma `Navbar` och `MobileDrawer` för både publik vy och Backoffice. Inline-skriptet i `index.html` sätter `<html lang>` före React-start. Se [språkmotor och språkval](design/layout.md#412-språkmotor-och-språkval-fe-41).
+- **Tvåspråkigt stöd (`sv` / `en`) och temakrav för sidor som inte är klara än:** Applikationen stödjer både svenska (`sv`, standard) och engelska (`en`) utöver mörkt och ljust tema (`dark` / `light`). Alla sidor och komponenter som byggs eller färdigställs — särskilt kvarvarande adminsidor (`/admin` översikt, `/admin/bokningar`, `/admin/salonger`, `/admin/kiosk`) och övriga flöden — måste från start implementeras med:
+  1. **Mörkt och ljust tema:** Endast semantiska CSS-/Sass-tokens (`$fv-*`, `--color-*`, `--text-*`, `tint(...)`, `$white-overlay-*`) enligt [design/tokens.md](design/tokens.md), inga hårdkodade hex-värden, och minst `4,5:1` kontrast (WCAG AA) i båda teman.
+  2. **Svensk och engelsk översättning (`sv` / `en`):** Alla UI-texter (rubriker, underrubriker, brödsmulor, knappar, badges, tabellhuvuden, formulärfält, placeholders, tom-/laddnings-/feltillstånd, bekräftelsedialoger och `aria-label`) ska gå via den gemensamma språk-/översättningsstrukturen utan hårdkodade strängar i komponenterna. Datum och tider formateras efter valt språk (`sv-SE` / `en-GB` i tidszonen `Europe/Stockholm`).
+
+- Bokningssäkerhet följer [design/booking-security.md](design/booking-security.md): verifierad e-post, gemensamma gäst-/medlemskvoter och begränsad bokningstakt. Gästförfrågningar reserverar inga platser och lagras separat från bekräftade bokningar. Dokumentet anger också kraven för framtida adminhantering av missbruk; den adminfunktionen byggs inte i denna ändring.
+- **Bokningar & Kassa – krav för kommande adminarbete:** Obetalda platser släpps en timme före filmstart; betalda platser behålls även vid sen ankomst. Sena kassaköp kräver en ny serverkontrollerad platstilldelning. Betalning och incheckning är separata åtgärder. Obetalda utgångna bokningar rensas sju dagar efter filmens slut. [Admin/Bokningar](design/pages/admin-bokningar.md) beskriver statusar, arbetsflöde, befintliga API-anrop, acceptanskriterier och återstående backendkrav för nya kassaköp, adminavbokning och granskningslogg.
+- **Automatiskt varningssystem:** Tre varningar inom 90 dagar ger 30 dagars spärr för nya obetalda reservationer. Varning ges först efter filmens slut om bokningen fortfarande är obetald och inte avbokad. Historik och spärrar överlever bokningsrensning; Mina sidor och verifierat gästflöde visar kundens status, och mejl köas för leverans. Gamla bokningar undantas genom aktiveringsdatum. Betalning av befintliga bokningar och kontoåtkomst fungerar under spärren. Endast personalens granskning, rättelser och spärrhävning återstår att bygga som en liten sektion i kundens detaljvy i Admin/Bokningar, utan separat varningssida; se [krav för Admin/Bokningar](design/pages/admin-bokningar.md#uteblivna-besök-varningar-och-reservationsspärr--automatik-och-framtida-adminhantering).
+- Biografen har endast **Stora Salongen**, 80 platser (A–H, 1–10), och **Lilla Salongen**, 40 platser (A–E, 1–8). Seed-data använder samma två salonger. Filmer sprids över flera dagar utan överlappning och med 20 minuters städtid.
+- Sidnumrering: 8 filmer på startsidan, 10 på `/filmer` och i adminens Filmarkiv, 15 visningar i adminens Visningsschema och 5 bokningar per flik i Mina bokningar. Kontroller döljs när resultatet ryms på en sida. Se [komponenter §3.13](design/components.md#313-sidnumrering-paginationtsx).
+- Admin använder samma temaanpassade toppnavigering som publika sidor. `Backoffice` öppnar `/admin` från både desktopmeny och mobil sidomeny. Filmarkiv och Visningsschema delar `AdminPageHeader`: brödsmulan ligger uppe till höger från `768px` och under rubrikblocket på mobil. Se [layout §4.3](design/layout.md#43-admin-navigering-samma-header-som-vanliga-hemsidan).
+- Filmarkiv har sökning på titel/regissör, tabell från `768px`, mobilkort och ett gemensamt filmformulär med manuell inmatning, TMDB-import för granskning, affischuppladdning och personregister för rollistan. Visningsschema har kort under `1200px` (två kolumner på surfplatta), tabell från `1200px` och radbrytande filter. Se [Filmarkiv](design/pages/admin-filmer.md) och [Visningsschema](design/pages/admin-visningar.md).
+- Medverkande på filmens detaljsida är klickbara profilkort med rund bild, namn och rollfigur. Profilmodalen återanvänder sidfotens `Modal`, visar biografi som ren text och har reservikon vid saknad eller trasig bild. Se [filmdetaljer](design/pages/movie-detail.md#klickbara-skådespelarprofiler).
+- Toppnavigeringens sökknapp öppnar `/filmer?sok=1`, fokuserar sökfältet och tar bort fokusparametern. Datum och åldersfilter sparas i URL:en och bevaras vid omladdning och bakåt/framåt.
+- Hero-trailern använder YouTubes IFrame API och visas först efter tre sekunders sammanhängande faktisk uppspelning, därefter intoning under 0,8 sekunder med `scale(1.2)`. Paus, buffring, loop/seek och uppspelningsfel döljer videon direkt; blockerad autoplay eller API-fel lämnar bakgrundsbilden kvar. Spelare och intervall städas vid filmbyte/paus/avmontering. Bildfel hanteras med alternativ bild eller reservyta.
+- Fullbokade visningar visar `Visningen är fullbokad` och `Se andra visningstider`. Biljettval och checkout visas inte. När platser finns begränsas totalantalet till `min(10, lediga platser)`.
+- Publik vy och admin delar den responsiva sidfoten med kontaktuppgifter, öppettider, kassapolicy och informationsdialoger för integritet och lokal lagring. Admin-länken visas endast för administratörer.
+- Seed-scenarier, testkonton och verifieringskommandon finns i [Backend/README.md](Backend/README.md#demo-data-for-manual-testing).
+
+---
+
+## 1. Designspråk och principer
+
+**Källfiler:**
+- `docs/figma-make/src/index.css`
+- `docs/figma-make/src/imports/pasted_text/filmvisarna-booking-spec.md` (identisk med `docs/figma-make/src/assets/spec2.png`)
+- `docs/figma-make/src/imports/pasted_text/cinema-app-screens.md` (identisk med `docs/figma-make/src/assets/upload.png`)
+
+### Visuell identitet
+- **Mörkt och ljust tema:** Mörkt tema har grafitmörk sidbakgrund (`#0B0F19`), marinblå kort (`#161F30`) och sekundärytor (`#1E2D47`). Ljust tema har en ljus sidbakgrund (`#F8FAFC`), vita kort (`#FFFFFF`), sekundärytor i `#E2E8F0` och mörk text (`#0F172A`). Ytor, text, kantlinjer och statusfärger styrs av gemensamma tokens; aktuella värden finns i [design/tokens.md](design/tokens.md).
+- **Biografkänsla och glasmorfism (Glassmorphism):** Navigationsfält, klibbiga filterrader, bildmärkningar och överlägg använder semitransparenta bakgrunder med oskärpa (`backdrop-filter: blur(4px)` till `blur(20px)`). Startsidan har en mörk gradient bakom vit hero-text utan separat kortruta, medan bildens högra sida lämnas fri. Endast nederkanten tonar mot aktuell `var(--color-bg)`. Vita bildkontroller och salongsbildernas bildtext har egna mörka kontrastplattor som behålls även i ljust tema.
+- **Tydlig färgkodad semantik:**
+  - **Biografröd (`#E50914` mörkt / `#C40712` ljust):** Primära knappar (CTA), aktiva filterval, fokusringar, 15-årsgräns, Salong 1-identitet och destruktiva åtgärder. Kontraströd (`#FF6B6B` mörkt / `#B91C1C` ljust) används för varningstext vid få platser kvar, sekundära avbokningsknappar och inställda visningar.
+  - **Smaragdgrön (`#10B981` mörkt / `#036347` ljust):** Valda platser i salongskartan (med grön glöd), genomförda steg, bokningsbekräftelse, "Alla"-åldersgräns, betalda bokningar och Salong 2-identitet på salongssidan.
+  - **Bärnstensgul/orange (`#F59E0B` mörkt / `#92400E` ljust):** IMDb-stjärnor och betyg, premiärbadges, 7- och 11-årsgräns på filmsidan, väntande betalning ("Inväntar") samt beläggningsvarning (> 80 %).
+  - **Blå (`#60A5FA` mörkt / `#1D4ED8` ljust):** Rullstolsplatser, tillgänglighetsmärkning, Salong 2-badge i admin-schemat samt KPI-indikator för dagens bokningar.
+- **Typografisk hierarki:**
+  - **Poppins** (`--font-display`) används för rubriker (`h1`–`h3`), logotyp, filmtitlar, belopp och statistiska nyckeltal.
+  - **Inter** (`--font-sans`) används för brödtext, knappar, formulärfält, etiketter och tabeller.
+  - **JetBrains Mono** (`--font-jetbrains` / `--font-mono`) används för bokningskoder (`FV-XXXXX`), klockslag i admin, radbokstäver i salongskartor och sifferbetyg.
+- **Konsekvent geometri och mikrointeraktioner:**
+  - Bygger på ett 8px-baserat avståndssystem (`8px`, `16px`, `24px`, `32px`, `48px`, `64px`) och rundade hörn (`16px` för kort, `10px` för knappar/fält, `6px` för stolar, `20px`/`9999px` för chips och badges).
+  - Interaktiva element har mjuka övergångar (`0.1s`–`0.35s`): filmkort lyfter vid hover (`translateY(-4px)`) med förstärkt skugga, affischer zoomar in (`scale(1.05)`), och lediga/valda stolar förstoras vid hover (`scale(1.15)`).
+- **Tillgänglighet (WCAG AA):**
+  - Enhetstester kontrollerar minst `4,5:1` för texttokens på grundytor i båda teman, vit text på primärknappar och text på valda stolar. Vit bildtext och dämpad bildtext testas även mot en mörk platta över en helt vit bild. Detta är tokenkontroller; komponenternas sammansatta tillstånd granskas också visuellt.
+  - Synlig fokusindikator (`outline: 2px solid var(--color-primary)`, `outline-offset: 2px`) för `input:focus` och `button:focus-visible`.
+
+---
+
+
+## Filindex för designspecifikationen
+
+| Fil | Innehåll |
+| :--- | :--- |
+| [design/booking-security.md](design/booking-security.md) | Gällande bokningsskydd, gästbekräftelse, kvoter, åtskillnad mellan förfrågningar och bokningar samt säkerhetskrav för framtida adminarbete. |
+| [design/tokens.md](design/tokens.md) | Sektion 2: Alla designtokens (färger, typografi, avstånd/layoutmått, hörnradier, skuggor/oskärpa samt brytpunkter och z-index) översatta till hex/px/rem och SCSS-variabler. |
+| [design/components.md](design/components.md) | Sektion 3: Alla återanvända UI-komponenter (knappar, chips/pills, badges, kort, tabeller, formulär, modaler/BottomSheets, tabbar, inline-feedback, platskartor, steppers och cookie-banner). |
+| [design/layout.md](design/layout.md) | Sektion 4: Applikationsskal, gemensam toppnavigering (`Navbar`) för publik hemsida och admin, mobil bottennavigering (`BottomNav`), mobil sidomeny (`MobileDrawer`), sidfot samt grid och responsivt beteende. |
+| [design/flows.md](design/flows.md) | Sektion 6–10: Användarflöden (bokning, avbokning, admin), roller och behörigheter, ikoner och bilder, funktioner ej med i vår app samt inkonsekvenser och OKLART. |
+| [design/coverage.md](design/coverage.md) | Sektion 11: Fullständig täckningslista som mappar samtliga 28 källfiler i `docs/figma-make/src/` mot sektionerna i designspecifikationen. |
+| [design/pages/home.md](design/pages/home.md) | Sektion 5.1: Startsida (`HomeScreen`, föreslagen route `/`) med hero-sektion, klibbig filterrad, repertoargrid och interaktioner. |
+| [design/pages/filmer.md](design/pages/filmer.md) | Sektion 5.2: Filmer & Repertoar (`FilmerScreen`, föreslagen route `/filmer`) med flikarna På bio nu, Kommande premiärer och trailer-modal. |
+| [design/pages/movie-detail.md](design/pages/movie-detail.md) | Sektion 5.3: Aktuell `MovieDetails` på `/filmer/:id`, med backdrop-hero, faktaruta, klickbara skådespelarprofiler och visningsschema. |
+| [design/pages/seat-selection.md](design/pages/seat-selection.md) | Sektion 5.4: Stolsväljaren & Bokning (`SeatSelectionScreen`, föreslagen route `/boka/:visningId`) med biljetträknare, interaktiv platskarta, checkout-panel och platsvalsalgoritm. |
+| [design/pages/booking-confirm.md](design/pages/booking-confirm.md) | Sektion 5.5: Bokningsbekräftelse (`BookingConfirmScreen`, föreslagen route `/bekraftelse/:kod`) med bokningskod, biljettsammanfattning, QR-kod och åtgärdsknappar. |
+| [design/pages/salonger.md](design/pages/salonger.md) | Sektion 5.6: Våra Salonger (`SalongerScreen`, föreslagen route `/salonger`) med salongskort, minikartor samt tillgänglighets- och dukinformation. |
+| [design/pages/om-oss.md](design/pages/om-oss.md) | Sektion 5.7: Om oss (föreslagen route `/om-oss`, saknas som egen skärm i prototypen). |
+| [design/pages/mina-bokningar.md](design/pages/mina-bokningar.md) | Sektion 5.8: Mina Sidor / Mina Bokningar (`MyBookingsScreen`, föreslagen route `/mina-bokningar`) med profilöversikt, aktuella bokningar, historik och avbokningsmodal. |
+| [design/pages/profil.md](design/pages/profil.md) | Sektion 5.9: Min Profil (`ProfilScreen`, föreslagen route `/profil`) med användarkort samt flikarna Mina uppgifter, Säkerhet och Bokningshistorik. |
+| [design/pages/admin-bokningar.md](design/pages/admin-bokningar.md) | Sektion 5.10: Admin – Bokningar & Kassa (`BokningarTab`, föreslagen route `/admin/bokningar`) med snabb incheckning, KPI-kort, bokningslista, live-salongskarta och kassaöversikt. |
+| [design/pages/admin-visningar.md](design/pages/admin-visningar.md) | Sektion 5.11: Aktuell `AdminScreenings` på `/admin/visningar`, med Backoffice-brödsmula, filter, responsiva kort/tabell, sidnumrering och visningsformulär. |
+| [design/pages/admin-filmer.md](design/pages/admin-filmer.md) | Sektion 5.12: Aktuell `AdminMovies` på `/admin/filmer`, med Backoffice-brödsmula, sökning, sidnumrering, TMDB-import, bilduppladdning och rollista/personprofiler. |
+| [design/pages/admin-salonger.md](design/pages/admin-salonger.md) | Sektion 5.13: Admin – Salonger (`SalongerAdminTab`, föreslagen route `/admin/salonger`) med salongskort, förhandsgranskningskarta och konfigurationsmodal. |
+| [design/pages/admin-kiosk.md](design/pages/admin-kiosk.md) | Sektion 5.14: Admin – Kiosk (föreslagen route `/admin/kiosk`, saknas i prototypen). |
+
+---
+
+## 5. Sidor
+
+### Översikt över skärmar och föreslagna routes
+
+| Föreslagen route | Status i prototypen | Skärm-ID (`Screen`) | Källfil i `docs/figma-make/src/` |
+| :--- | :--- | :--- | :--- |
+| `/` (Föreslagen) | Finns | `'home'` | `src/components/HomeScreen.tsx` |
+| `/filmer` (Föreslagen) | Finns | `'filmer'` | `src/components/FilmerScreen.tsx` |
+| `/filmer/:id` (Föreslagen) | Finns | `'detail'` | `src/components/MovieDetailScreen.tsx` |
+| `/boka/:visningId` (Föreslagen) | Finns | `'seats'` | `src/components/SeatSelectionScreen.tsx` |
+| `/bekraftelse/:kod` (Föreslagen) | Finns | `'confirm'` | `src/components/BookingConfirmScreen.tsx` |
+| `/salonger` (Föreslagen) | Finns | `'salonger'` | `src/components/SalongerScreen.tsx` |
+| `/om-oss` (Föreslagen) | **Saknas i prototypen** | — | — |
+| `/mina-bokningar` (Föreslagen) | Finns | `'bookings'` | `src/components/MyBookingsScreen.tsx` |
+| `/profil` (Föreslagen) | Finns | `'profil'` | `src/components/ProfilScreen.tsx` |
+| `/admin/bokningar` (Föreslagen) | Finns (som flik i `AdminScreen`) | `'admin'` (`activeTab: 'bokningar'`) | `src/components/AdminScreen.tsx`, `src/components/admin/BokningarTab.tsx` |
+| `/admin/visningar` (Föreslagen) | Finns (som flik i `AdminScreen`) | `'admin'` (`activeTab: 'schema'`) | `src/components/AdminScreen.tsx`, `src/components/admin/SchemaTab.tsx` |
+| `/admin/filmer` (Föreslagen) | Finns (som flik i `AdminScreen`) | `'admin'` (`activeTab: 'filmarkiv'`) | `src/components/AdminScreen.tsx`, `src/components/admin/FilmarkivTab.tsx` |
+| `/admin/salonger` (Föreslagen) | Finns (som flik i `AdminScreen`) | `'admin'` (`activeTab: 'salonger'`) | `src/components/AdminScreen.tsx`, `src/components/admin/SalongerAdminTab.tsx` |
+| `/admin/kiosk` (Föreslagen) | **Saknas i prototypen** | — | — |
+

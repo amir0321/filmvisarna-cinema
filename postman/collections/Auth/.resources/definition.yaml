@@ -1,0 +1,8 @@
+$kind: collection
+name: Auth
+variables:
+  - key: user_token
+    secret: true
+  - key: admin_token
+    secret: true
+

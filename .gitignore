@@ -4,6 +4,7 @@ node_modules/
 # Build outputs
 dist/
 dist-ssr/
+Backend/uploads/*
 
 # Environment files
 .env
@@ -19,6 +20,9 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
+# Local agent instructions and skills
+.agents/
+
 # Logs
 *.log
 npm-debug.log*
@@ -31,3 +35,6 @@ pnpm-debug.log*
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Postman internal workspace config (auto-generated)
+.postman/

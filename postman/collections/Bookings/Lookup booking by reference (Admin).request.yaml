@@ -1,0 +1,5 @@
+$kind: http-request
+name: Lookup booking by reference (Admin)
+url: http://localhost:3000/api/bookings/lookup?reference=FV-ABC12
+method: GET
+order: 3000

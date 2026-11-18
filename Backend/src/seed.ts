@@ -1,178 +1,303 @@
+import { getSeedMovies } from "./seeds/movieData.js";
+import { seedDemoData } from "./seeds/demo.js";
 import { pool } from "./db.js";
+import bcrypt from "bcryptjs";
 
-// Mock data for cinema halls
-const cinemas = [{ name: "Stora Salongen" }, { name: "Lilla Salongen" }];
-
-// Generate seats for a cinema hall
-function generateSeats(
-  cinemaId: number,
-  rowCount: number,
-  seatsPerRow: number,
-) {
-  const seats = [];
-
-  for (let row = 0; row < rowCount; row++) {
-    const rowLabel = String.fromCharCode(65 + row);
-
-    for (let seatNumber = 1; seatNumber <= seatsPerRow; seatNumber++) {
-      seats.push({
-        cinema_id: cinemaId,
-        row_label: rowLabel,
-        seat_number: seatNumber,
-      });
-    }
-  }
-
-  return seats;
+async function cleanDatabase() {
+  await pool.query(`
+    TRUNCATE TABLE
+      booking_item,
+      ticket,
+      booking,
+      screening,
+      seat,
+      combo_item,
+      menu_item,
+      movie_person,
+      person,
+      movie_genre,
+      movie,
+      genre,
+      price_group,
+      cinema
+    RESTART IDENTITY CASCADE;
+  `);
 }
 
-// Test seat generation without inserting data
-const largeCinemaSeats = generateSeats(1, 10, 8);
-const smallCinemaSeats = generateSeats(2, 5, 8);
-
-console.log("Large cinema seats:", largeCinemaSeats.length);
-console.log("Small cinema seats:", smallCinemaSeats.length);
-console.log("Total seats:", largeCinemaSeats.length + smallCinemaSeats.length);
-
-// Find or create a cinema and return its ID
-async function getOrCreateCinema(name: string): Promise<number> {
-  const result = await pool.query(
-    `INSERT INTO cinema (name)
-     VALUES ($1)
-     ON CONFLICT (name)
-     DO UPDATE SET name = EXCLUDED.name
-     RETURNING id`,
-    [name],
-  );
-
-  return result.rows[0].id;
-}
-// Insert seats without creating duplicates
-async function insertSeats(cinemaId: number, rowCount: number) {
-  const seats = generateSeats(cinemaId, rowCount, 8);
-
-  for (const seat of seats) {
-    await pool.query(
-      `INSERT INTO seat (cinema_id, row_label, seat_number)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (cinema_id, row_label, seat_number)
-       DO NOTHING`,
-      [seat.cinema_id, seat.row_label, seat.seat_number],
-    );
-  }
-}
-
-// Seed cinema halls and their seats
 async function seedCinemasAndSeats() {
-  const largeCinemaId = await getOrCreateCinema("Stora Salongen");
-  await insertSeats(largeCinemaId, 10);
+  const resLarge = await pool.query<{ id: number }>(`
+    INSERT INTO cinema (name, format, tech, screen_size, opened_year)
+    VALUES ('Stora Salongen', '4K Dolby Atmos', 'Laser 4K, Dolby Atmos 7.1, Induktionsslinga', '18×8 m', 1987)
+    RETURNING id;
+  `);
+  const largeCinemaId = resLarge.rows[0].id;
 
-  const smallCinemaId = await getOrCreateCinema("Lilla Salongen");
-  await insertSeats(smallCinemaId, 5);
-
-  console.log("Cinema halls and seats seeded successfully.");
-}
-
-// Mock data for movies
-const movies = [
-  { title: "Stjärnornas Krig: Arvet", duration_minutes: 165, age_rating: "15" },
-  { title: "Djupet", duration_minutes: 132, age_rating: "15" },
-  { title: "Väktarnas Dal", duration_minutes: 118, age_rating: "11" },
-  { title: "Sommaren Vi Försvann", duration_minutes: 104, age_rating: "Alla" },
-  { title: "Järnhjärtat", duration_minutes: 128, age_rating: "15" },
-  {
-    title: "Lille Björnens Stora Äventyr",
-    duration_minutes: 88,
-    age_rating: "Alla",
-  },
-  { title: "Nattens Arkitekt", duration_minutes: 121, age_rating: "15" },
-  { title: "Röd Sand", duration_minutes: 142, age_rating: "15" },
-];
-
-// Insert movies without creating duplicates
-async function seedMovies() {
-  for (const movie of movies) {
-    const existingMovie = await pool.query(
-      "SELECT id FROM movie WHERE title = $1",
-      [movie.title],
-    );
-
-    if (existingMovie.rows.length === 0) {
+  for (let r = 0; r < 8; r++) {
+    const rowLabel = String.fromCharCode(65 + r);
+    for (let s = 1; s <= 10; s++) {
       await pool.query(
-        `INSERT INTO movie (title, duration_minutes, age_rating)
-         VALUES ($1, $2, $3)`,
-        [movie.title, movie.duration_minutes, movie.age_rating],
+        `INSERT INTO seat (cinema_id, row_label, seat_number) VALUES ($1, $2, $3)`,
+        [largeCinemaId, rowLabel, s],
       );
     }
   }
 
-  console.log("Movies seeded successfully.");
+  const resSmall = await pool.query<{ id: number }>(`
+    INSERT INTO cinema (name, format, tech, screen_size, opened_year)
+    VALUES ('Lilla Salongen', '2D Intimt', '2K Digital, Dolby 5.1, Rullstolsanpassad', '10×4,5 m', 2019)
+    RETURNING id;
+  `);
+  const smallCinemaId = resSmall.rows[0].id;
+
+  for (let r = 0; r < 5; r++) {
+    const rowLabel = String.fromCharCode(65 + r);
+    for (let s = 1; s <= 8; s++) {
+      await pool.query(
+        `INSERT INTO seat (cinema_id, row_label, seat_number) VALUES ($1, $2, $3)`,
+        [smallCinemaId, rowLabel, s],
+      );
+    }
+  }
+
+  return { largeCinemaId, smallCinemaId };
 }
 
-// Mock data for cinema kiosk menu
-const menuItems = [
-  {
-    name: "Klassikern",
-    description: "Mellanpopcorn & 50cl Läsk",
-    category: "food",
-    price: 79,
-    is_combo: true,
-  },
-  {
-    name: "Stora Biomyset",
-    description: "Stor Popcorn & 2x Läsk + Godispåse",
-    category: "food",
-    price: 129,
-    is_combo: true,
-  },
-  {
-    name: "Kaffepaket",
-    description: "Kaffe/Te & Nybakad Kaka",
-    category: "food",
-    price: 49,
-    is_combo: true,
-  },
-];
+async function seedPriceGroups() {
+  await pool.query(`
+    INSERT INTO price_group (name, price) VALUES
+      ('child', 80.00),
+      ('adult', 140.00),
+      ('elder', 120.00);
+  `);
+}
 
-// Insert or update cinema kiosk menu items
-async function seedMenuItems() {
-  for (const item of menuItems) {
+async function seedGenresAndMovies() {
+  const genreNames = [
+    "Action",
+    "Sci-Fi",
+    "Äventyr",
+    "Drama",
+    "Thriller",
+    "Fantasy",
+    "Romance",
+    "Animation",
+    "Familj",
+    "Krim",
+  ];
+
+  const genreMap = new Map<string, number>();
+  for (const name of genreNames) {
+    const res = await pool.query<{ id: number }>(
+      `INSERT INTO genre (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+      [name],
+    );
+    genreMap.set(name, res.rows[0].id);
+  }
+
+  const moviesData = getSeedMovies();
+
+  const personMap = new Map<string, number>();
+  async function getOrCreatePerson(name: string): Promise<number> {
+    let id = personMap.get(name);
+    if (!id) {
+      const res = await pool.query<{ id: number }>(
+        `INSERT INTO person (name) VALUES ($1) RETURNING id`,
+        [name],
+      );
+      id = res.rows[0].id;
+      personMap.set(name, id);
+    }
+    return id;
+  }
+
+  const movieMap = new Map<string, number>();
+  for (const m of moviesData) {
+    const res = await pool.query<{ id: number }>(
+      `INSERT INTO movie (title, duration_minutes, age_rating, director, imdb_rating, description, trailer_url, poster_url, landscape_image_url, release_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id`,
+      [
+        m.title,
+        m.duration_minutes,
+        m.age_rating,
+        m.director,
+        m.imdb_rating,
+        m.description,
+        m.trailer_url,
+        m.poster_url,
+        m.landscape_image_url,
+        m.release_date,
+      ],
+    );
+    const movieId = res.rows[0].id;
+    movieMap.set(m.title, movieId);
+
+    for (const g of m.genres) {
+      const genreId = genreMap.get(g);
+      if (genreId) {
+        await pool.query(
+          `INSERT INTO movie_genre (movie_id, genre_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [movieId, genreId],
+        );
+      }
+    }
+
+    const directorId = await getOrCreatePerson(m.director);
     await pool.query(
-      `INSERT INTO menu_item
-       (name, description, category, price, is_combo)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (name)
+      `INSERT INTO movie_person (movie_id, person_id, role) VALUES ($1, $2, 'director') ON CONFLICT DO NOTHING`,
+      [movieId, directorId],
+    );
+
+    for (const actor of m.actors) {
+      const actorId = await getOrCreatePerson(actor);
+      await pool.query(
+        `INSERT INTO movie_person (movie_id, person_id, role) VALUES ($1, $2, 'actor') ON CONFLICT DO NOTHING`,
+        [movieId, actorId],
+      );
+    }
+  }
+
+  return movieMap;
+}
+
+async function seedKioskMenu() {
+  const baseItems = [
+    { name: "Mellanpopcorn", desc: "Varma nypoppade mellanpopcorn", cat: "food", price: 45, avail: true },
+    { name: "Stor Popcorn", desc: "Nypoppade stora popcorn", cat: "food", price: 55, avail: true },
+    { name: "Liten Popcorn", desc: "Perfekt portion för barn", cat: "food", price: 35, avail: true },
+    { name: "Cola 50cl", desc: "Iskall Coca-Cola 50cl", cat: "drink", price: 35, avail: true },
+    { name: "Fanta 50cl", desc: "Iskall Fanta Orange 50cl", cat: "drink", price: 35, avail: true },
+    { name: "Vatten 50cl", desc: "Stilla källvatten 50cl", cat: "drink", price: 25, avail: false },
+    { name: "Godispåse", desc: "Blandat biogodis 150g", cat: "food", price: 40, avail: true },
+    { name: "Kaffe / Te", desc: "Nybryggt kaffe eller ekologiskt te", cat: "drink", price: 30, avail: true },
+    { name: "Nybakad Kaka", desc: "Chokladkaka eller kanelbulle", cat: "food", price: 25, avail: true },
+  ];
+
+  const itemMap = new Map<string, number>();
+  for (const item of baseItems) {
+    const res = await pool.query<{ id: number }>(
+      `INSERT INTO menu_item (name, description, category, price, is_combo, is_available)
+       VALUES ($1, $2, $3, $4, false, $5)
+       RETURNING id`,
+      [item.name, item.desc, item.cat, item.price, item.avail],
+    );
+    itemMap.set(item.name, res.rows[0].id);
+  }
+
+  const combos = [
+    {
+      name: "Klassikern",
+      desc: "Mellanpopcorn & 50cl Läsk",
+      cat: "food",
+      price: 79,
+      parts: [
+        { name: "Mellanpopcorn", qty: 1 },
+        { name: "Cola 50cl", qty: 1 },
+      ],
+    },
+    {
+      name: "Stora Biomyset",
+      desc: "Stor Popcorn & 2× Läsk + Godispåse",
+      cat: "food",
+      price: 129,
+      parts: [
+        { name: "Stor Popcorn", qty: 1 },
+        { name: "Cola 50cl", qty: 2 },
+        { name: "Godispåse", qty: 1 },
+      ],
+    },
+    {
+      name: "Kaffepaket",
+      desc: "Kaffe/Te & Nybakad Kaka",
+      cat: "food",
+      price: 49,
+      parts: [
+        { name: "Kaffe / Te", qty: 1 },
+        { name: "Nybakad Kaka", qty: 1 },
+      ],
+    },
+  ];
+
+  for (const combo of combos) {
+    const res = await pool.query<{ id: number }>(
+      `INSERT INTO menu_item (name, description, category, price, is_combo, is_available)
+       VALUES ($1, $2, $3, $4, true, true)
+       RETURNING id`,
+      [combo.name, combo.desc, combo.cat, combo.price],
+    );
+    const comboId = res.rows[0].id;
+
+    for (const part of combo.parts) {
+      const partId = itemMap.get(part.name);
+      if (partId) {
+        await pool.query(
+          `INSERT INTO combo_item (combo_id, item_id, quantity) VALUES ($1, $2, $3)`,
+          [comboId, partId, part.qty],
+        );
+      }
+    }
+  }
+}
+
+async function seedDefaultUsers() {
+  const defaultPassword = process.env.SEED_USER_PASSWORD || "Password123!";
+  const hash = await bcrypt.hash(defaultPassword, 12);
+
+  const users = [
+    {
+      email: "admin@filmvisarna.se",
+      firstName: "Ameer",
+      lastName: "Admin",
+      role: "admin",
+    },
+    {
+      email: "medlem@filmvisarna.se",
+      firstName: "Anna",
+      lastName: "Medlemsson",
+      role: "user",
+    },
+    {
+      email: "testuser1@example.com",
+      firstName: "Test",
+      lastName: "User",
+      role: "user",
+    },
+  ];
+
+  for (const u of users) {
+    await pool.query(
+      `INSERT INTO app_user (email, password_hash, first_name, last_name, role)
+       VALUES (lower($1), $2, $3, $4, $5)
+       ON CONFLICT (email)
        DO UPDATE SET
-         description = EXCLUDED.description,
-         category = EXCLUDED.category,
-         price = EXCLUDED.price,
-         is_combo = EXCLUDED.is_combo`,
-      [item.name, item.description, item.category, item.price, item.is_combo],
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         role = EXCLUDED.role`,
+      [u.email, hash, u.firstName, u.lastName, u.role],
     );
   }
-
-  console.log("Cinema kiosk menu items seeded successfully.");
 }
 
-// Run all seed functions
-async function runSeed() {
+async function runFullSeed() {
   try {
+    if (process.env.NODE_ENV === 'production') throw new Error('Demo seeding is disabled in production');
+    if (process.argv.includes("--demo")) {
+      await seedDemoData();
+      return;
+    }
+    await cleanDatabase();
     await seedCinemasAndSeats();
-    await seedMovies();
-    await seedMenuItems();
-
-    console.log("All seed operations completed successfully.");
+    await seedPriceGroups();
+    await seedGenresAndMovies();
+    await seedKioskMenu();
+    await seedDefaultUsers();
+    await seedDemoData();
   } catch (error) {
-    console.error("Seed failed:", error);
-    throw error;
+    console.error(error);
+    process.exitCode = 1;
+  } finally {
+    await pool.end();
   }
 }
-// Start the seed process
-runSeed()
-  .catch((error) => {
-    console.error("Seed process failed:", error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await pool.end();
-  });
+
+runFullSeed();

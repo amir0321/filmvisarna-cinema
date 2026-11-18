@@ -1,0 +1,248 @@
+import { translateApiError } from '../i18n/mappers'
+import LanguageToggle from './LanguageToggle'
+import { useTranslation } from '../context/LocaleContext'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router'
+import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
+import BrandLogo from './BrandLogo'
+import { BookingCountBadge } from './BookingCountBadge'
+import ThemeToggle from './ThemeToggle'
+
+const BASE_NAV_LINKS = [
+  { name: 'nav.home', path: '/', end: true },
+  { name: 'nav.programme', path: '/filmer', end: false },
+  { name: 'nav.cinemas', path: '/salonger', end: false },
+  { name: 'nav.about', path: '/om-oss', end: false },
+] as const
+
+const ADMIN_NAV_LINKS = [
+  { name: 'nav.backoffice', path: '/admin', icon: 'bi-layers', end: true },
+  { name: 'nav.bookings', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
+  { name: 'nav.schedule', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
+  { name: 'nav.movies', path: '/admin/filmer', icon: 'bi-film', end: false },
+  { name: 'nav.cinemas', path: '/admin/salonger', icon: 'bi-display', end: false },
+] as const
+
+export default function Navbar() {
+  const { t, locale } = useTranslation()
+  const { user, logout, loggingOut, logoutError } = useAuth()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  const isAdminRoute = pathname.startsWith('/admin')
+  const isLoggedIn = user !== null
+  const isAdmin = user?.role === 'admin'
+  const initials = getUserInitials(user)
+  const displayName = user ? getUserDisplayName(user) : t('nav.guest')
+
+  const handleLogout = async () => {
+    try { await logout(); navigate('/') } catch { /* The menu displays the error. */ }
+  }
+
+  return (
+    <header className="app-navbar sticky-top">
+      <nav
+        className="nav-container"
+        aria-label={t(isAdminRoute ? 'nav.adminNavigation' : 'nav.mainNavigation')}
+      >
+        <div className="d-flex align-items-center gap-2 nav-brand-group">
+          <BrandLogo />
+          {isAdminRoute ? (
+            <span className="nav-admin-badge d-none d-lg-inline-block">{t('nav.admin')}</span>
+          ) : null}
+        </div>
+
+        {/* Desktop navigation links */}
+        <ul className="d-none d-md-flex align-items-center list-unstyled mb-0 nav-links-list">
+          {isAdminRoute ? (
+            <>
+              {ADMIN_NAV_LINKS.map((link) => (
+                <li key={link.path}>
+                  <NavLink
+                    to={link.path}
+                    end={link.end}
+                    className={({ isActive }) =>
+                      `public-nav-link d-inline-flex align-items-center gap-1 gap-xl-2 ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <i className={`bi ${link.icon} d-none d-xl-inline`} aria-hidden="true"></i>
+                    <span>{t(link.name)}</span>
+                  </NavLink>
+                </li>
+              ))}
+              <li>
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    `public-nav-link d-inline-flex align-items-center gap-1 gap-xl-2 ${isActive ? 'active' : ''}`
+                  }
+                >
+                  <i className="bi bi-box-arrow-left d-none d-xl-inline" aria-hidden="true"></i>
+                  <span>{t('nav.toCinema')}</span>
+                </NavLink>
+              </li>
+            </>
+          ) : (
+            <>
+              {BASE_NAV_LINKS.map((link) => (
+                <li key={link.path}>
+                  <NavLink
+                    to={link.path}
+                    end={link.end}
+                    className={({ isActive }) =>
+                      `public-nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    {t(link.name)}
+                  </NavLink>
+                </li>
+              ))}
+
+              {isLoggedIn ? (
+                <li>
+                  <NavLink
+                    to="/mina-bokningar"
+                    className={({ isActive }) =>
+                      `public-nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    {t('nav.myBookings')}
+                    <BookingCountBadge />
+                  </NavLink>
+                </li>
+              ) : null}
+
+              {isAdmin ? (
+                <li>
+                  <NavLink
+                    to="/admin"
+                    className={({ isActive }) =>
+                      `public-nav-link d-inline-flex align-items-center gap-2 ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <span>{t('nav.backoffice')}</span>
+                    <span className="nav-admin-badge d-none d-lg-inline-block">{t('nav.admin')}</span>
+                  </NavLink>
+                </li>
+              ) : null}
+            </>
+          )}
+        </ul>
+
+        {/* Right actions (shared search button + desktop/mobile controls) */}
+        <div className="d-flex align-items-center nav-actions-group">
+          <button
+            type="button"
+            className="nav-search-btn"
+            aria-label={t('nav.searchMovies')}
+            onClick={() => navigate('/filmer?sok=1')}
+          >
+            <i className="bi bi-search" aria-hidden="true"></i>
+          </button>
+
+          <ThemeToggle />
+          <LanguageToggle />
+
+          {/* Desktop auth actions (>= 768px) */}
+          <div className="d-none d-md-flex align-items-center gap-2">
+            {isLoggedIn ? (
+              <div className="dropdown">
+                <button
+                  type="button"
+                  className="nav-avatar-btn dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-label={t('nav.userMenu', { name: displayName })}
+                >
+                  <span className="nav-avatar-circle" aria-hidden="true">
+                    {initials}
+                  </span>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end nav-user-dropdown">
+                  {logoutError && <li className="px-3 py-2 text-danger small" role="alert">{translateApiError(logoutError, locale)}</li>}
+                  <li className="px-3 py-2 border-bottom">
+                    <div className="fw-semibold text-body small text-truncate">{displayName}</div>
+                    <div className="text-secondary nav-dropdown-email text-truncate">{user.email}</div>
+                  </li>
+                  <li>
+                    <NavLink to="/profil" className="dropdown-item d-flex align-items-center gap-2">
+                      <i className="bi bi-person" aria-hidden="true"></i>
+                      <span>{t('nav.myProfile')}</span>
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/mina-bokningar" className="dropdown-item d-flex align-items-center gap-2">
+                      <i className="bi bi-ticket-perforated" aria-hidden="true"></i>
+                      <span>{t('nav.myBookings')}</span>
+                      <BookingCountBadge />
+                    </NavLink>
+                  </li>
+                  {isAdmin ? (
+                    <li>
+                      <NavLink
+                        to={isAdminRoute ? '/' : '/admin'}
+                        end={isAdminRoute}
+                        className="dropdown-item d-flex align-items-center justify-content-between gap-2"
+                      >
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <i
+                            className={`bi ${isAdminRoute ? 'bi-box-arrow-left' : 'bi-layers'}`}
+                            aria-hidden="true"
+                          ></i>
+                          <span>{t(isAdminRoute ? 'nav.toCinema' : 'nav.backoffice')}</span>
+                        </span>
+                        {!isAdminRoute ? <span className="nav-admin-badge">{t('nav.admin')}</span> : null}
+                      </NavLink>
+                    </li>
+                  ) : null}
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      className="dropdown-item d-flex align-items-center gap-2 nav-dropdown-logout"
+                      disabled={loggingOut}
+                      onClick={handleLogout}
+                    >
+                      <i className="bi bi-box-arrow-right" aria-hidden="true"></i>
+                      <span>{t(loggingOut ? 'nav.loggingOut' : 'nav.logout')}</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <>
+                <NavLink
+                  to="/logga-in"
+                  className={({ isActive }) =>
+                    `nav-login-btn ${isActive ? 'active' : ''}`
+                  }
+                >
+                  {t('nav.login')}
+                </NavLink>
+                <Link to="/skapa-konto" className="nav-register-btn">
+                  {t('nav.join')}
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu toggle (< 768px) */}
+          <div className="d-flex d-md-none align-items-center gap-2">
+            <button
+              type="button"
+              className="nav-hamburger-btn"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#mobileDrawer"
+              aria-controls="mobileDrawer"
+              aria-label={t('nav.openMenu')}
+            >
+              <i className="bi bi-list" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </header>
+  )
+}
