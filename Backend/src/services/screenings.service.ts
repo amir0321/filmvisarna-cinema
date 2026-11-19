@@ -98,6 +98,7 @@ async function getScreeningOverviewById(client: PoolClient, id: number): Promise
  */
 export async function listUpcomingScreenings(
   filters: ScreeningFilters,
+  includeStartedToday = false,
 ): Promise<ScreeningOverview[]> {
   return query<ScreeningOverview>(
     `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
@@ -119,7 +120,8 @@ export async function listUpcomingScreenings(
      FROM screening_times st
      JOIN movie m  ON m.id = st.movie_id
      JOIN cinema c ON c.id = st.cinema_id
-     WHERE st.starts_at > now()
+     WHERE (st.starts_at > now() OR ($7::boolean AND
+       (st.starts_at AT TIME ZONE $5)::date = (now() AT TIME ZONE $5)::date))
        AND ($1::int  IS NULL OR st.movie_id  = $1)
        AND ($2::int  IS NULL OR st.cinema_id = $2)
        AND ($3::date IS NULL OR (st.starts_at AT TIME ZONE $5)::date >= $3::date)
@@ -133,6 +135,7 @@ export async function listUpcomingScreenings(
       filters.to ?? null,
       config.timezone,
       filters.age ?? null,
+      includeStartedToday,
     ],
   );
 }

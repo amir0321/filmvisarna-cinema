@@ -76,6 +76,11 @@ export async function getTodayScreenings(req: Request, res: Response) {
   res.json(screenings);
 }
 
+// The admin overview needs the entire cinema day, including shows already started.
+export async function getDashboardScreenings(_req: Request, res: Response) {
+  res.json(await listUpcomingScreenings({}, true));
+}
+
 export async function getSeats(req: Request, res: Response) {
   const screeningId = parseId(req.params.id, "visnings-ID");
   const result = await getScreeningSeats(screeningId);

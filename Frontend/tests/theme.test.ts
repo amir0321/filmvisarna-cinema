@@ -37,5 +37,18 @@ for (const theme of ['dark', 'light']) {
     const captionPlate = tokens['image-scrim'].map(channel => channel * 0.7 + 255 * 0.3)
     assert.ok(contrast(tokens['image-text'], captionPlate) >= 4.5)
     assert.ok(contrast(tokens['image-text-muted'], captionPlate) >= 4.5)
+    // Dashboard eyebrow: 12% red badge above either end of the hero gradient.
+    const mix = (ink: number[], surface: number[], alpha: number) =>
+      ink.map((channel, index) => channel * alpha + surface[index] * (1 - alpha))
+    for (const heroSurface of [
+      mix(tokens['color-primary'], tokens['color-surface'], 0.07),
+      mix(tokens['surface-overlay'], tokens['color-surface'], 0.02),
+    ]) {
+      const eyebrowSurface = mix(tokens['color-primary'], heroSurface, 0.12)
+      assert.ok(contrast(tokens['color-danger-soft'], eyebrowSurface) >= 4.5, 'dashboard eyebrow')
+      for (const text of ['text-heading', 'text-secondary']) {
+        assert.ok(contrast(tokens[text], heroSurface) >= 4.5, `dashboard hero ${text}`)
+      }
+    }
   })
 }
