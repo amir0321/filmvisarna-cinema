@@ -17,6 +17,7 @@ import { formatDateShort, formatTime, toCinemaIsoDate } from '../../utils/date'
 import { formatSek } from '../../utils/price'
 import { usePagination } from '../../hooks/usePagination'
 import Pagination from '../../components/Pagination'
+import ReseatModal from '../../components/admin/ReseatModal'
 
 export default function AdminBookings() {
   const { t, locale } = useTranslation()
@@ -24,6 +25,8 @@ export default function AdminBookings() {
   const formatDateTime = (iso: string) =>
     `${formatDateShort(toCinemaIsoDate(iso), locale)} ${formatTime(iso, locale)}`
   const [screeningId, setScreeningId] = useState('')
+  const [reseatBooking, setReseatBooking] = useState<Booking | null>(null)
+  const [reseatError, setReseatError] = useState<string | null>(null)
   const { data: screenings } = useScreenings()
   const fetchBookings = useCallback(
  (signal: AbortSignal) =>
@@ -56,18 +59,28 @@ export default function AdminBookings() {
     ? `${selectedScreening.cinema} · ${formatDateTime(selectedScreening.startsAt)}`
     : null
 
-  async function handlePay(booking: Booking) {
-    if (payingId !== null) return
+    // seatIds is only given when the admin has chosen new seats. Returns true when paid.
+  async function handlePay(booking: Booking, seatIds?: number[]): Promise<boolean> {
+    if (payingId !== null) return false
     setPayingId(booking.id)
     setFeedback(null)
     try {
-      const result = await payBooking(booking.id)
+      const result = await payBooking(booking.id, seatIds)
       const points = result.pointsAwarded > 0 ? ` ${t('admin.bookings.action.points', { points: result.pointsAwarded })}` : ''
       setFeedback({ kind: 'success', text: `${t('admin.bookings.action.paidDone', { ref: booking.bookingRef })}${points}` })
       refetchStats()
+      notifyBookingsChanged()
+      return true
     } catch (err) {
-      const conflict = err instanceof ApiError && err.status === 409
-      setFeedback({ kind: 'error', text: t(conflict ? 'admin.bookings.action.conflict' : 'admin.bookings.action.error') })
+      if (err instanceof ApiError && err.status === 409) {
+        // A seat has been taken: let the admin choose new seats
+        setReseatBooking(booking);
+        //return false
+        setReseatError(seatIds ? t('admin.bookings.action.conflict') : null)
+      } else {
+        setFeedback({ kind: 'error', text: t('admin.bookings.action.error') })
+      }
+      return false
     } finally {
       refetchBookings()
       refetchSeats()
@@ -169,7 +182,7 @@ function handleCancel() {
           <option value="">{t('admin.bookings.filter.all')}</option>
           {(screenings ?? []).map((screening) => (
             <option key={screening.id} value={screening.id}>
-            {formatDateTime(screening.startsAt)} — {screening.movieTitle}, {screening.cinema}— {screening.movieTitle}, {screening.cinema}
+            {formatDateTime(screening.startsAt)} — {screening.movieTitle}, {screening.cinema}
             </option>
           ))}
         </select>
@@ -219,6 +232,26 @@ function handleCancel() {
           />
         </div>
       </div>
+          {reseatBooking && (
+        <ReseatModal
+          key={reseatBooking.id}
+          booking={reseatBooking}
+          paying={payingId === reseatBooking.id}
+          error={reseatError}
+          onConfirm={async (seatIds) => {
+            const paid = await handlePay(reseatBooking, seatIds)
+            if (paid) {
+              setReseatBooking(null)
+              setReseatError(null)
+            }
+            return paid
+          }}
+          onClose={() => {
+            setReseatBooking(null)
+            setReseatError(null)
+          }}
+        />
+      )}
     </div>
   )
 }
