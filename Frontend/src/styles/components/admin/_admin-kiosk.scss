@@ -38,17 +38,17 @@
   white-space: nowrap;
 
   &--combo {
-    background-color: rgba($color-primary, 0.12);
+    background-color: tint($color-primary, 0.12);
     color: $color-danger-soft;
   }
 
   &--food {
-    background-color: rgba($color-warning, 0.12);
+    background-color: tint($color-warning, 0.12);
     color: $color-warning;
   }
 
   &--drink {
-    background-color: rgba($color-info, 0.12);
+    background-color: tint($color-info, 0.12);
     color: $color-info-light;
   }
 }

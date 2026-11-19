@@ -1,28 +1,32 @@
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
+import { sv } from '../i18n/sv'
 import { useState } from "react";
 import type { Booking } from "../types/booking";
 import { Tabs } from "../components/Tabs";
 import { EmptyState } from "../components/EmptyState";
 import MyBookingCard from "../components/MyBookingCard";
 import { useAuth, getUserInitials, getUserDisplayName } from "../hooks/useAuth";
-import { CancelBookingModal } from "../components/CancelBookingModal";
+import MemberCancelBookingModal from "../components/MemberCancelBookingModal";
 import MyTicketModal from "../components/MyTicketModal";
 import { useMovies } from "../hooks/useMovies";
 import { canCancelBooking, getBookingState } from "../utils/bookings";
 import { useBookings } from "../hooks/useBookings";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
+import ReservationWarningNotice from '../components/ReservationWarningNotice';
 
 export default function MyBookings() {
-  const { user, isAuthenticated, roleLabel, loading } = useAuth();
+  const { t, locale } = useTranslation()
+  const { user, isAuthenticated, role, loading } = useAuth();
   const { data: movies } = useMovies();
 
   const [activeTab, setActiveTab] = useState<string>("active");
-  const { bookings, loading: bookingsLoading, error: bookingsError, currentTime, cancelBooking } = useBookings();
+  const { bookings, loading: bookingsLoading, error: bookingsError, currentTime, reservationStatus, reservationStatusError } = useBookings();
   const [feedback, setFeedback] = useState("");
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [bookingToView, setBookingToView] = useState<Booking | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
+  const viewedBooking = bookings.find(booking => booking.id === bookingToView?.id) ?? null;
 
   const getPosterUrl = (booking: Booking) =>
     movies?.find(
@@ -37,43 +41,13 @@ export default function MyBookings() {
     setBookingToView(null);
   };
   const handleOpenCancel = (booking: Booking) => {
+    setBookingToView(null);
     setBookingToCancel(booking);
-    setCancelError(null);
-  };
-  const handleCloseCancel = () => {
-    if (isCancelling) return;
-
-    setBookingToCancel(null);
-    setCancelError(null);
-  };
-  const handleConfirmCancel = async () => {
-    if (!bookingToCancel || isCancelling) return;
-
-    if (!canCancelBooking(bookingToCancel)) {
-      setCancelError("Avbokning måste ske minst två timmar före visningen.");
-      return;
-    }
-
-    setIsCancelling(true);
-    setCancelError(null);
-
-    try {
-      await cancelBooking(bookingToCancel.id);
-      setFeedback("Bokningen har avbokats och dina platser har släppts fria.");
-
-      setBookingToCancel(null);
-    } catch (error) {
-      setCancelError(
-        error instanceof Error ? error.message : "Kunde inte avboka bokningen.",
-      );
-    } finally {
-      setIsCancelling(false);
-    }
   };
 
-  const currentBookings = bookings.filter((booking) => getBookingState(booking, currentTime) === "upcoming");
+  const currentBookings = bookings.filter((booking) => ['upcoming', 'ongoing'].includes(getBookingState(booking, currentTime)));
   const historyBookings = bookings.filter(
-    (booking) => getBookingState(booking, currentTime) !== "upcoming",
+    (booking) => !['upcoming', 'ongoing'].includes(getBookingState(booking, currentTime)),
   );
   const currentPagination = usePagination(currentBookings, 5);
   const historyPagination = usePagination(historyBookings, 5);
@@ -82,30 +56,30 @@ export default function MyBookings() {
     <div className="fv-my-bookings py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1 className="h2 fw-bold mb-1">Mina bokningar</h1>
+          <h1 className="h2 fw-bold mb-1">{t('member.title')}</h1>
           <p className="text-secondary mb-0">
-            Här ser du alla dina kommande och tidigare biobokningar.
+            {t('member.intro')}
           </p>
         </div>
       </div>
 
-      <p role="status" className="text-secondary">{feedback}</p>
+      <p role="status" className={feedback ? 'text-secondary mb-3' : 'visually-hidden'}>{translateApiError(feedback, locale)}</p>
 
       {!isAuthenticated ? (
         <EmptyState
           icon="bi-person-lock"
-          title="Logga in för att se dina bokningar"
-          description="Som medlem samlas alla dina bokningar här automatiskt. Har du bokat som gäst hittar du din bokningsbekräftelse i ditt e-postmeddelande."
-          actionLabel="Utforska filmer"
+          title={t('member.loginToBookings')}
+          description={t('member.loginDescription')}
+          actionLabel={t('member.exploreMovies')}
           actionTo="/filmer"
         />
       ) : loading ? (
         <p className="text-secondary" role="status">
-          Laddar profil…
+          {t('member.loadingProfile')}
         </p>
       ) : !user ? (
         <p className="text-secondary" role="alert">
-          Kunde inte hämta profilinformationen.
+          {t('member.profileError')}
         </p>
       ) : (
         <>
@@ -119,7 +93,7 @@ export default function MyBookings() {
               </div>
 
               <div className="fv-my-bookings__profile-text">
-                <h2 className="h5 fw-bold text-light mb-1">
+                <h2 className="h5 fw-bold text-body mb-1">
                   {getUserDisplayName(user)}
                 </h2>
 
@@ -130,27 +104,28 @@ export default function MyBookings() {
                 <span
                   className="fv-my-bookings__role badge rounded-pill"
                 >
-                  {roleLabel}
+                  {t(role === 'admin' ? 'member.admin' : role === 'guest' ? 'nav.guest' : 'member.member')}
                 </span>
               </div>
             </div>
           </div>
 
+          <ReservationWarningNotice status={reservationStatus} error={reservationStatusError} currentTime={currentTime} />
           <Tabs value={activeTab} onChange={setActiveTab} variant="segmented">
             <div className="mb-4">
-              <Tabs.List ariaLabel="Välj bokningsflik">
-                <Tabs.Trigger value="active">Aktuella bokningar</Tabs.Trigger>
-                <Tabs.Trigger value="history">Bokningshistorik</Tabs.Trigger>
+              <Tabs.List ariaLabel={t('member.tabs')}>
+                <Tabs.Trigger value="active">{t('member.upcoming')}</Tabs.Trigger>
+                <Tabs.Trigger value="history">{t('member.history')}</Tabs.Trigger>
               </Tabs.List>
             </div>
 
             {bookingsLoading ? (
               <p className="text-secondary" role="status">
-                Laddar bokningar…
+                {t('member.loadingBookings')}
               </p>
             ) : bookingsError ? (
               <p className="text-danger" role="alert">
-                Kunde inte hämta bokningarna: {bookingsError}
+                {t('member.bookingsError', { error: translateApiError(bookingsError, locale) })}
               </p>
             ) : (
               <>
@@ -158,9 +133,9 @@ export default function MyBookings() {
                   {currentBookings.length === 0 ? (
                     <EmptyState
                       icon="bi-film"
-                      title="Inga aktuella bokningar"
-                      description="Dina bokningar visas här när du har bokat biljetter."
-                      actionLabel="Se repertoaren"
+                      title={t('member.noUpcoming')}
+                      description={t('member.noUpcomingDescription')}
+                      actionLabel={t('member.seeProgramme')}
                       actionTo="/filmer"
                     />
                   ) : (
@@ -179,7 +154,7 @@ export default function MyBookings() {
                         page={currentPagination.page}
                         totalPages={currentPagination.totalPages}
                         onPageChange={currentPagination.setPage}
-                        ariaLabel="Sidnumrering för aktuella bokningar"
+                        ariaLabel={t('member.upcomingPagination')}
                       />
                     </div>
                   )}
@@ -189,8 +164,8 @@ export default function MyBookings() {
                   {historyBookings.length === 0 ? (
                     <EmptyState
                       icon="bi-clock-history"
-                      title="Ingen bokningshistorik ännu"
-                      description="Tidigare biobesök kommer att visas här efter att visningen ägt rum."
+                      title={t('member.noHistory')}
+                      description={t('member.noHistoryDescription')}
                     />
                   ) : (
                     <div>
@@ -207,7 +182,7 @@ export default function MyBookings() {
                         page={historyPagination.page}
                         totalPages={historyPagination.totalPages}
                         onPageChange={historyPagination.setPage}
-                        ariaLabel="Sidnumrering för bokningshistorik"
+                        ariaLabel={t('member.historyPagination')}
                       />
                     </div>
                   )}
@@ -218,36 +193,25 @@ export default function MyBookings() {
         </>
       )}
 
-      <CancelBookingModal
-        isOpen={bookingToCancel !== null}
-        booking={
-          bookingToCancel
-            ? {
-                bookingRef: bookingToCancel.bookingRef,
-                movieTitle: bookingToCancel.movieTitle ?? "Okänd film",
-                cinemaName: bookingToCancel.cinemaName ?? "Okänd biograf",
-                screeningStartsAt: bookingToCancel.screeningStartsAt ?? "",
-                posterUrl: getPosterUrl(bookingToCancel),
-                seats: bookingToCancel.tickets.map((ticket) =>
-                  ticket.row && ticket.seatNumber != null
-                    ? `Rad ${ticket.row}, plats ${ticket.seatNumber}`
-                    : `Plats-ID ${ticket.seatId}`,
-                ),
-              }
-            : null
-        }
-        canCancel={bookingToCancel ? canCancelBooking(bookingToCancel, currentTime) : false}
-        isSubmitting={isCancelling}
-        error={cancelError}
-        onConfirm={handleConfirmCancel}
-        onClose={handleCloseCancel}
-      />
+      {bookingToCancel && <MemberCancelBookingModal
+        key={bookingToCancel.id}
+        booking={bookingToCancel}
+        posterUrl={getPosterUrl(bookingToCancel)}
+        onClose={() => setBookingToCancel(null)}
+        onCancelled={() => {
+          setBookingToCancel(null);
+          setFeedback(sv['member.cancelledFeedback']);
+        }}
+      />}
 
       <MyTicketModal
         isOpen={bookingToView !== null}
-        booking={bookingToView}
-        posterUrl={bookingToView ? getPosterUrl(bookingToView) : null}
+        booking={viewedBooking}
+        posterUrl={viewedBooking ? getPosterUrl(viewedBooking) : null}
         onClose={handleCloseTicket}
+        onCancel={handleOpenCancel}
+        canCancel={viewedBooking ? canCancelBooking(viewedBooking, currentTime) : false}
+        currentTime={currentTime}
       />
     </div>
   );

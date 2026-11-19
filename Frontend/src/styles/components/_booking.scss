@@ -4,10 +4,18 @@
 // ============================================================================
 
 .fv-seatmap {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+
+  // Match the API's dynamic row lengths without inline styles.
+  @for $columns from 1 through 50 {
+    &--columns-#{$columns} {
+      --fv-seat-columns: #{$columns};
+    }
+  }
 
   &__screen {
     width: 80%;
@@ -25,8 +33,7 @@
 
   &__scroll {
     width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    padding: 6px 4px 10px;
   }
 
   &__rows {
@@ -34,12 +41,15 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    min-width: max-content;
+    width: 100%;
+    max-width: calc(var(--fv-seat-columns) * 40px + 52px);
     margin: 0 auto;
   }
 
   &__row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 20px;
+    width: 100%;
     align-items: center;
     gap: 8px;
   }
@@ -53,8 +63,36 @@
   }
 
   &__seats {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(var(--fv-seat-columns), minmax(0, 1fr));
     gap: 4px;
+
+    .fv-seat {
+      width: 100%;
+      height: auto;
+      min-height: 32px;
+      aspect-ratio: 1;
+      touch-action: manipulation;
+    }
+  }
+
+  @container (max-width: 360px) {
+    &__row {
+      grid-template-columns: 10px minmax(0, 1fr);
+      gap: 2px;
+    }
+
+    &__label {
+      width: 10px;
+
+      &:last-child {
+        display: none;
+      }
+    }
+
+    &__seats {
+      gap: 2px;
+    }
   }
 
   &__legend {
@@ -77,6 +115,8 @@
 }
 
 .fv-seat {
+  position: relative;
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -85,6 +125,13 @@
   border: 1px solid transparent;
   border-radius: $radius-seat;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus-visible {
+    transform: scale(1.15);
+    z-index: 2;
+    outline: 2px solid $fv-primary;
+    outline-offset: 2px;
+  }
 
   &--free {
     background: $seat-available-bg;
@@ -97,6 +144,7 @@
   }
 
   &--selected {
+    color: var(--text-on-success);
     background: $seat-selected-bg;
     border-color: $seat-selected-border;
     box-shadow: $seat-selected-glow;
@@ -152,6 +200,7 @@
 
   &__controls {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 12px;
   }
@@ -164,8 +213,8 @@
   }
 
   &__btn {
-    width: 32px;
-    height: 32px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 0;
     display: inline-flex;
     align-items: center;
@@ -175,9 +224,9 @@
     color: $fv-fg;
     background: $white-overlay-08;
     border: 1px solid $border-strong;
-    border-radius: $radius-md;
+    border-radius: $radius-full;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 
     &:hover:not(:disabled) {
       background: $white-overlay-15;
@@ -244,7 +293,7 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 20px 24px;
+    padding: 20px 16px;
     text-align: left;
     color: $fv-fg;
     background: transparent;
@@ -254,6 +303,14 @@
 
     &:hover {
       background: $white-overlay-03;
+    }
+
+    &:focus-visible {
+      outline-offset: -3px;
+    }
+
+    @media (min-width: $fv-bp-sm) {
+      padding-inline: 24px;
     }
   }
 
@@ -287,8 +344,12 @@
   }
 
   &__items {
-    padding: 0 24px 20px;
+    padding: 0 16px 20px;
     border-top: 1px solid $border-faint;
+
+    @media (min-width: $fv-bp-sm) {
+      padding-inline: 24px;
+    }
   }
 }
 
@@ -311,11 +372,18 @@
     color: $fv-fg;
 
     input {
+      min-width: 0;
+      width: 100%;
       padding: 10px 12px;
       color: $fv-fg;
       background: $color-surface-chip;
       border: 1px solid $border-strong;
       border-radius: $radius-md;
+
+      &:focus-visible {
+        outline: 2px solid $fv-primary;
+        outline-offset: 2px;
+      }
     }
   }
 
@@ -359,14 +427,19 @@
     align-items: center;
     gap: 8px;
     color: $fv-muted-fg;
+  }
 
-    &:not(:last-child)::after {
-      content: '';
-      width: 32px;
-      height: 1px;
-      margin-left: 8px;
-      background: $border-strong;
+  &__label {
+    @media (max-width: ($fv-bp-sm - 0.02px)) {
+      @include visually-hidden();
     }
+  }
+
+  &__line {
+    width: 32px;
+    height: 1px;
+    margin-left: 8px;
+    background: $border-strong;
   }
 
   &__num {
@@ -393,6 +466,10 @@
   &__item--done {
     color: $fv-fg;
 
+    .fv-steps__line {
+      background: $fv-success;
+    }
+
     .fv-steps__num {
       background: $seat-selected-bg;
       border-color: $seat-selected-bg;
@@ -409,6 +486,29 @@
   max-width: $fv-container-6xl;
   margin: 0 auto;
   padding: 24px 0 48px;
+
+  &__card:not(.fv-kiosk) {
+    padding: 24px 16px;
+  }
+
+  @media (max-width: ($fv-bp-sm - 0.02px)) {
+    &__card.fv-booking__seat-card {
+      padding-inline: 4px;
+
+      > h2,
+      > .fv-card__subtitle {
+        margin-inline: 12px;
+      }
+    }
+  }
+
+  @media (min-width: $fv-bp-sm) {
+    padding-inline: 24px;
+
+    &__card:not(.fv-kiosk) {
+      padding-inline: 24px;
+    }
+  }
 
   &__top {
     display: flex;
@@ -442,18 +542,21 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
 
     @media (min-width: $fv-bp-lg) {
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     }
   }
 
   &__aside {
-    position: sticky;
-    top: 96px;
     align-self: start;
+
+    @media (min-width: $fv-bp-lg) {
+      position: sticky;
+      top: 96px;
+    }
   }
 }
 
@@ -468,6 +571,7 @@
   border-radius: 12px;
 
   &__poster {
+    flex-shrink: 0;
     width: 48px;
     height: 72px;
     object-fit: cover;
@@ -475,6 +579,7 @@
   }
 
   &__title {
+    overflow-wrap: anywhere;
     margin: 0 0 2px;
     font-family: $fv-font-display;
     font-size: 16px;
@@ -526,6 +631,7 @@
 
   &__row {
     display: flex;
+    gap: 12px;
     justify-content: space-between;
     padding: 6px 0;
     font-size: 14px;
@@ -559,7 +665,7 @@
   }
 
   &__top {
-    padding: 40px 32px 32px;
+    padding: 40px 20px 32px;
     text-align: center;
     background: linear-gradient(to bottom, tint($fv-success, 0.12), transparent);
 
@@ -597,7 +703,7 @@
   }
 
   &__code {
-    padding: 0 32px 24px;
+    padding: 0 20px 24px;
   }
 
   &__label {
@@ -611,6 +717,7 @@
 
   &__codebox {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -677,7 +784,7 @@
   }
 
   &__body {
-    padding: 24px 32px 32px;
+    padding: 24px 20px 32px;
   }
 
   &__movie {
@@ -686,6 +793,7 @@
     margin-bottom: 16px;
 
     img {
+      flex-shrink: 0;
       width: 56px;
       height: 84px;
       object-fit: cover;
@@ -803,24 +911,17 @@
 
   &__cancel {
     display: block;
+    width: 100%;
     margin-top: 12px;
     padding: 12px;
     font-weight: 500;
-    color: $fv-danger-light;
     text-align: center;
     text-decoration: none;
-    border: 1px solid $fv-danger-weak;
     border-radius: 12px;
-    transition: background-color 0.15s ease;
-
-    &:hover {
-      color: $fv-danger-light;
-      background: tint($fv-danger-weak, 0.1);
-    }
   }
 
   &__footer {
-    padding: 0 32px 28px;
+    padding: 0 20px 28px;
     text-align: center;
   }
 
@@ -831,6 +932,15 @@
 
     &:hover {
       color: $fv-fg;
+    }
+  }
+
+  @media (min-width: $fv-bp-sm) {
+    &__top,
+    &__code,
+    &__body,
+    &__footer {
+      padding-inline: 32px;
     }
   }
 }

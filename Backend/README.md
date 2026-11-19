@@ -25,6 +25,9 @@ cp .env.example .env
 | :--- | :--- | :--- |
 | `PORT` | HTTP port for Express server | `3000` |
 | `DATABASE_URL` | Full PostgreSQL connection string | `postgresql://user:pass@host:5432/filmvisarna` |
+| `DB_SSL` | Enable TLS for PostgreSQL connections (`true`/`false`) | auto-enabled for non-localhost `DATABASE_URL` |
+| `DB_SSL_REJECT_UNAUTHORIZED` | Verify PostgreSQL TLS certificate chain (`true`/`false`) | `true` in `production`, `false` in dev/test |
+| `DB_SSL_CA` | Optional custom CA certificate (PEM) for PostgreSQL TLS verification | *(optional)* |
 | `JWT_SECRET` | Secret key used to sign JWTs (min 32 chars) | `your_jwt_secret_key_that_is_at_least_32_characters_long` |
 | `JWT_EXPIRES_IN` | Session expiration time | `8h` |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:5173` |
@@ -38,6 +41,8 @@ cp .env.example .env
 | `EMAIL_FROM` | Sender address allowed by your SMTP provider | defaults to `EMAIL_USER` |
 | `FRONTEND_URL` | Trusted public frontend origin used in auth email links; HTTPS required in production | `http://localhost:5173` |
 | `NODE_ENV` | Environment (`development`, `test`, `production`) | `development` |
+| `TMDB_API_KEY` | Optional server-side TMDB v3 API key for admin movie import | empty (external search returns 503) |
+| `TMDB_API_BASE_URL` | Trusted upstream API base URL; HTTP(S), no credentials/query/fragment | `https://api.themoviedb.org/3` |
 
 ---
 
@@ -85,6 +90,7 @@ The cinema has exactly **two auditoriums**: **Stora Salongen** (8 rows A–H × 
 - **Sold out:** A seeded **Interstellar** screening in **Stora Salongen** has all 80 seats booked. Direct navigation to it must show a clear sold-out state and an alternative-showtimes link, without ticket, seat, kiosk or checkout controls.
 - **My bookings:** `admin@filmvisarna.se`, `medlem@filmvisarna.se` and `testuser1@example.com` have at least 6 upcoming and 6 historical bookings (including cancellations), exercising 5-card pagination in both tabs. Upcoming entries mix paid/unpaid bookings; confirmed personal bookings include popcorn. Existing passwords are retained. New accounts use `SEED_USER_PASSWORD`, defaulting to `Password123!`.
 - **Media:** Seed movies have trailers, posters and landscape images. `npm run seed:images` checks all distinct public image URLs. Film cards try the alternate artwork on loading failure, then show a title fallback.
+- **Cast:** All 46 seed actors have static portrait links, TMDB person IDs, short Swedish biographies and per-film characters/billing order. `src/seeds/actorProfiles.ts` records the Wikipedia/Wikidata person sources and a TMDB portrait for Kensington Tallman. Wikimedia file pages linked from those person pages provide photo credits and licenses. Seeding requires no TMDB key or network requests, reuses existing people and fills missing photos/biographies without replacing profiles already edited by admins.
 
 The additive seed can be repeated without duplicating movies, cinemas or matching screenings/bookings. It preserves interactions on existing bookings and sends no emails. Bookings use `FV-XXXXX` references and at most 10 tickets each. `seed:check` verifies the two cinema capacities, 12 movies across the upcoming programme, the exact three free seats, the sold-out screening, booking pagination, no overlapping screenings and correct seat-to-cinema mapping. Add `-- --api` to verify the running local API too. Booking one of the three free seats intentionally changes the exact-seat check.
 
@@ -104,6 +110,71 @@ All SQL migrations and initialization scripts are located in `Backend/sql/`:
 - `04_seed.sql`: Initial seed data for cinemas, movies, and kiosk menu items.
 
 ---
+
+## Cast profiles and image uploads
+
+Before starting this API against an existing database, run from `Backend/`:
+
+```bash
+npm run migrate:cast
+```
+
+The additive migration adds profile fields to `person` and credit fields to `movie_person`, preserves all existing rows and can be repeated. New databases receive these fields through `01_schema.sql`.
+
+`GET /api/persons?search=...` is public and returns `{ success: true, data: [{ id, name, photo_url, bio, tmdb_id }] }`, limited to 50 people ordered by name and ID. Search matches names without case sensitivity. Admins can use `POST /api/persons` with `{ name, photo_url?, bio?, tmdb_id? }` and `PUT /api/persons/:id` with any subset of these fields. Creation reuses profiles by TMDB ID or `lower(trim(name))` and updates supplied profile fields. Editing a profile to collide with a different existing person returns 409; it does not merge records or move credits between people. Omitted profile fields are preserved; nullable fields can be cleared with `null`.
+
+Movie creation and updates accept `cast_members` alongside `genres`:
+
+```json
+{
+  "cast_members": [
+    { "person_id": 12, "character_name": "Lead", "billing_order": 0 },
+    { "name": "New Actor", "photo_url": "/uploads/actor.webp", "bio": "Biography", "tmdb_id": 123, "billing_order": 1 }
+  ]
+}
+```
+
+Reference an existing person by `person_id`, or supply a name to create/reuse a profile. Supplied profile fields also update that shared person. If `billing_order` is omitted, the array index is used. Film metadata, genres, profiles and credits are saved in one transaction. Omitted `genres`/`cast_members` on update are preserved; an empty array clears those links. Removing an actor preserves the person record and any director credits or credits for other movies. Duplicate references to the same person in one cast return 400.
+
+Every movie response includes `actors: string[]` for existing clients and `cast_members: [{ person_id, name, photo_url, bio, character_name, tmdb_id, billing_order }]`, both ordered by billing order and name. `active_screenings_count` counts future screenings (`starts_at > now()`); `total_screenings_count` includes past screenings too.
+
+`photo_url`, `poster_url` and `landscape_image_url` accept HTTP(S) URLs without credentials or filenames under `/uploads/` without `..`. `trailer_url` requires an HTTP(S) URL without credentials. All these URL fields are limited to 2048 characters.
+
+Admin-only `POST /api/upload` accepts one file in the multipart field `image`: JPEG (`.jpg`/`.jpeg`), PNG, WebP or GIF, with matching MIME type, extension and magic-byte signature, up to 5 MB. Invalid image content is deleted from disk before returning 400. Larger files return 400 with `{ success: false, error: "Bildfilen är för stor. Maximal filstorlek är 5 MB." }`. Uploaded assets are served with `Content-Security-Policy: default-src 'none'; sandbox` and `X-Content-Type-Options: nosniff`. All writes require the session cookie and CSRF header described below.
+
+Run the cast/movie/upload integration tests against a dedicated test database:
+
+```bash
+CAST_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/filmvisarna_cast_test npm run test:cast
+```
+
+The suite creates and removes an isolated schema and its uploaded test files. It also accepts the existing `AUTH_TEST_DATABASE_URL` used by CI. Without either test database variable, it is skipped.
+
+## TMDB movie import
+
+Set the optional v3 API key in `Backend/.env` and restart the backend:
+
+```dotenv
+TMDB_API_KEY=
+TMDB_API_BASE_URL=https://api.themoviedb.org/3
+```
+
+Use a real key as the value of `TMDB_API_KEY`. It stays on the server. The default base URL is the official API; only override it for a trusted upstream, such as the local fake server used by integration tests. Requests time out after eight seconds, reject redirects and never log or return upstream error bodies, URLs or API credentials. Setup follows [TMDB authentication](https://developer.themoviedb.org/docs/authentication-application) and [append-to-response](https://developer.themoviedb.org/docs/append-to-response).
+
+Both endpoints require an admin session and return `{ success: true, data: ... }`:
+
+| Endpoint | Result |
+| --- | --- |
+| `GET /api/movies/external/search?query=...` | Query must contain 2–120 trimmed characters. Up to eight suggestions with `tmdbId`, `title`, `originalTitle`, numeric/null `releaseYear`, `posterUrl` and `overview`. |
+| `GET /api/movies/external/:tmdbId` | Import preview with `tmdbId`, `title`, `originalTitle`, `description`, `duration_minutes`, `age_rating`, `release_date`, `imdb_rating`, `director`, `genres`, `poster_url`, `landscape_image_url`, `trailer_url` and `cast_members`. |
+
+The detail preview prioritizes Swedish descriptions, with an English overview fallback. Certifications prefer Swedish theatrical releases, then other Swedish releases, then US certification; US labels are retained for admin review. The legacy `imdb_rating` field receives TMDB's `vote_average`, not a separate IMDb score. Missing runtime is returned as `null` and must be filled before saving. Only YouTube trailers with valid eleven-character video IDs are linked.
+
+Up to eight unique actors are returned in billing order with `tmdb_id`, `name`, `character_name`, `photo_url`, `billing_order` and `bio`. A nonempty local biography is reused; other biographies are fetched concurrently, preferring Swedish translation, then English translation, then the primary English biography. An unavailable/invalid individual biography becomes `null`; a person-level rate limit still returns 429. All consumed upstream fields are validated with Zod. Text is trimmed and stripped of controls, HTML tags and script bodies; external image URLs are constructed only from validated filenames on `image.tmdb.org`.
+
+These GET requests only preview data. After review, send the movie fields and `cast_members` to the existing `POST /api/movies` or `PUT /api/movies/:id` endpoint to save atomically. No preview request creates movies or people. Missing configuration returns 503; upstream rate limits return 429; other movie/search upstream failures, invalid JSON/schema and timeouts return 502 with generic Swedish messages.
+
+The cast integration suite tests these endpoints with a local fake TMDB server and a dummy key, including authorization, validation, sanitization, language fallback, local biography reuse, parallel requests, redirect/timeout handling and safe error responses. It makes no live TMDB API requests and needs no real API key.
 
 ## Cookie sessions and CSRF protection
 
@@ -408,9 +479,30 @@ Standardvärden och framtida adminkrav finns i [design/booking-security.md](../d
 
 `TRUST_PROXY` är tom som standard: klientens `X-Forwarded-For` används då inte. Bakom en proxy anger driften endast betrodda IP-adresser/CIDR eller explicita Express-proxyintervall, separerade med komma. Sätt inte en generell `true` eller ett obegränsat proxyintervall.
 
-Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen. Idempotensnycklar för bekräftade bokningar lagras på själva bokningen och städas inte bort av jobbet.
+Servern städar utgångna förfrågningar och begränsningsposter vid start och varje minut. `npm run cleanup:bookings` kan också köras schemalagt. Utgångskontroll görs alltid vid anrop, oberoende av städningen.
+
+Obetalda bokningar visas som `reserved` tills en timme före filmstart. Därefter blir de `expired` och platserna släpps. Nya obetalda nätreservationer stoppas vid samma gräns. Betalda bokningar behåller sina platser även vid sen ankomst. Sen betalning i kassan kräver en ny ledighetskontroll och kan göras före filmens sluttid: `PATCH /api/bookings/:id/pay` återtar de ursprungliga platserna om de är lediga, eller tar emot `seatIds` med lika många andra lediga platser. Samma stöd finns i den generella admin-PATCH-rutten med `isPaid: true`. Incheckning kräver betalning. All platstilldelning och betalning sker atomärt; konflikter ger 409 utan betalning eller poäng.
+
+Kör `npm run migrate:bookings` före start med denna version. Migreringen lägger till `ticket.is_active`, behåller historiska biljettuppgifter och säkrar med ett unikt index att en stol bara kan ha en aktiv biljett per visning. API och platskartor kontrollerar tidsgränsen även om städjobbet inte körts. Serverns befintliga minutjobb släpper reservationerna i databasen. Obetalda utgångna bokningar behålls till sju dagar efter filmens sluttid och raderas sedan med biljetter och kioskbeställningar via befintliga kaskadregler. Betalda och avbokade bokningar behålls. Idempotensnyckeln följer bokningen tills den rensas.
 
 Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_URL` och körs i ett eget slumpmässigt schema. De skickar inga riktiga mejl och använder aldrig applikationens databas som reserv. Adminfunktioner för flaggning och avbokning är enbart dokumenterade framtida krav i denna ändring.
+
+Kundavbokning använder betalstatus: betalda bokningar har två timmars avbokningsgräns; obetalda reservationer kan avbokas fram tills stolarna släpps en timme före start. Vid själva frisläppningstidpunkten kan de inte längre avbokas.
+
+### Automatiska uteblivandevarningar och reservationsspärrar
+
+`npm run migrate:bookings` inkluderar `20261116_booking_warnings.sql`. Den skapar `booking_warning_policy`, `booking_warning` och `booking_reservation_block` med RLS. `activated_at` sätts en gång vid införande och bevaras vid omkörning. Både bokning och filmens sluttid måste vara efter aktivering; äldre demo-/historikbokningar får inga retroaktiva varningar.
+
+Efter filmens slut får en fortfarande obetald, ej avbokad bokning exakt en varning. Betalning och varningsregistrering använder bokningsradens transaktionslås. En varning per bokning säkras av `source_booking_id` och kan inte försvinna när bokningen rensas. Tre nya, giltiga varningar inom 90 dagar ger en beständig 30-dagarsspärr. De tre används sedan inte igen för att återstarta spärren; nya uteblivanden krävs. Utgångna och rättade varningar räknas inte. Gäst-/medlemsbokningar delar normaliserad e-post och kontokoppling.
+
+Spärren kontrolleras före medlemsbokning, gästförfrågan och gästbekräftelse samt i reservationens transaktion. `403` nekar nya obetalda reservationer utan att röja varningshistorik eller spärrens exakta sluttid i offentliga formulär. Sessionsinloggning, avbokning och betalning av befintliga bokningar påverkas inte. Nya betalda kassaköp ska tillåtas när deras admin-API byggs.
+
+- `GET /api/bookings/reservation-status` kräver session och använder dess konto/e-post. Svaret innehåller `warningCount`, `warningLimit: 3`, `windowDays: 90`, `blockDays: 30`, `blockedUntil` samt de senaste 90 dagarnas giltiga varningar med `id`, `bookingRef`, `screeningEndedAt`, `recordedAt` och `usedForBlock`. Räknaren visar nya varningar i aktuell omgång; redan förbrukade varningar finns endast i historiken. Under aktiv spärr visas tre av tre.
+- `POST /api/bookings/guest/preview` innehåller samma struktur i `reservationStatus` först efter att gästlänken verifierats. En gammal länk kringgår inte spärrkontrollen vid bekräftelse.
+- `cleanupBookingProtection` registrerar uteblivanden före bokningarnas sjudagarsrensning. Serverns minutjobb och `npm run cleanup:bookings` levererar dessutom mejlkön. Varningar beräknas också vid status- och reservationskontroller, så skyddet beror inte på att minutjobbet hunnit köras.
+- Mejlen är tvåspråkiga och använder befintliga `EMAIL_*`-inställningar utan Ethereal-fallback. Saknad SMTP lämnar mejlet i kö. Fel ger återförsök efter 15 minuter; högst tio mejl behandlas per körning. Radlås hindrar samtidiga arbetare från att skicka samma köpost och ett stabilt `Message-ID` används. SMTP ger ingen absolut exakt-en-gång-garanti om processen kraschar efter lyckad leverans men före databasens kvittens; själva varningen/spärren dubbleras aldrig av mejlåterförsök.
+
+**Kvar för adminarbetet:** En liten varningssektion i kundens detaljvy/modal i Admin/Bokningar, rättelse-/hävnings-API, obligatorisk motivering, omräkning och administrativ granskningslogg. Ingen separat varningssida, route eller navigationsflik ska byggas. Databasfälten `revoked_at` och `revocation_reason` är förberedda, men ingen sådan adminfunktion är exponerad. Se [Admin/Bokningar – varningar och reservationsspärr](../design/pages/admin-bokningar.md#uteblivna-besök-varningar-och-reservationsspärr--automatik-och-framtida-adminhantering).
 
 #### `GET /api/bookings/me`
 - **Åtkomst:** Inloggad användare
@@ -425,40 +517,45 @@ Bokningsskyddets integrationstester ingår i `npm test` med `AUTH_TEST_DATABASE_
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningsreferensen hittades inte.
 
-#### `GET /api/bookings/cancel-preview?token=...`
-- **Åtkomst:** Publik (via länk i bekräftelsemejl)
+#### `POST /api/bookings/cancel-preview`
+- **Åtkomst:** Publik via `/avboka`. Skicka `{ "bookingRef": "FV-ABCDE", "email": "kund@example.se" }` i JSON-body med `X-CSRF-Protection: 1`. GET och token-body stöds inte längre; gamla avbokningslänkar visar formuläret.
 - **`200 OK`**: Hämtar film, salong, stolar och bokningsnr till bekräftelsemodalen.
-- **`400 Bad Request`**: Ogiltig/utgången länk, redan avbokad, eller mindre än 2 timmar kvar till start.
-- **`403 Forbidden`**: E-postadressen matchar inte bokningen.
-- **`404 Not Found`**: Bokningen hittades inte.
+- **`400 Bad Request`**: Ogiltiga fält, redan avbokad, släppt obetald reservation eller mindre än 2 timmar kvar till start för en betald bokning. Bokningsstatus kontrolleras först när referens och e-post matchar.
+- **`403 Forbidden`**: CSRF-skyddet nekar anropet.
+- **`404 Not Found`**: Både saknad referens och fel e-post ger exakt `Vi hittade ingen bokning som matchar angivet bokningsnummer och e-postadress.`
+- **`429 Too Many Requests`**: Global/IP-gräns eller fem försök per normaliserad bokningsreferens/e-post under 15 minuter. Referens- och e-postgränserna delas med bekräftelserutten och gäller även vid IP-byte. Svaret innehåller `Retry-After: 900`.
 
 #### `POST /api/bookings/cancel-by-token`
-- **Åtkomst:** Publik (via länk i bekräftelsemejl)
+- **Åtkomst:** Publik med samma body, CSRF-skydd och försöksgränser som `cancel-preview`. Ruttnamnet behålls, men ingen token används.
 - **`200 OK`**: Bokningen avbokad och stolarna frigjorda.
-- **`400 Bad Request`**: Ogiltig/utgången länk, redan avbokad, eller mindre än 2 timmar kvar till start.
-- **`403 Forbidden`**: E-postadressen matchar inte bokningen.
-- **`404 Not Found`**: Bokningen hittades inte.
+- **`400` / `403` / `404` / `429`**: Samma villkor som för förhandsgranskningen. Identitet, status och tidsgräns verifieras igen med bokningsraden låst i en transaktion. Betalda medlemsbokningars lojalitetspoäng dras av atomärt tillsammans med att biljetter raderas och bokningen markeras avbokad.
 
 #### `DELETE /api/bookings/:id`
 - **Åtkomst:** Inloggad användare
 - **`200 OK`**: Bokningen avbokad och stolarna frigjorda.
-- **`400 Bad Request`**: Ogiltigt ID, redan avbokad, eller mindre än 2 timmar kvar till start.
+- **`400 Bad Request`**: Ogiltigt ID, redan avbokad, släppt obetald reservation eller mindre än 2 timmar kvar till start för en betald bokning.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`404 Not Found`**: Bokningen hittades inte eller tillhör en annan användare.
 
 #### `PATCH /api/bookings/:id/pay`
 - **Åtkomst:** Admin (`requireAdmin`)
-- **Beskrivning:** Bekräftar bokningen som betald i kassan (`is_paid = true`, `paid_at = now()`).
+- **Beskrivning:** Registrerar betalning som redan tagits emot i kassan (`is_paid = true`, `status = 'confirmed'`, första `paid_at` bevaras). Anropet tar inte betalt via en betaltjänst och checkar inte in kunden.
+- **Body:** Valfri `{ "seatIds": [41, 42] }` för andra platser på en obetald bokning. Utan `seatIds` används de ursprungliga platserna. Antal och biljettkategorier behålls; stolarna måste vara olika och tillhöra rätt salong. Backend matchar listan mot befintliga biljetter i stigande `seat_id`-ordning.
+- **Sen kund:** Från en timme före filmstart är obetalda reservationer släppta. Betalning kan registreras före filmens sluttid endast om samtliga önskade platser kan tilldelas atomärt. Samma genomförda betalningsanrop med samma platser kan upprepas utan nya poäng. En redan betald bokning kan inte byta platser genom denna åtgärd.
 - **Lojalitetspoäng:** Om bokningen tillhör en registrerad medlem (`user_id IS NOT NULL`) tilldelas medlemmen automatiskt 1 lojalitetspoäng per krona (1 SEK = 1 poäng baserat på `totalPrice`). Idempotent: om bokningen redan är betald delas inga dubbla poäng ut (`pointsAwarded: 0`). Gästbokningar ger 0 poäng till användarkonton.
 - **`200 OK`**: `{ success: true, message: "Bokningen har markerats som betald.", booking, pointsAwarded: number }`
+- **`400 Bad Request`**: Avbokad bokning eller ogiltigt platsval.
+- **`409 Conflict`**: Platser upptagna eller filmen har slutat; ingen betalning eller poängtilldelning genomförs.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningen hittades inte.
 
 #### `PATCH /api/bookings/:id/checkin`
 - **Åtkomst:** Admin (`requireAdmin`)
-- **Beskrivning:** Checkar in gästen (`is_checked_in = true`, `checked_in_at = now()`).
+- **Beskrivning:** Checkar in kunden (`is_checked_in = true`, `checked_in_at = now()`). Kräver betald bokning; registrerar inte betalning. För uttrycklig kombinerad betalning och incheckning används `PATCH /api/bookings/:id` med `{ "isPaid": true, "isCheckedIn": true }` och vid behov `seatIds`.
 - **`200 OK`**: `{ success: true, message: "Bokningen har checkats in.", booking }`
+- **`400 Bad Request`**: Bokningen är avbokad.
+- **`409 Conflict`**: Bokningen är obetald eller den obetalda bokningens film har slutat.
 - **`401 Unauthorized`**: Inte inloggad.
 - **`403 Forbidden`**: Inte admin.
 - **`404 Not Found`**: Bokningen hittades inte.

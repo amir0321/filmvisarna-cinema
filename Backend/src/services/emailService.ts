@@ -1,6 +1,7 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import type { AuthEmail } from './authActions.service.js';
 import type { GuestBookingEmail } from './guestBookings.service.js';
+import type { BookingWarningEmail } from './bookingWarnings.service.js';
 import {
   generateBookingConfirmationHtml,
   generateBookingConfirmationText,
@@ -41,6 +42,9 @@ async function getTransporter(): Promise<Transporter> {
       },
     });
   } else {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SMTP settings are required in production");
+    }
     console.log("No SMTP settings found. Creating Ethereal test account...");
     const testAccount = await nodemailer.createTestAccount();
     cachedTransporter = nodemailer.createTransport({
@@ -77,11 +81,6 @@ export async function sendBookingConfirmation(bookingData: EmailPayload) {
   const info = await transporter.sendMail(mailOptions);
 
   console.log("Email sent: %s", info.messageId);
-
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log("Preview email: %s", previewUrl);
-  }
 
   return info;
 }
@@ -126,4 +125,23 @@ export async function sendGuestBookingEmail(data: GuestBookingEmail): Promise<vo
     disableFileAccess: true, disableUrlAccess: true,
   });
   if (info.rejected?.length) throw new Error('Booking verification email rejected');
+}
+
+export async function sendBookingWarningEmail(data: BookingWarningEmail): Promise<void> {
+  if (!isAuthEmailConfigured()) throw new Error('Warning SMTP is not configured');
+  const transporter = await getTransporter();
+  const format = (locale: string) => data.blockedUntil
+    ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Stockholm' }).format(new Date(data.blockedUntil))
+    : '';
+  const sv = `Bokning ${data.bookingRef} var fortfarande obetald och inte avbokad när filmen slutade. Du har fått en varning för uteblivet besök (${data.warningCount}/3). Tre varningar inom 90 dagar ger 30 dagars spärr för nya obetalda reservationer.`;
+  const en = `Booking ${data.bookingRef} was still unpaid and had not been cancelled when the film ended. You have received a no-show warning (${data.warningCount}/3). Three warnings within 90 days lead to a 30-day block on new unpaid reservations.`;
+  const info = await transporter.sendMail({
+    from: { name: 'Filmvisarna Cinema', address: process.env.EMAIL_FROM || process.env.EMAIL_USER! },
+    to: { address: data.email, name: '' },
+    messageId: `<fv-booking-warning-${data.id}@filmvisarna.se>`,
+    subject: 'Varning för uteblivet biobesök / Cinema no-show warning – Filmvisarna',
+    text: `${sv}\n${data.blockedUntil ? `Spärren gäller till ${format('sv-SE')} (svensk tid).\n` : ''}Du kan fortfarande betala befintliga bokningar och köpa lediga platser i kassan. Om något är fel, kontakta biografen.\n\n${en}\n${data.blockedUntil ? `The block ends on ${format('en-GB')} (Swedish time).\n` : ''}You can still pay existing bookings and buy available seats at the box office. If something is incorrect, contact the cinema.`,
+    disableFileAccess: true, disableUrlAccess: true,
+  });
+  if (info.rejected?.length) throw new Error('Warning email rejected');
 }

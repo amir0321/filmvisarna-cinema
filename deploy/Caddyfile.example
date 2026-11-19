@@ -1,0 +1,5 @@
+# Replace with the domain Thomas registers. Match the port in Backend/.env.
+your-domain.se {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3000
+}

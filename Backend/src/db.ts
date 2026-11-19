@@ -11,11 +11,23 @@ const useSsl =
     !process.env.DATABASE_URL?.includes("localhost") &&
     !process.env.DATABASE_URL?.includes("127.0.0.1"));
 
+const rejectUnauthorized =
+  process.env.DB_SSL_REJECT_UNAUTHORIZED !== undefined
+    ? process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false"
+    : process.env.NODE_ENV === "production";
+
+const sslConfig = useSsl
+  ? {
+      rejectUnauthorized,
+      ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA } : {}),
+    }
+  : undefined;
+
 export const pool = new Pool(
   process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+        ssl: sslConfig,
       }
     : {
         host: process.env.DB_HOST || "localhost",
@@ -23,7 +35,7 @@ export const pool = new Pool(
         user: process.env.DB_USER || "postgres",
         password: process.env.DB_PASSWORD || "postgrespassword",
         database: process.env.DB_NAME || "filmvisarna",
-        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+        ssl: sslConfig,
       },
 );
 

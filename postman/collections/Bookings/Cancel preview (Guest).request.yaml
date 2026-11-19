@@ -1,10 +1,14 @@
 $kind: http-request
 name: Cancel preview (Guest)
-url: http://localhost:3000/api/bookings/cancel-preview?token={{cancellation_token}}
-method: GET
-queryParams:
-  token: "{{cancellation_token}}"
+url: http://localhost:3000/api/bookings/cancel-preview
+method: POST
+headers:
+  X-CSRF-Protection: "1"
 body:
   type: json
-  content: ""
+  content: |
+    {
+      "bookingRef": "{{booking_reference}}",
+      "email": "{{booking_email}}"
+    }
 order: 5000

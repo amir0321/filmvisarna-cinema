@@ -3,6 +3,11 @@
 // Follows design/tokens.md and design/components.md §3.8
 // ============================================================================
 
+.fv-tab-trigger:focus-visible {
+  outline: 2px solid $fv-primary;
+  outline-offset: -3px;
+}
+
 .fv-tabs-underline {
   .fv-tab-list {
     display: flex;
@@ -79,7 +84,7 @@
     }
 
     &.active {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: $white-overlay-10;
       color: $fv-fg;
       font-weight: 600;
     }
@@ -125,13 +130,13 @@
     }
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.02);
+      background-color: $white-overlay-02;
       color: $fv-fg;
     }
 
     &.active {
       border-left-color: $fv-primary;
-      background-color: rgba($fv-primary, 0.06);
+      background-color: tint($fv-primary, 0.06);
       color: $fv-fg;
       font-weight: 600;
     }
@@ -157,7 +162,7 @@
     cursor: pointer;
 
     &:hover {
-      border-color: rgba(255, 255, 255, 0.25);
+      border-color: $white-overlay-25;
       color: $fv-fg;
     }
 

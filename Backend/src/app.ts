@@ -1,13 +1,14 @@
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth";
 import { screeningsRouter } from "./routes/screenings.js";
 import { moviesRouter } from "./routes/movies";
+import { personsRouter } from "./routes/persons.js";
 import { HttpError } from "./utils/httpErorr";
-import path from "node:path";
 import { bookingsRouter } from "./routes/bookings.js";
 import { menuRouter } from "./routes/menu.js";
 import { kioskRouter } from "./routes/kiosk.routes.js";
@@ -17,12 +18,24 @@ import { priceGroupsRouter } from "./routes/priceGroups.js";
 import { adminRouter } from "./routes/admin.js";
 import { contactRouter } from "./routes/contact.js";
 import { csrfProtection } from './middleware/csrf';
+import { uploadsFolder } from './paths.js';
+import { createFrontendRouter } from './frontend.js';
 
 export const app = express();
 if (config.trustProxy.length) app.set('trust proxy', config.trustProxy);
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      "script-src": ["'self'", "https://www.youtube.com", "https://s.ytimg.com"],
+      "frame-src": ["https://www.youtube-nocookie.com", "https://www.youtube.com"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
+      "img-src": ["'self'", "data:", "https:"],
+      "upgrade-insecure-requests": config.nodeEnv === 'production' ? [] : null,
+    },
+  },
 }));
 app.use(cors({ origin: [...new Set([config.frontendUrl, ...config.corsOrigin])], credentials: true,
   allowedHeaders: ['Content-Type', 'X-CSRF-Protection', 'Idempotency-Key'] }));
@@ -30,7 +43,12 @@ app.use('/api', csrfProtection);
 app.use(express.json({ limit: "100kb" }));
 
 // Static serving for uploaded files
-app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+app.use("/uploads", express.static(uploadsFolder, {
+  setHeaders: (res) => {
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  },
+}));
 
 const api = express.Router();
 api.get("/health", (_req, res) => {
@@ -39,6 +57,7 @@ api.get("/health", (_req, res) => {
 api.use("/auth", authRouter);
 api.use("/screenings", screeningsRouter);
 api.use("/movies", moviesRouter);
+api.use("/persons", personsRouter);
 api.use("/bookings", bookingsRouter);
 api.use("/menu", menuRouter);
 api.use("/kiosk", kioskRouter);
@@ -50,11 +69,29 @@ api.use("/contact", contactRouter);
 
 app.use("/api", api);
 
+// Never turn an unknown API endpoint or missing asset into frontend HTML.
+app.use('/api', (_req, res) => {
+  res.status(404).json({ success: false, error: 'API-adressen hittades inte' });
+});
+app.use('/uploads', (_req, res) => {
+  res.status(404).json({ success: false, error: 'Bilden hittades inte' });
+});
+
+app.use(createFrontendRouter());
+
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: "Sidan hittades inte" });
 });
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof MulterError) {
+    const error = err.code === "LIMIT_FILE_SIZE"
+      ? "Bildfilen är för stor. Maximal filstorlek är 5 MB."
+      : "Ogiltig bilduppladdning. Skicka en bild i fältet 'image'.";
+    res.status(400).json({ success: false, error });
+    return;
+  }
+
   if (err instanceof HttpError) {
     if (err.status === 429) res.setHeader('Retry-After', '900');
     res.status(err.status).json({ success: false, error: err.message });

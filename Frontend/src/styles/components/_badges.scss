@@ -29,32 +29,32 @@
 }
 
 .fv-badge-success {
-  background-color: rgba($fv-success, 0.15);
+  background-color: tint($fv-success, 0.15);
   color: $fv-success;
 }
 
 .fv-badge-warning {
-  background-color: rgba($fv-warning, 0.15);
+  background-color: tint($fv-warning, 0.15);
   color: $fv-warning;
 }
 
 .fv-badge-danger {
-  background-color: rgba($fv-primary, 0.12);
+  background-color: tint($fv-primary, 0.12);
   color: $fv-danger-light;
 }
 
 .fv-badge-info {
-  background-color: rgba($fv-info, 0.12);
+  background-color: tint($fv-info, 0.12);
   color: $fv-info-light;
 }
 
 .fv-badge-muted {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: $white-overlay-08;
   color: $fv-muted-fg;
 }
 
 .fv-badge-genre {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: $white-overlay-06;
   color: $fv-muted-fg;
   font-size: $font-size-12;
   font-weight: 500;
@@ -63,10 +63,10 @@
 }
 
 .fv-badge-runtime {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: tint($image-scrim, 0.85);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  color: rgba(255, 255, 255, 0.85);
+  color: $image-text-muted;
   font-size: 11px;
   font-weight: 500;
   padding: 3px 7px;
@@ -75,7 +75,7 @@
 
 .fv-badge-premiere {
   background: linear-gradient(135deg, $fv-warning-dark 0%, $fv-warning 100%);
-  color: $fv-white;
+  color: $fv-bg;
   font-size: 10px;
   font-weight: 700;
   font-family: $fv-font-display;
@@ -95,6 +95,7 @@
   color: $fv-white;
 
   &.age-all {
+    color: var(--text-on-success);
     background-color: $fv-success;
   }
   &.age-restricted {
@@ -110,6 +111,7 @@
   color: $fv-white;
 
   &.age-all {
+    color: var(--text-on-success);
     background-color: $fv-success;
   }
   &.age-15 {
@@ -117,7 +119,7 @@
   }
   &.age-mid {
     background-color: $fv-warning;
-    color: $fv-white;
+    color: $fv-bg;
   }
 }
 
@@ -128,11 +130,11 @@
   font-weight: 700;
 
   &.age-all {
-    background-color: rgba($fv-success, 0.15);
+    background-color: tint($fv-success, 0.15);
     color: $fv-success;
   }
   &.age-restricted {
-    background-color: rgba($fv-primary, 0.12);
+    background-color: tint($fv-primary, 0.12);
     color: $fv-danger-light;
   }
 }
@@ -151,23 +153,23 @@
   &.status-paid,
   &.status-active,
   &.status-member {
-    background-color: rgba($fv-success, 0.15);
+    background-color: tint($fv-success, 0.15);
     color: $fv-success;
   }
 
   &.status-pending,
   &.status-guest-member {
-    background-color: rgba($fv-warning, 0.15);
+    background-color: tint($fv-warning, 0.15);
     color: $fv-warning;
   }
 
   &.status-cancelled {
-    background-color: rgba(153, 27, 27, 0.2);
+    background-color: $fv-cancelled-bg;
     color: $fv-danger-light;
   }
 
   &.status-verified {
-    background-color: rgba($fv-success, 0.15);
+    background-color: tint($fv-success, 0.15);
     color: $fv-success;
     font-size: 11px;
     font-weight: 700;
@@ -186,12 +188,12 @@
   font-weight: 600;
 
   &.auditorium-1 {
-    background-color: rgba($fv-primary, 0.12);
+    background-color: tint($fv-primary, 0.12);
     color: $fv-danger-light;
   }
 
   &.auditorium-2 {
-    background-color: rgba($fv-info, 0.12);
+    background-color: tint($fv-info, 0.12);
     color: $fv-info-light;
   }
 }

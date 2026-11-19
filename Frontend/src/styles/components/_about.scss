@@ -13,9 +13,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.9rem;
-  border: 1px solid rgba($fv-primary, 0.4);
-  background: rgba($fv-primary, 0.12);
-  color: $fv-primary;
+  border: 1px solid tint($fv-primary, 0.4);
+  background: tint($fv-primary, 0.12);
+  color: $fv-danger-light;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -109,7 +109,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba($fv-primary, 0.15);
+  background: tint($fv-primary, 0.15);
 }
 
 .fv-about__feature-title {
@@ -130,7 +130,7 @@
 }
 
 .fv-about__section--kiosk {
-  background: linear-gradient(180deg, rgba($fv-warning, 0.05), transparent);
+  background: linear-gradient(180deg, tint($fv-warning, 0.05), transparent);
 }
 
 .fv-about__eyebrow--amber {

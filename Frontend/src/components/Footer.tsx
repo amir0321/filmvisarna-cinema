@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
@@ -8,6 +9,7 @@ interface FooterProps {
 }
 
 export default function Footer({ onOpenCookieSettings }: FooterProps) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [openInfo, setOpenInfo] = useState<'privacy' | 'cookies' | null>(null)
 
@@ -36,33 +38,34 @@ export default function Footer({ onOpenCookieSettings }: FooterProps) {
               <address className="footer-text mb-0">
                 Stortorget 12<br />
                 572 31 Småstad<br />
-                Tel: 0491-123 45
+                {t('footer.phone')}: 0491-123 45
               </address>
             </div>
 
             <div>
-              <h2 className="footer-heading">Öppettider</h2>
+              <h2 className="footer-heading">{t('footer.hours')}</h2>
               <p className="footer-text mb-0">
-                Mån–Tor: 13.00–23.00<br />
-                Fre–Lör: 11.00–01.00<br />
-                Sön: 11.00–22.00
+                {t('footer.monThu')}: 13.00–23.00<br />
+                {t('footer.friSat')}: 11.00–01.00<br />
+                {t('footer.sun')}: 11.00–22.00
               </p>
             </div>
 
             <div>
-              <h2 className="footer-heading">Information</h2>
+              <h2 className="footer-heading">{t('footer.information')}</h2>
               <p className="footer-notice mb-0">
-                Betalning sker alltid på plats i kassan vid ankomst.
+                {t('footer.payment')}
               </p>
-              <nav className="footer-links" aria-label="Sidfotslänkar">
+              <nav className="footer-links" aria-label={t('footer.links')}>
+                <Link to="/avboka" className="footer-link">{t('footer.cancelBooking')}</Link>
                 <button type="button" className="footer-link" onClick={() => setOpenInfo('privacy')}>
-                  Integritetspolicy
+                  {t('footer.privacy')}
                 </button>
                 <button type="button" className="footer-link" onClick={openCookieSettings}>
-                  Cookie-inställningar
+                  {t('footer.cookies')}
                 </button>
                 {user?.role === 'admin' ? (
-                  <Link to="/admin" className="footer-link footer-link-admin">Admin</Link>
+                  <Link to="/admin" className="footer-link footer-link-admin">{t('footer.admin')}</Link>
                 ) : null}
               </nav>
             </div>
@@ -73,39 +76,21 @@ export default function Footer({ onOpenCookieSettings }: FooterProps) {
       <Modal
         isOpen={openInfo !== null}
         onClose={() => setOpenInfo(null)}
-        title={openInfo === 'privacy' ? 'Integritetspolicy' : 'Cookie-inställningar'}
+        title={t(openInfo === 'privacy' ? 'footer.privacy' : 'footer.cookies')}
       >
         <Modal.Body>
           {openInfo === 'privacy' ? (
             <>
-              <p>
-                Filmvisarna använder din e-postadress och dina bokningsuppgifter för att
-                hantera din bokning och skicka bokningsbekräftelse och avbokningslänk.
-              </p>
-              <p>
-                När du blir medlem sparas dina kontouppgifter för att du ska kunna logga
-                in och se dina bokningar. Ditt lösenord skickas aldrig tillbaka till webbläsaren.
-              </p>
-              <p className="mb-0">
-                Har du frågor om dina personuppgifter? Kontakta biografen på 0491-123 45.
-              </p>
+              <p>{t('footer.privacyBooking')}</p>
+              <p>{t('footer.privacyAccount')}</p>
+              <p className="mb-0">{t('footer.privacyContact')}</p>
             </>
           ) : (
             <>
-              <p>
-                Filmvisarnas inloggning använder en nödvändig sessionscookie som inte kan
-                läsas av JavaScript. När du loggar ut tas cookien bort och sessionen
-                spärras på servern.
-              </p>
-              <p>
-                Din bokningsbekräftelse sparas tillfälligt i flikens sessionslagring
-                (sessionStorage) så att du kan läsa den när du laddar om sidan.
-              </p>
-              <p className="mb-0">
-                Appen använder inga valfria analys- eller marknadsföringscookies. Det finns
-                därför inga cookie-val att ändra här. Du kan rensa webbplatsens lagrade
-                uppgifter i webbläsarens inställningar.
-              </p>
+              <p>{t('footer.cookieSession')}</p>
+              <p>{t('footer.cookieBooking')}</p>
+              <p>{t('footer.cookiePreferences')}</p>
+              <p className="mb-0">{t('footer.cookieOptional')}</p>
             </>
           )}
         </Modal.Body>

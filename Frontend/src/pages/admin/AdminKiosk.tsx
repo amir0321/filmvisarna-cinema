@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import apiClient from '../../api/client'
 import { useAdminMenuItems } from '../../hooks'
 import type { AdminMenuItem } from '../../types'
@@ -8,6 +7,7 @@ import { FilterPillGroup } from '../../components/Pills'
 import { CardListSkeleton } from '../../components/Skeleton'
 import { InlineFeedback, type InlineFeedbackVariant } from '../../components/Toast'
 import KioskItemFormModal from '../../components/admin/KioskItemFormModal'
+import AdminPageHeader from '../../components/admin/AdminPageHeader'
 import AdminStatCard from '../../components/admin/AdminStatCard'
 import KioskTable from '../../components/admin/KioskTable'
 import { KIOSK_CATEGORIES, getKioskCategory, type KioskCategory } from '../../utils/kiosk'
@@ -65,20 +65,7 @@ export default function AdminKiosk() {
 
   return (
     <div className="admin-kiosk">
-      <header className="admin-page-header">
-        <div>
-          <h1 className="admin-page-header__title">Kiosksortiment</h1>
-          <p className="admin-page-header__subtitle">Hantera kioskprodukter, priser och tillgänglighet</p>
-        </div>
-        <nav aria-label="Brödsmulor">
-          <ol className="admin-breadcrumb">
-            <li>
-              <Link to="/admin">Backoffice</Link>
-            </li>
-            <li aria-current="page">Kiosksortiment</li>
-          </ol>
-        </nav>
-      </header>
+      <AdminPageHeader title="Kiosksortiment" subtitle="Hantera kioskprodukter, priser och tillgänglighet" />
 
       <div className="admin-stats">
         <AdminStatCard label="Totalt sortiment" value={`${items.length} st`} color="info" />

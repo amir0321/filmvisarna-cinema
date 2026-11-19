@@ -1,35 +1,37 @@
+import { useTranslation } from '../../context/LocaleContext'
 import { Link } from 'react-router'
 import { Badge } from '../../components/Badge'
 
 export default function AdminDashboard() {
+  const { t } = useTranslation()
   const cards = [
     {
-      title: 'Bokningar & Kassa',
-      description: 'Hantera bokningar, checka in gäster och ta emot betalningar.',
+      title: t('nav.bookingsCashier'),
+      description: t('admin.dashboard.bookings'),
       path: '/admin/bokningar',
       icon: 'bi-ticket-perforated',
-      badge: 'Aktuellt',
+      badge: t('admin.dashboard.current'),
     },
     {
-      title: 'Visningsschema',
-      description: 'Schemalägg nya filmvisningar och hantera tider för salongerna.',
+      title: t('movieDetails.scheduleHeading'),
+      description: t('admin.dashboard.screenings'),
       path: '/admin/visningar',
       icon: 'bi-calendar3',
-      badge: 'Schema',
+      badge: t('nav.schedule'),
     },
     {
-      title: 'Filmarkiv',
-      description: 'Lägg till och uppdatera filmer, genrer och information.',
+      title: t('nav.movieArchive'),
+      description: t('admin.dashboard.movies'),
       path: '/admin/filmer',
       icon: 'bi-film',
-      badge: 'Arkiv',
+      badge: t('admin.dashboard.archive'),
     },
     {
-      title: 'Salonger',
-      description: 'Se salongskartor, stolsindelning och rullstolsplatser.',
+      title: t('nav.cinemas'),
+      description: t('admin.dashboard.cinemas'),
       path: '/admin/salonger',
       icon: 'bi-display',
-      badge: 'Salonger',
+      badge: t('nav.cinemas'),
     },
   ]
 
@@ -37,24 +39,24 @@ export default function AdminDashboard() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Administrationsöversikt</h2>
-          <p className="text-secondary mb-0">Välkommen till Filmvisarnas administrationspanel.</p>
+          <h1 className="h2 fw-bold mb-1">{t('admin.dashboard.title')}</h1>
+          <p className="text-secondary mb-0">{t('admin.dashboard.intro')}</p>
         </div>
       </div>
 
       <div className="row g-4">
         {cards.map((c) => (
           <div key={c.path} className="col-12 col-md-6 col-lg-3">
-            <div className="card h-100 bg-card border-secondary border-opacity-25 shadow-sm">
+            <div className="card h-100 bg-card shadow-sm">
               <div className="card-body d-flex flex-column p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <i className={`bi ${c.icon} text-danger fs-2`}></i>
+                  <i className={`bi ${c.icon} text-danger fs-2`} aria-hidden="true"></i>
                   <Badge variant="muted">{c.badge}</Badge>
                 </div>
-                <h5 className="card-title fw-bold text-white mb-2">{c.title}</h5>
+                <h2 className="h5 card-title fw-semibold mb-0">{c.title}</h2>
                 <p className="card-text text-secondary small flex-grow-1">{c.description}</p>
                 <Link to={c.path} className="btn btn-outline-danger btn-sm mt-3 w-100">
-                  Öppna modul &rarr;
+                  {t('admin.dashboard.openModule')}
                 </Link>
               </div>
             </div>

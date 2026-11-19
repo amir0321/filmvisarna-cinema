@@ -1,3 +1,6 @@
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
+import { sv } from '../i18n/sv'
 import { useState, type FormEvent } from 'react'
 import { changePassword, login } from '../api/auth'
 import PasswordField from './auth/PasswordField'
@@ -7,6 +10,7 @@ import { useInlineFeedback } from '../hooks/useInlineFeedback'
 
 
 export default function ChangePasswordForm() {
+  const { t, locale } = useTranslation()
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,12 +24,12 @@ export default function ChangePasswordForm() {
     setError("");
 
     if (newPassword !== confirmPassword) {
-      setError("De nya lösenorden matchar inte.");
+      setError(sv['auth.passwordsMismatch']);
       return;
     }
 
     if (newPassword.length < 8) {
-      setError("Det nya lösenordet måste innehålla minst 8 tecken.");
+      setError(sv['auth.newPasswordShort']);
       return;
     }
 
@@ -33,7 +37,7 @@ export default function ChangePasswordForm() {
 
    try {
   if (!user) {
-    throw new Error('Du måste vara inloggad för att ändra lösenordet.')
+    throw new Error(sv['auth.loginRequiredForPassword'])
   }
 
   await changePassword({ currentPassword, newPassword })
@@ -53,7 +57,7 @@ export default function ChangePasswordForm() {
   setError(
     error instanceof Error
       ? error.message
-      : 'Det gick inte att uppdatera inloggningen.',
+      : sv['auth.updateLoginError'],
   )
 } finally {
   setSaving(false)
@@ -62,18 +66,17 @@ export default function ChangePasswordForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-     
 <div className="d-grid gap-3 mb-4">
   <PasswordField
     id="current-password"
-    label="Nuvarande lösenord"
+    label={t('auth.currentPassword')}
     value={currentPassword}
     onChange={setCurrentPassword}
   />
 
   <PasswordField
     id="new-password"
-    label="Nytt lösenord"
+    label={t('auth.newPassword')}
     value={newPassword}
     onChange={setNewPassword}
     registering
@@ -82,7 +85,7 @@ export default function ChangePasswordForm() {
 
   <PasswordField
     id="confirm-password"
-    label="Bekräfta nytt lösenord"
+    label={t('auth.confirmPassword')}
     value={confirmPassword}
     onChange={setConfirmPassword}
     registering
@@ -92,17 +95,17 @@ export default function ChangePasswordForm() {
 
       {error && (
         <p role="alert" className="text-danger">
-          {error}
+          {translateApiError(error, locale)}
         </p>
       )}
 
       {saved && (
   <p role="status" className="text-success">
-    Lösenordet har ändrats!
+    {t('auth.passwordChanged')}
   </p>
 )}
       <button type="submit" className="btn btn-danger" disabled={saving}>
-        {saving ? "Ändrar lösenord..." : "Ändra lösenord"}
+        {saving ? t('auth.changingPassword') : t('auth.changePassword')}
       </button>
     </form>
   );

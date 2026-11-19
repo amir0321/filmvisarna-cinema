@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { parseId } from "../utils/httpErorr.js";
+import { httpUrlSchema, imageUrlSchema } from "../utils/imageUrl.js";
+import { castMemberBody } from "./persons.controller.js";
+import { getTmdbMovieDetails, searchTmdbMovies } from "../services/tmdb.service.js";
 import {
   createMovie,
   deleteMovie,
@@ -25,23 +28,11 @@ export const createMovieBody = z.object({
 
   age_rating: z.string().trim().max(10).optional().nullable(),
 
-  poster_url: z
-    .string()
-    .url("Poster-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  poster_url: imageUrlSchema.optional().nullable(),
 
-  landscape_image_url: z
-    .string()
-    .url("Bred bild-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  landscape_image_url: imageUrlSchema.optional().nullable(),
 
-  trailer_url: z
-    .string()
-    .url("Trailer-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  trailer_url: httpUrlSchema.optional().nullable(),
 
   director: z
     .string()
@@ -68,6 +59,7 @@ export const createMovieBody = z.object({
     .array(z.string().trim().min(1).max(100))
     .max(10, "Max 10 genrer per film.")
     .optional(),
+  cast_members: z.array(castMemberBody).max(100).optional(),
 });
 
 export const updateMovieBody = z.object({
@@ -88,23 +80,11 @@ export const updateMovieBody = z.object({
 
   age_rating: z.string().trim().max(10).optional().nullable(),
 
-  poster_url: z
-    .string()
-    .url("Poster-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  poster_url: imageUrlSchema.optional().nullable(),
 
-  landscape_image_url: z
-    .string()
-    .url("Bred bild-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  landscape_image_url: imageUrlSchema.optional().nullable(),
 
-  trailer_url: z
-    .string()
-    .url("Trailer-URL måste vara en giltig URL.")
-    .optional()
-    .nullable(),
+  trailer_url: httpUrlSchema.optional().nullable(),
 
   director: z
     .string()
@@ -131,6 +111,7 @@ export const updateMovieBody = z.object({
     .array(z.string().trim().min(1).max(100))
     .max(10, "Max 10 genrer per film.")
     .optional(),
+  cast_members: z.array(castMemberBody).max(100).optional(),
 });
 
 export const listMoviesQuerySchema = z.object({
@@ -143,6 +124,18 @@ export async function getMovies(req: Request, res: Response) {
   const query = listMoviesQuerySchema.parse(req.query);
   const movies = await getAllMovies(query);
   res.json({ success: true, data: movies });
+}
+
+const externalSearchQuery = z.object({ query: z.string().trim().min(2).max(120) });
+
+export async function searchExternalMovies(req: Request, res: Response) {
+  const { query } = externalSearchQuery.parse(req.query);
+  res.json({ success: true, data: await searchTmdbMovies(query) });
+}
+
+export async function getExternalMovie(req: Request, res: Response) {
+  const tmdbId = parseId(req.params.tmdbId, "TMDB-ID");
+  res.json({ success: true, data: await getTmdbMovieDetails(tmdbId) });
 }
 
 export async function getMovie(req: Request, res: Response) {

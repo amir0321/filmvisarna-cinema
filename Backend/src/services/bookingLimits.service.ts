@@ -1,10 +1,11 @@
-import { createHash } from 'node:crypto';
 import type pg from 'pg';
 import { pool } from '../db.js';
 import { HttpError } from '../utils/httpErorr.js';
+import { releaseExpiredReservations } from './reservationExpiry.service.js';
+import { hashBookingValue } from '../utils/bookingIdentity.js';
+import { processBookingWarnings } from './bookingWarnings.service.js';
 
-export const normalizeBookingEmail = (email: string) => email.trim().toLowerCase();
-export const hashBookingValue = (value: string) => createHash('sha256').update(value).digest('hex');
+export { normalizeBookingEmail, hashBookingValue } from '../utils/bookingIdentity.js';
 
 export async function consumeBookingLimit(db: pg.Pool, key: string, maximum: number, seconds = 900, cooldownSeconds = 0): Promise<void> {
   const client = await db.connect();
@@ -32,6 +33,16 @@ export async function consumeBookingLimit(db: pg.Pool, key: string, maximum: num
 }
 
 export async function cleanupBookingProtection(db: pg.Pool = pool): Promise<void> {
+  await releaseExpiredReservations(db);
+  await processBookingWarnings(db);
   await db.query('DELETE FROM guest_booking_intent WHERE expires_at <= clock_timestamp()');
   await db.query('DELETE FROM booking_rate_limit WHERE expires_at <= clock_timestamp()');
+  await db.query('DELETE FROM auth_action_token WHERE expires_at <= clock_timestamp()');
+  await db.query('DELETE FROM auth_session WHERE expires_at <= clock_timestamp()');
+  await db.query("DELETE FROM auth_rate_limit WHERE window_start <= clock_timestamp() - interval '15 minutes'");
+  // Foreign keys also remove the expired reservation's tickets and kiosk lines.
+  // Paid and cancelled bookings are retained; the seven days start at film end.
+  await db.query(`DELETE FROM booking b USING screening_times st
+    WHERE b.screening_id = st.id AND b.status = 'expired' AND NOT b.is_paid
+      AND st.ends_at <= statement_timestamp() - interval '7 days'`);
 }

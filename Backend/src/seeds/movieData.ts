@@ -1,4 +1,14 @@
 import { todayIn } from "../utils/dates.js";
+import { seedActorProfiles } from "./actorProfiles.js";
+
+export interface SeedCastMember {
+  name: string;
+  tmdb_id: number;
+  photo_url: string;
+  bio: string;
+  character_name: string;
+  billing_order: number;
+}
 
 export interface SeedMovie {
   title: string;
@@ -6,6 +16,7 @@ export interface SeedMovie {
   age_rating: string;
   director: string;
   actors: string[];
+  cast_members: SeedCastMember[];
   imdb_rating: number;
   description: string;
   trailer_url: string | null;
@@ -21,7 +32,7 @@ export function seedDateOffset(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-const originalMovies: SeedMovie[] = [
+const originalMovies: Omit<SeedMovie, "cast_members">[] = [
     {
       title: "Dune: Part Two",
       duration_minutes: 166,
@@ -172,12 +183,32 @@ const extraMovies = [
   { title: 'Insidan ut 2', trailer: 'LEjhY15eCx0', duration: 96, age: '7', director: 'Kelsey Mann', actors: ['Amy Poehler', 'Maya Hawke', 'Kensington Tallman'], genres: ['Animation', 'Familj', 'Äventyr'], poster: 'vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg', description: 'När Riley blir tonåring får hennes välbekanta känslor sällskap av nya och oväntade besökare.' },
 ];
 
+// Characters follow the actor order above; animated films refer to the original voice cast.
+const seedCharacters: Record<string, string[]> = {
+  "Dune: Part Two": ["Paul Atreides", "Chani", "Lady Jessica"],
+  "Interstellar": ["Cooper", "Amelia Brand", "Murphy Cooper"],
+  "Inception": ["Dominick Cobb", "Arthur", "Ariadne"],
+  "The Batman": ["Bruce Wayne / Batman", "Selina Kyle / Catwoman", "Edward Nashton / The Riddler"],
+  "Avatar: The Way of Water": ["Jake Sully", "Neytiri", "Kiri"],
+  "Spider-Man: Across the Spider-Verse": ["Miles Morales (röst)", "Gwen Stacy (röst)", "Miguel O'Hara (röst)"],
+  "Blade Runner 2049": ["K", "Rick Deckard", "Joi"],
+  "La La Land": ["Sebastian Wilder", "Mia Dolan", "Keith"],
+  "Oppenheimer": ["J. Robert Oppenheimer", "Katherine 'Kitty' Oppenheimer", "Leslie Groves"],
+  "Barbie": ["Barbie", "Ken", "Gloria"],
+  "Whiplash": ["Andrew Neiman", "Terence Fletcher", "Jim Neiman"],
+  "Coco": ["Miguel Rivera (röst)", "Héctor (röst)", "Ernesto de la Cruz (röst)"],
+  "Arrival": ["Louise Banks", "Ian Donnelly", "Överste Weber"],
+  "Soul": ["Joe Gardner (röst)", "22 (röst)", "Moonwind (röst)"],
+  "Den vilda roboten": ["Roz (röst)", "Fink (röst)", "Brightbill (röst)"],
+  "Insidan ut 2": ["Glädje (röst)", "Ängslan (röst)", "Riley Andersen (röst)"],
+};
+
 export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] {
   const originals = originalMovies.map((movie, index) => ({
     ...movie,
     release_date: seedDateOffset(today, -60 + index),
   }));
-  return [...originals, ...extraMovies.map((movie, index) => ({
+  const movies = [...originals, ...extraMovies.map((movie, index) => ({
     title: movie.title,
     duration_minutes: movie.duration,
     age_rating: movie.age,
@@ -191,4 +222,21 @@ export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] 
     release_date: seedDateOffset(today, index < 4 ? -20 + index : 14 + (index - 4) * 7),
     genres: movie.genres,
   }))];
+  const filmography = new Map<string, string[]>();
+  for (const movie of movies) {
+    for (const name of movie.actors) filmography.set(name, [...(filmography.get(name) ?? []), movie.title]);
+  }
+  return movies.map(movie => ({
+    ...movie,
+    cast_members: movie.actors.map((name, index) => {
+      const profile = seedActorProfiles[name];
+      const character = seedCharacters[movie.title]?.[index];
+      if (!profile || !character) throw new Error(`Missing seed cast profile: ${movie.title}, ${name}`);
+      return {
+        name, tmdb_id: profile.tmdb_id, photo_url: profile.photo_url,
+        bio: `${name} är skådespelare med roller i ${filmography.get(name)!.join(", ")}.`,
+        character_name: character, billing_order: index,
+      };
+    }),
+  }));
 }

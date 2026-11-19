@@ -5,9 +5,15 @@ import { pool } from "../db";
 
 async function main() {
   const [email, password] = process.argv.slice(2);
-  if (!email || !password || password.length < 8 || password.length > 72) {
+  if (
+    !email ||
+    !password ||
+    password.length < 8 ||
+    password.length > 72 ||
+    Buffer.byteLength(password, "utf8") > 72
+  ) {
     console.error(
-      "Usage: npm run create-admin -- <email> <password (8-72 characters)>",
+      "Usage: npm run create-admin -- <email> <password (8-72 characters and max 72 UTF-8 bytes)>",
     );
     process.exit(1);
   }

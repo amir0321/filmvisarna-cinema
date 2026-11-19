@@ -18,22 +18,54 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba($fv-primary, 0.12);
+  background: tint($fv-primary, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.fv-cancel-form {
+  color: $fv-fg;
+
+  .form-control {
+    background: $fv-card-bg;
+    border: 1px solid $fv-border;
+    color: inherit;
+    padding: 0.75rem;
+
+    &::placeholder { color: $fv-muted-fg; }
+
+    &:focus {
+      border-color: $fv-primary;
+      box-shadow: 0 0 0 3px tint($fv-primary, 0.3);
+    }
+  }
+
+  &__reference {
+    font-family: $fv-font-mono;
+    letter-spacing: 0.05em;
+  }
+}
+
 .fv-cancel-booking-card {
-  background: rgba($fv-secondary, 0.4);
+  background: tint($fv-secondary, 0.4);
   border-color: $fv-border !important;
+
+  &__details {
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    i {
+      flex-shrink: 0;
+    }
+  }
 }
 
 .fv-cancel-success-icon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba($fv-success, 0.12);
+  background: tint($fv-success, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -53,8 +85,22 @@
 .fv-cancel-ref-badge {
   font-family: $fv-font-mono;
   letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.06);
+  background: $white-overlay-06;
   border: 1px solid $fv-border;
   padding: 4px 10px;
   border-radius: $radius-sm;
+}
+
+.fv-cancel-success-details {
+  max-width: 440px;
+}
+
+.fv-cancel-receipt-poster {
+  width: 80px;
+  height: 120px;
+}
+
+.fv-cancel-modal-poster {
+  width: 56px;
+  height: 84px;
 }

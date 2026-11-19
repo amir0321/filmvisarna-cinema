@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 import { Link } from "react-router";
+import { useTranslation } from "../../context/LocaleContext";
+import { translateGenre } from "../../i18n/mappers";
 import type { Movie } from "../../types";
 import { formatDuration, formatDurationLong, getYouTubeBackgroundUrl } from "../../utils/movie";
 import { getMovieTrailerUrl, getMovieUrl } from "../../utils/links";
@@ -101,6 +103,7 @@ function HeroBackdrop({ movie, active, priority }: { movie: Movie; active: boole
 }
 
 export default function HeroSection({ movies }: HeroSectionProps) {
+  const { t, locale } = useTranslation();
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(prefersReducedMotion);
   const [isHovered, setIsHovered] = useState(false);
@@ -136,8 +139,8 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   return (
     <section
       className="hero-section"
-      aria-roledescription="karusell"
-      aria-label="Utvalda filmer"
+      aria-roledescription={t("hero.carouselRole")}
+      aria-label={t("hero.featuredMovies")}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocus={handleFocus}
@@ -166,21 +169,21 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           key={movie.id}
           className="hero-section__text"
           role="group"
-          aria-roledescription="bild"
-          aria-label={`${index + 1} av ${movies.length}`}
+          aria-roledescription={t("hero.slideRole")}
+          aria-label={t("hero.slidePosition", { current: index + 1, total: movies.length })}
           aria-live={isRotating ? "off" : "polite"}
         >
           <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3 mb-3">
             {movie.genres.map((genre) => (
               <span key={genre} className="badge rounded-pill hero-section__genre">
-                {genre}
+                {translateGenre(genre, locale)}
               </span>
             ))}
             <AgeBadge ageRating={movie.age_rating} />
             <span className="hero-section__duration">
               <span aria-hidden="true">{formatDuration(movie.duration_minutes)}</span>
               <span className="visually-hidden">
-                Speltid: {formatDurationLong(movie.duration_minutes)}
+                {t("movie.durationAnnouncement", { duration: formatDurationLong(movie.duration_minutes, locale) })}
               </span>
             </span>
           </div>
@@ -196,18 +199,18 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               <Link
                 to={getMovieTrailerUrl(movie.id)}
                 className="btn hero-section__button btn-hero-secondary"
-                aria-label={`Se trailer för ${movie.title}`}
+                aria-label={t("hero.watchTrailerFor", { title: movie.title })}
               >
                 <i className="bi bi-play-fill me-2" aria-hidden="true"></i>
-                Se Trailer
+                {t("hero.watchTrailer")}
               </Link>
             )}
             <Link
               to={getMovieUrl(movie.id)}
               className="btn hero-section__button btn-hero-primary"
-              aria-label={`Boka biljett till ${movie.title}`}
+              aria-label={t("hero.bookTicketFor", { title: movie.title })}
             >
-              Boka Biljett
+              {t("hero.bookTicket")}
               <i className="bi bi-chevron-right ms-2" aria-hidden="true"></i>
             </Link>
           </div>
@@ -218,7 +221,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             <button
               type="button"
               className="hero-carousel__arrow hero-carousel__arrow--prev"
-              aria-label="Föregående film"
+              aria-label={t("hero.previousMovie")}
               onClick={() => showMovie(index - 1)}
             >
               <i className="bi bi-chevron-left" aria-hidden="true"></i>
@@ -228,7 +231,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               <button
                 type="button"
                 className="hero-carousel__pause"
-                aria-label={isPaused ? "Starta bildspel och trailer" : "Pausa bildspel och trailer"}
+                aria-label={t(isPaused ? "hero.playCarousel" : "hero.pauseCarousel")}
                 onClick={() => setIsPaused((paused) => !paused)}
               >
                 <i className={`bi ${isPaused ? "bi-play-fill" : "bi-pause-fill"}`} aria-hidden="true"></i>
@@ -238,7 +241,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                   key={slide.id}
                   type="button"
                   className={`hero-carousel__dot${slideIndex === index ? " is-active" : ""}`}
-                  aria-label={`Visa ${slide.title}`}
+                  aria-label={t("hero.showMovie", { title: slide.title })}
                   aria-current={slideIndex === index}
                   onClick={() => showMovie(slideIndex)}
                 ></button>
@@ -248,7 +251,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             <button
               type="button"
               className="hero-carousel__arrow hero-carousel__arrow--next"
-              aria-label="Nästa film"
+              aria-label={t("hero.nextMovie")}
               onClick={() => showMovie(index + 1)}
             >
               <i className="bi bi-chevron-right" aria-hidden="true"></i>
@@ -261,8 +264,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 }
 
 export function HeroSectionSkeleton() {
+  const { t } = useTranslation();
   return (
-    <section className="hero-section" aria-busy="true" aria-label="Laddar utvalda filmer">
+    <section className="hero-section" aria-busy="true" aria-label={t("hero.loadingFeaturedMovies")}>
       <div className="hero-section__content container-fluid">
         <div className="hero-section__text placeholder-glow" aria-hidden="true">
           <span className="placeholder col-4 mb-3 rounded"></span>

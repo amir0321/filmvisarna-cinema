@@ -89,8 +89,11 @@ export function AuthProvider({ children, onUnauthorized }: AuthProviderProps) {
       const currentChannel = new BroadcastChannel('fv:session')
       channel.current = currentChannel
       currentChannel.onmessage = () => {
-        // Ignore late responses issued before another tab changed the shared cookie.
+        // Ignore late responses issued before another tab changed the shared cookie,
+        // and immediately clear cached identity until the active session is re-fetched.
+        request.current?.abort()
         advanceSessionRevision()
+        setSessionState({ ...EMPTY_SESSION, loading: true })
         syncSession()
       }
     }

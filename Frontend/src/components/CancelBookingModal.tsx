@@ -1,3 +1,6 @@
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
+import { translateSeatLabel } from '../utils/bookingPresentation'
 import React from 'react'
 import { Modal } from './Modal'
 import { Poster } from './Poster'
@@ -24,9 +27,10 @@ export function CancelBookingModal({
   error = null,
   onConfirm,
   onClose,
-  confirmLabel = 'Bekräfta avbokning',
-  cancelLabel = 'Behåll bokning',
+  confirmLabel,
+  cancelLabel,
 }: CancelBookingModalProps) {
+  const { t, locale } = useTranslation()
   if (!isOpen || !booking) {
     return null
   }
@@ -36,8 +40,8 @@ export function CancelBookingModal({
   let formattedTime = ''
   try {
     const isoDate = toCinemaIsoDate(booking.screeningStartsAt)
-    formattedDate = capitalize(formatDateLong(isoDate))
-    formattedTime = formatTime(booking.screeningStartsAt)
+    formattedDate = capitalize(formatDateLong(isoDate, locale))
+    formattedTime = formatTime(booking.screeningStartsAt, locale)
   } catch {
     formattedDate = booking.screeningStartsAt
   }
@@ -67,20 +71,20 @@ export function CancelBookingModal({
             <i className="bi bi-exclamation-triangle-fill text-danger fs-4" />
           </div>
           <div>
-            <h2 id="cancel-booking-modal-title" className="h5 fw-bold mb-1 text-light">
-              Är du säker på att du vill avboka?
+            <h2 id="cancel-booking-modal-title" className="h5 fw-bold mb-1 text-body">
+              {t('cancellation.question')}
             </h2>
             <p className="text-secondary small mb-0">
-              Denna åtgärd kan inte ångras och dina reserverade platser släpps fria.
+              {t('cancellation.warning')}
             </p>
           </div>
         </div>
 
         {/* Booking Details Card */}
         <div className="fv-cancel-booking-card p-3 rounded-3 mb-3 border">
-          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
-            <span className="text-secondary small">Bokningsnummer</span>
-            <span className="font-monospace fw-bold text-light letter-spacing-1">
+          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <span className="text-secondary small">{t('cancellation.reference')}</span>
+            <span className="font-monospace fw-bold text-body letter-spacing-1">
               {booking.bookingRef}
             </span>
           </div>
@@ -88,8 +92,7 @@ export function CancelBookingModal({
           <div className="d-flex gap-3 align-items-start mt-2">
             {booking.posterUrl ? (
               <div
-                className="flex-shrink-0 rounded overflow-hidden"
-                style={{ width: '56px', height: '84px' }}
+                className="fv-cancel-modal-poster flex-shrink-0 rounded overflow-hidden"
               >
                 <Poster
                   src={booking.posterUrl}
@@ -100,15 +103,15 @@ export function CancelBookingModal({
               </div>
             ) : null}
 
-            <div className="flex-grow-1 min-w-0">
-              <h3 className="h6 fw-bold text-light mb-1 text-truncate">
+            <div className="fv-cancel-booking-card__details flex-grow-1">
+              <h3 className="h6 fw-bold text-body mb-1 text-truncate">
                 {booking.movieTitle}
               </h3>
 
               <div className="text-secondary small mb-1 d-flex align-items-center gap-2">
                 <i className="bi bi-calendar3" aria-hidden="true" />
                 <span>
-                  {formattedDate} {formattedTime ? `· kl. ${formattedTime}` : ''}
+                  {formattedDate} {formattedTime ? `· ${t('common.atTime', { time: formattedTime })}` : ''}
                 </span>
               </div>
 
@@ -119,14 +122,14 @@ export function CancelBookingModal({
 
               {booking.seats && booking.seats.length > 0 ? (
                 <div className="mt-2">
-                  <div className="text-secondary extra-small mb-1">Valda platser:</div>
+                  <div className="text-secondary extra-small mb-1">{t('cancellation.selectedSeats')}</div>
                   <div className="d-flex flex-wrap gap-1">
                     {booking.seats.map((seat, index) => (
                       <span
                         key={index}
-                        className="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 fw-normal px-2 py-1"
+                        className="badge bg-surface-2 text-body border fw-normal px-2 py-1"
                       >
-                        {seat}
+                        {translateSeatLabel(seat, locale)}
                       </span>
                     ))}
                   </div>
@@ -143,24 +146,24 @@ export function CancelBookingModal({
             role="alert"
           >
             <i className="bi bi-exclamation-octagon flex-shrink-0" aria-hidden="true" />
-            <div>{error}</div>
+            <div>{translateApiError(error, locale)}</div>
           </div>
         ) : null}
 
         {/* Action Buttons */}
         {!canCancel ? (
           <p id="cancel-booking-deadline" className="small text-secondary" role="status">
-            Avbokning måste ske minst två timmar före visningen.
+            {t('cancellation.deadline')}
           </p>
         ) : null}
         <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 pt-2">
           <button
             type="button"
-            className="btn btn-outline-secondary px-4 py-2"
+            className="btn btn-secondary-outline px-4 py-2"
             onClick={onClose}
             disabled={isSubmitting}
           >
-            {cancelLabel}
+            {cancelLabel ?? t('cancellation.keep')}
           </button>
           <button
             type="button"
@@ -176,10 +179,10 @@ export function CancelBookingModal({
                   role="status"
                   aria-hidden="true"
                 />
-                <span>Avbokar...</span>
+                <span>{t('cancellation.cancelling')}</span>
               </>
             ) : (
-              <span>{confirmLabel}</span>
+              <span>{confirmLabel ?? t('cancellation.confirm')}</span>
             )}
           </button>
         </div>

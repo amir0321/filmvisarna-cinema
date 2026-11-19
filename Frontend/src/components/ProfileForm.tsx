@@ -1,3 +1,6 @@
+import { translateApiError } from '../i18n/mappers'
+import { useTranslation } from '../context/LocaleContext'
+import { sv } from '../i18n/sv'
 import { useState, type FormEvent } from "react";
 import { updateProfile } from "../api/auth";
 import type { User } from "../types/user";
@@ -9,6 +12,7 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ user, onSaved }: ProfileFormProps) {
+  const { t, locale } = useTranslation()
   const [firstName, setFirstName] = useState(user.firstName ?? "");
   const [lastName, setLastName] = useState(user.lastName ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
@@ -20,7 +24,6 @@ export default function ProfileForm({ user, onSaved }: ProfileFormProps) {
     event.preventDefault();
     setSaving(true);
     setError("");
-    
 
     try {
      await updateProfile({
@@ -35,7 +38,7 @@ showSaved();
       setError(
         error instanceof Error
           ? error.message
-          : "Kunde inte spara profiluppgifterna.",
+          : sv['profile.saveError'],
       );
     } finally {
       setSaving(false);
@@ -46,7 +49,7 @@ showSaved();
     <form onSubmit={handleSubmit}>
       <div className="mb-3">
         <label htmlFor="profile-first-name" className="form-label">
-          Förnamn
+          {t('form.firstName')}
         </label>
         <input
           id="profile-first-name"
@@ -61,7 +64,7 @@ showSaved();
 
       <div className="mb-3">
         <label htmlFor="profile-last-name" className="form-label">
-          Efternamn
+          {t('form.lastName')}
         </label>
         <input
           id="profile-last-name"
@@ -76,7 +79,7 @@ showSaved();
 
       <div className="mb-3">
         <label htmlFor="profile-email" className="form-label">
-          E-postadress
+          {t('form.email')}
         </label>
         <input
           id="profile-email"
@@ -88,13 +91,13 @@ showSaved();
         <span
           className={`badge mt-2 ${user.isVerified ? "bg-success" : "bg-warning text-dark"}`}
         >
-          {user.isVerified ? "Verifierad" : "Ej verifierad"}
+          {user.isVerified ? t('profile.verified') : t('profile.unverified')}
         </span>
       </div>
 
       <div className="mb-4">
         <label htmlFor="profile-phone" className="form-label">
-          Telefonnummer
+          {t('form.phone')}
         </label>
         <input
           id="profile-phone"
@@ -108,17 +111,17 @@ showSaved();
 
       {error && (
         <p role="alert" className="text-danger">
-          {error}
+          {translateApiError(error, locale)}
         </p>
       )}
       {saved && (
   <p role="status" className="text-success">
-    Ändringarna har sparats!
+    {t('profile.saved')}
   </p>
 )}
 
       <button type="submit" className="btn btn-danger" disabled={saving}>
-        {saving ? "Sparar..." : "Spara ändringar"}
+        {saving ? t('auth.saving') : t('profile.save')}
       </button>
     </form>
   );

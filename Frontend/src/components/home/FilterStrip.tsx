@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "../../context/LocaleContext";
 import type { ScreeningWhen } from "../../types";
 import {
   formatDateLong,
@@ -19,19 +20,13 @@ interface FilterStripProps {
   onAgeFilterChange: (filter: AgeFilter) => void;
 }
 
-const DATE_PRESETS: { when: ScreeningWhen; label: string }[] = [
-  { when: "today", label: "Idag" },
-  { when: "tomorrow", label: "Imorgon" },
-  { when: "weekend", label: "I helgen" },
-];
+const DATE_PRESETS = [
+  { when: "today", labelKey: "date.today" },
+  { when: "tomorrow", labelKey: "date.tomorrow" },
+  { when: "weekend", labelKey: "date.weekend" },
+] as const satisfies readonly { when: ScreeningWhen; labelKey: string }[];
 
-const AGE_OPTIONS: { value: AgeFilter; label: string }[] = [
-  { value: null, label: "Alla" },
-  { value: 0, label: "Barntillåten" },
-  { value: 7, label: "7 år" },
-  { value: 11, label: "11 år" },
-  { value: 15, label: "15 år" },
-];
+const AGE_VALUES: AgeFilter[] = [null, 0, 7, 11, 15];
 
 function pillClassName(isActive: boolean): string {
   return `filter-pill${isActive ? " filter-pill--active" : ""}`;
@@ -44,6 +39,7 @@ export default function FilterStrip({
   onDateFilterChange,
   onAgeFilterChange,
 }: FilterStripProps) {
+  const { t, locale } = useTranslation();
   const datePickerButtonRef = useRef<HTMLButtonElement>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const closeDatePicker = useCallback(() => setIsDatePickerOpen(false), []);
@@ -58,7 +54,7 @@ export default function FilterStrip({
           className="filter-strip__group"
         >
           <span id="date-filter-label" className="filter-strip__label">
-            Datum
+            {t("filter.date")}
           </span>
           {DATE_PRESETS.map((preset) => {
             const isActive =
@@ -78,7 +74,7 @@ export default function FilterStrip({
                 {isActive && (
                   <i className="bi bi-check2 me-1" aria-hidden="true"></i>
                 )}
-                {preset.label}
+                {t(preset.labelKey)}
               </button>
             );
           })}
@@ -93,14 +89,14 @@ export default function FilterStrip({
             aria-controls={isDatePickerOpen ? "date-picker-popover" : undefined}
             aria-label={
               customDate
-                ? `Valt datum: ${formatDateLong(customDate)}. Byt datum`
-                : "Välj datum"
+                ? t("filter.selectedDateChange", { date: formatDateLong(customDate, locale) })
+                : t("calendar.chooseDate")
             }
             onClick={() => setIsDatePickerOpen((isOpen) => !isOpen)}
           >
             <i className="bi bi-calendar3" aria-hidden="true"></i>
             {customDate && (
-              <span className="ms-2">{formatDateShort(customDate)}</span>
+              <span className="ms-2">{formatDateShort(customDate, locale)}</span>
             )}
           </button>
           {isDatePickerOpen && (
@@ -128,22 +124,27 @@ export default function FilterStrip({
           className="filter-strip__group"
         >
           <span id="age-filter-label" className="filter-strip__label">
-            Åldersgräns
+            {t("filter.ageLimit")}
           </span>
-          {AGE_OPTIONS.map((option) => {
-            const isActive = ageFilter === option.value;
+          {AGE_VALUES.map((value) => {
+            const isActive = ageFilter === value;
+            const label = value === null
+              ? t("common.all")
+              : value === 0
+                ? t("movie.allAges")
+                : t("movie.age", { age: value });
             return (
               <button
-                key={option.label}
+                key={String(value)}
                 type="button"
                 className={pillClassName(isActive)}
                 aria-pressed={isActive}
-                onClick={() => onAgeFilterChange(option.value)}
+                onClick={() => onAgeFilterChange(value)}
               >
                 {isActive && (
                   <i className="bi bi-check2 me-1" aria-hidden="true"></i>
                 )}
-                {option.label}
+                {label}
               </button>
             );
           })}

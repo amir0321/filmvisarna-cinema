@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 interface Props {
   label: string
   value: number
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function QuantityPicker({ label, value, max = 10, onChange }: Props) {
+  const { t } = useTranslation()
   return (
     <div className="fv-quantity">
       <span className="fv-quantity__label">{label}</span>
@@ -13,17 +15,17 @@ export default function QuantityPicker({ label, value, max = 10, onChange }: Pro
         <button
           type="button"
           className="fv-quantity__btn"
-          aria-label={`Minska ${label}`}
+          aria-label={t('quantity.decrease', { label })}
           disabled={value <= 0}
           onClick={() => onChange(value - 1)}
         >
           −
         </button>
-        <span className="fv-quantity__value">{value}</span>
+        <span className="fv-quantity__value" aria-live="polite" aria-atomic="true">{value}</span>
         <button
           type="button"
           className="fv-quantity__btn"
-          aria-label={`Öka ${label}`}
+          aria-label={t('quantity.increase', { label })}
           disabled={value >= max}
           onClick={() => onChange(value + 1)}
         >

@@ -1,20 +1,30 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
+import { cancelByToken, getCancelPreview } from '../src/api/cancellations.ts'
 import { advanceSessionRevision, ApiError, apiClient, AUTH_UNAUTHORIZED_EVENT } from '../src/api/client.ts'
+import { BOOKINGS_CHANGED_EVENT } from '../src/utils/bookingUpdates.ts'
 
 const originalFetch = globalThis.fetch
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
 let unauthorizedEvents = 0
+let bookingUpdates = 0
+let lastUrl = ''
 let lastRequest: RequestInit | undefined
 
 beforeEach(() => {
   unauthorizedEvents = 0
+  bookingUpdates = 0
+  lastUrl = ''
   lastRequest = undefined
   Object.defineProperty(globalThis, 'window', { configurable: true, value: {
     location: { origin: 'https://cinema.example' },
-    dispatchEvent: (event: Event) => { if (event.type === AUTH_UNAUTHORIZED_EVENT) unauthorizedEvents++ },
+    dispatchEvent: (event: Event) => {
+      if (event.type === AUTH_UNAUTHORIZED_EVENT) unauthorizedEvents++
+      if (event.type === BOOKINGS_CHANGED_EVENT) bookingUpdates++
+    },
   } })
-  globalThis.fetch = async (_url, options) => {
+  globalThis.fetch = async (url, options) => {
+    lastUrl = String(url)
     lastRequest = options
     return Response.json({ success: true })
   }
@@ -34,17 +44,29 @@ test('mutations send cookies and the CSRF header without exposing any bearer tok
   assert.equal(headers.get('Content-Type'), 'application/json')
 })
 
-test('multipart uploads carry CSRF protection without overriding their boundary', async () => {
-  await apiClient.post('/upload', new FormData())
-  const headers = new Headers(lastRequest?.headers)
-  assert.equal(headers.get('X-CSRF-Protection'), '1')
-  assert.equal(headers.has('Content-Type'), false)
+test('cancellation preview and confirmation send reference and email in POST bodies without URL parameters or cookies', async () => {
+  const credentials = { bookingRef: 'FV-A1B2C', email: 'anna@example.test' }
+  await getCancelPreview(credentials)
+  assert.equal(lastUrl, '/api/bookings/cancel-preview')
+  assert.equal(lastRequest?.method, 'POST')
+  assert.equal(lastRequest?.credentials, 'omit')
+  assert.equal(lastRequest?.body, JSON.stringify(credentials))
+  assert.equal(new Headers(lastRequest?.headers).get('X-CSRF-Protection'), '1')
+  assert.equal(bookingUpdates, 0)
+
+  await cancelByToken(credentials)
+  assert.equal(lastUrl, '/api/bookings/cancel-by-token')
+  assert.equal(lastRequest?.method, 'POST')
+  assert.equal(lastRequest?.credentials, 'omit')
+  assert.equal(lastRequest?.body, JSON.stringify(credentials))
+  assert.equal(new Headers(lastRequest?.headers).get('X-CSRF-Protection'), '1')
+  assert.equal(bookingUpdates, 1)
 })
 
-test('guest writes can explicitly omit the shared session cookie', async () => {
-  await apiClient.post('/bookings/guest/confirm', { token: 'link' }, { credentials: 'omit' })
-  assert.equal(lastRequest?.credentials, 'omit')
-  assert.equal(new Headers(lastRequest?.headers).get('X-CSRF-Protection'), '1')
+test('failed public cancellation does not invalidate the member booking cache', async () => {
+  globalThis.fetch = async () => Response.json({ error: 'För många försök.' }, { status: 429 })
+  await assert.rejects(cancelByToken({ bookingRef: 'FV-A1B2C', email: 'anna@example.test' }), { status: 429 })
+  assert.equal(bookingUpdates, 0)
 })
 
 test('protected failures expire the UI but initial restoration and password validation do not', async () => {

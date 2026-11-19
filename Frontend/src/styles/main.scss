@@ -1,6 +1,7 @@
 @import './tokens';
 @import './bootstrap-overrides';
 @import 'bootstrap/scss/bootstrap';
+@include fv-bootstrap-theme;
 @import './components';
 @import './navigation';
 
@@ -32,6 +33,10 @@ h6,
   color: var(--text-heading);
 }
 
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.btn-close:focus-visible,
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -40,6 +45,25 @@ textarea:focus-visible,
 [role='button']:focus-visible {
   outline: $focus-ring-width solid $focus-ring-color;
   outline-offset: $focus-ring-offset;
+}
+
+.fv-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 16px;
+  z-index: $fv-z-modal-top + 1;
+  padding: 12px 16px;
+  color: $fv-fg;
+  background: $fv-card-bg;
+  border-radius: $radius-md;
+
+  &:not(:focus-visible) {
+    @include visually-hidden();
+  }
+}
+
+#main-content {
+  scroll-margin-top: $fv-nav-height + 16px;
 }
 
 ::-webkit-scrollbar {
@@ -75,6 +99,7 @@ textarea:focus-visible,
 
 .age-badge-all {
   background-color: $fv-success;
+  color: var(--text-on-success);
 }
 
 .age-badge-mid {
@@ -143,8 +168,8 @@ textarea:focus-visible,
 .backoffice-badge {
   padding: 2px 7px;
   border-radius: 5px;
-  background-color: rgba($fv-primary, 0.15);
-  color: $fv-primary;
+  background-color: tint($fv-primary, 0.15);
+  color: $fv-danger-light;
   font-size: $font-size-10;
   font-weight: 600;
   text-transform: uppercase;
@@ -241,7 +266,7 @@ textarea:focus-visible,
 
 .seat-available {
   background-color: $seat-available-bg;
-  border-color: rgba($seat-available-border, 0.35);
+  border-color: tint($seat-available-border, 0.35);
   cursor: pointer;
 
   &:hover,
@@ -255,7 +280,7 @@ textarea:focus-visible,
   background-color: $seat-selected-bg;
   border-color: $seat-selected-border;
   box-shadow: $seat-selected-glow;
-  color: $color-white;
+  color: var(--text-on-success);
   cursor: pointer;
 
   &:hover,
@@ -266,7 +291,7 @@ textarea:focus-visible,
 
 .seat-occupied {
   background-color: $seat-occupied-bg;
-  border-color: rgba($seat-occupied-border, 0.4);
+  border-color: tint($seat-occupied-border, 0.4);
   opacity: 0.4;
   cursor: not-allowed;
   overflow: hidden;
@@ -278,9 +303,32 @@ textarea:focus-visible,
     background: linear-gradient(
       135deg,
       transparent 40%,
-      rgba($color-white, 0.3) 40%,
-      rgba($color-white, 0.3) 60%,
+      tint($color-white, 0.3) 40%,
+      tint($color-white, 0.3) 60%,
       transparent 60%
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition: none !important;
+  }
+
+  // Disable decorative scaling while preserving transforms used for positioning.
+  .fv-seat,
+  .seat,
+  .movie-card,
+  .fv-poster .fv-poster-img {
+    transform: none !important;
+  }
+
+  .movie-details-hero__play:hover {
+    transform: translate(-50%, -50%);
   }
 }

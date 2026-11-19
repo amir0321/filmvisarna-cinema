@@ -1,3 +1,7 @@
+import { translateTicketType, translateKioskName, translateApiError, translateApiMessage } from '../i18n/mappers'
+import { formatDateLong, formatTime, toCinemaIsoDate } from '../utils/date'
+import { useTranslation } from '../context/LocaleContext'
+import { sv } from '../i18n/sv'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import SeatMap from '../components/SeatMap'
@@ -22,21 +26,29 @@ import { useBookings } from '../hooks/useBookings'
 import { EmptyState } from '../components/EmptyState'
 import { Skeleton } from '../components/Skeleton'
 import { limitTicketCounts } from '../utils/bookingAvailability'
+import ReservationWarningNotice from '../components/ReservationWarningNotice'
 
 export const hideFromNav = true
 
 export default function ScreeningDetail() {
+  const { t, locale } = useTranslation()
   const { id: idParam } = useParams()
   const id = idParam ? Number(idParam) : NaN
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { user, loading: authLoading, refreshUser } = useAuth()
   const [pending, setPending] = useState(false)
+  const [currentTime, setCurrentTime] = useState(Date.now)
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
   const [guestMessage, setGuestMessage] = useState('')
   const request = useRef<AbortController | null>(null)
   const submission = useRef<{ payload: string; key: string } | null>(null)
   useEffect(() => () => request.current?.abort(), [])
-  const { refresh: refreshBookings } = useBookings()
+  const { refresh: refreshBookings, reservationStatus } = useBookings()
+  const reservationBlocked = Boolean(reservationStatus?.blockedUntil && Date.parse(reservationStatus.blockedUntil) > currentTime)
   const [data, setData] = useState<SeatsResponse | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     (searchParams.get('seats') ?? '')
@@ -71,7 +83,7 @@ export default function ScreeningDetail() {
   useEffect(() => {
     getPriceGroups()
       .then(groups => setGroupIds(Object.fromEntries(groups.map(g => [g.name, g.id]))))
-      .catch(() => setMessage('Kunde inte hämta biljettyper.'))
+      .catch(() => setMessage(sv['booking.ticketTypesError']))
   }, [])
   const [kiosk, setKiosk] = useState<KioskItem[]>([])
   const [kioskQty, setKioskQty] = useState<Record<number, number>>({})
@@ -81,7 +93,7 @@ export default function ScreeningDetail() {
   useEffect(() => {
     getKioskItems()
       .then(items => setKiosk(items.filter(i => i.is_available)))
-      .catch(() => setKioskError('Kunde inte hämta kiosken.'))
+      .catch(() => setKioskError(sv['booking.kioskError']))
   }, [])
 
   const retrySeats = () => {
@@ -119,7 +131,7 @@ export default function ScreeningDetail() {
           setSelectedIds(cur => {
             const stillFree = cur.filter(seatId => !taken.has(seatId))
             if (stillFree.length < cur.length) {
-              setNotice('En stol du valt har just blivit bokad. Välj en annan stol.')
+              setNotice(sv['booking.seatTaken'])
             }
             return stillFree
           })
@@ -137,9 +149,9 @@ export default function ScreeningDetail() {
       <div className="py-5">
         <EmptyState
           variant="warning"
-          title="Ogiltig visning"
-          description="Visningen du söker finns inte eller har ett ogiltigt ID."
-          actionLabel="Till startsidan"
+          title={t('booking.invalidTitle')}
+          description={t('booking.invalidDescription')}
+          actionLabel={t('common.home')}
           actionTo="/"
         />
       </div>
@@ -151,9 +163,9 @@ export default function ScreeningDetail() {
       <div className="py-5">
         <EmptyState
           variant="error"
-          title="Kunde inte hämta stolarna"
-          description="Det gick inte att ladda platskartan för den här visningen. Försök igen."
-          actionLabel="Försök igen"
+          title={t('booking.seatsErrorTitle')}
+          description={t('booking.seatsErrorDescription')}
+          actionLabel={t('common.retry')}
           onAction={retrySeats}
         />
       </div>
@@ -163,7 +175,7 @@ export default function ScreeningDetail() {
   if (!data || data.screeningId !== id) {
     return (
       <section className="fv-booking" role="status" aria-busy="true">
-        <span className="visually-hidden">Laddar bokningssida...</span>
+        <span className="visually-hidden">{t('booking.loading')}</span>
         <div className="fv-booking__top">
           <Skeleton variant="text" width="140px" height="20px" />
           <Skeleton variant="pill" width="280px" height="28px" />
@@ -177,13 +189,13 @@ export default function ScreeningDetail() {
         </div>
         <div className="fv-booking__grid">
           <div>
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <Skeleton variant="text" width="180px" height="24px" className="mb-3" />
               <Skeleton variant="rect" width="100%" height="140px" />
             </div>
           </div>
           <aside className="fv-booking__aside">
-            <div className="fv-card">
+            <div className="fv-card fv-booking__card">
               <Skeleton variant="text" width="140px" height="22px" className="mb-3" />
               <Skeleton variant="rect" width="100%" height="160px" />
             </div>
@@ -211,17 +223,18 @@ export default function ScreeningDetail() {
   }
 
   async function handleConfirm() {
+    if (reservationsClosed || reservationBlocked) return
     if (request.current || authLoading || (user && !user.isVerified)) return
     if (isSoldOut || ticketCount === 0 || ticketCount > ticketLimit ||
       selectedIds.length !== ticketCount || selectedIds.some(seatId => !data?.seats.some(seat => seat.id === seatId && seat.status === 'available'))) return
     setMessage(null)
     setGuestMessage('')
-    const emailError = validateEmail(email)
+    const emailError = validateEmail(email, locale)
     if (emailError) { setMessage(emailError); return }
 
     const dbName = { adult: 'adult', senior: 'elder', child: 'child' } as const
-    const perSeat = TICKET_TYPES.flatMap(t =>
-      Array<number>(counts[t.type]).fill(groupIds[dbName[t.type]]),
+    const perSeat = TICKET_TYPES.flatMap(ticket =>
+      Array<number>(counts[ticket.type]).fill(groupIds[dbName[ticket.type]]),
     )
     const tickets = selectedIds.map((seatId, i) => ({ seatId, priceGroupId: perSeat[i] }))
     const items = kiosk
@@ -246,49 +259,37 @@ export default function ScreeningDetail() {
       setReference(created.bookingRef)
       navigate(`/bekraftelse/${created.bookingRef}`)
     } catch (err) {
-      if (!controller.signal.aborted) setMessage(err instanceof ApiError ? err.message : 'Något gick fel. Försök igen.')
+      if (!controller.signal.aborted) setMessage(err instanceof ApiError ? err.message : sv['booking.genericError'])
     } finally {
       if (!controller.signal.aborted) { request.current = null; setPending(false) }
     }
   }
 
   const ticketCount = counts.adult + counts.senior + counts.child
-  const ticketTotal = TICKET_TYPES.reduce((sum, t) => sum + counts[t.type] * t.price, 0)
+  const ticketTotal = TICKET_TYPES.reduce((sum, ticket) => sum + counts[ticket.type] * ticket.price, 0)
   const kioskCount = Object.values(kioskQty).reduce((sum, n) => sum + n, 0)
   const kioskTotal = kiosk.reduce((sum, i) => sum + i.price * (kioskQty[i.id] ?? 0), 0)
   const selectedLabels = data.seats
     .filter(s => selectedIds.includes(s.id))
     .sort((a, b) => a.row_label.localeCompare(b.row_label) || a.seat_number - b.seat_number)
-    .map(s => `Rad ${s.row_label}, Stol ${s.seat_number}`)
+    .map(s => t('seatMap.seat', { row: s.row_label, seat: s.seat_number }))
     .join(' · ')
 
   const screening = screenings?.find(s => s.id === id)
+  const reservationsClosed = Boolean(screening && new Date(screening.startsAt).getTime() - currentTime <= 60 * 60_000)
   const when = screening
-    ? new Date(screening.startsAt).toLocaleString('sv-SE', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Stockholm',
-      })
+    ? t('common.dateTime', { date: formatDateLong(toCinemaIsoDate(screening.startsAt), locale), time: formatTime(screening.startsAt, locale) })
     : ''
-  const endTime = screening
-    ? new Date(screening.endsAt).toLocaleTimeString('sv-SE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Stockholm',
-      })
-    : ''
+  const endTime = screening ? formatTime(screening.endsAt, locale) : ''
   const seatsLeft = ticketCount - selectedIds.length
   const ctaLabel =
     ticketCount === 0
-      ? 'Välj biljetter'
+      ? t('booking.chooseTickets')
       : seatsLeft > 0
-        ? `Välj ${seatsLeft} ${seatsLeft === 1 ? 'plats' : 'platser'} till`
+        ? t(seatsLeft === 1 ? 'booking.chooseMoreOne' : 'booking.chooseMoreMany', { count: seatsLeft })
         : seatsLeft < 0
-          ? 'Fler platser än biljetter'
-          : user ? 'Slutför bokning' : 'Skicka bekräftelsemejl'
+          ? t('booking.tooManySeats')
+          : user ? t('booking.complete') : t('booking.sendEmail')
 
   return (
     <section className="fv-booking">
@@ -297,7 +298,7 @@ export default function ScreeningDetail() {
           to={screening ? getMovieUrl(screening.movieId) : '/'}
           className="fv-booking__back"
         >
-          ‹ {screening ? screening.movieTitle : 'Tillbaka'}
+          ‹ {screening ? screening.movieTitle : t('common.back')}
         </Link>
         <StepIndicator current={ticketCount === 0 ? 1 : 2} />
       </div>
@@ -322,42 +323,41 @@ export default function ScreeningDetail() {
 
       {notice && (
         <p className="fv-booking__alert" role="alert">
-          {notice}
+          {translateApiError(notice, locale)}
         </p>
       )}
 
       {isSoldOut ? (
         <EmptyState
           icon="bi-ticket-perforated"
-          title="Visningen är fullbokad"
-          description="Det finns inga lediga platser till den här visningen. Välj en annan visning för att boka biljetter."
-          actionLabel="Se andra visningstider"
+          title={t('booking.soldOutTitle')}
+          description={t('booking.soldOutDescription')}
+          actionLabel={t('booking.otherScreenings')}
           actionTo={screening ? getMovieUrl(screening.movieId) : '/filmer'}
         />
       ) : (
         <div className="fv-booking__grid">
           <div>
-            <div className="fv-card">
-              <h2>1. Välj biljetter</h2>
+            <div className="fv-card fv-booking__card">
+              <h2>{t('booking.stepTickets')}</h2>
               <p className="fv-card__subtitle" role="status">
                 {availableSeats <= 10
-                  ? `${availableSeats} ${availableSeats === 1 ? 'plats kvar' : 'platser kvar'}. Du kan välja högst ${ticketLimit} ${ticketLimit === 1 ? 'biljett' : 'biljetter'}.`
-                  : 'Välj antal biljetter per kategori'}
+                  ? t('booking.availability', { available: t(availableSeats === 1 ? 'booking.seatsLeftOne' : 'screening.seatsLeft', { count: availableSeats }), limit: t(ticketLimit === 1 ? 'booking.ticketCountOne' : 'booking.ticketCountMany', { count: ticketLimit }) })
+                  : t('booking.ticketCategories')}
               </p>
-              {TICKET_TYPES.map(t => (
+              {TICKET_TYPES.map(ticket => (
                 <QuantityPicker
-                  key={t.type}
-                  label={`${t.label} (${t.price} kr)`}
-                  value={counts[t.type]}
-                  max={ticketLimit - (ticketCount - counts[t.type])}
-                  onChange={n => changeCount(t.type, n)}
+                  key={ticket.type}
+                  label={`${translateTicketType(ticket.label, locale)} (${formatSek(ticket.price, locale)})`}
+                  value={counts[ticket.type]}
+                  max={ticketLimit - (ticketCount - counts[ticket.type])}
+                  onChange={n => changeCount(ticket.type, n)}
                 />
               ))}
               {ticketCount > 0 && (
                 <div className="fv-ticket-summary">
                   <span>
-                    Totalt: {formatSek(ticketTotal)} för {ticketCount}{' '}
-                    {ticketCount === 1 ? 'biljett' : 'biljetter'}
+                    {t('booking.ticketSummary', { price: formatSek(ticketTotal, locale), tickets: t(ticketCount === 1 ? 'booking.ticketCountOne' : 'booking.ticketCountMany', { count: ticketCount }) })}
                   </span>
                   <i className="bi bi-check-circle-fill" aria-hidden="true" />
                 </div>
@@ -365,111 +365,121 @@ export default function ScreeningDetail() {
             </div>
 
             {ticketCount > 0 && (
-              <div className="fv-card">
-                <h2>2. Välj platser</h2>
+              <div className="fv-card fv-booking__card fv-booking__seat-card">
+                <h2>{t('booking.stepSeats')}</h2>
                 <p className="fv-card__subtitle">
-                  Bästa tillgängliga platser är förvalda — klicka för att ändra
+                  {t('booking.bestSeats')}
                 </p>
                 <SeatMap seats={data.seats} selectedIds={selectedIds} onToggle={toggle} />
               </div>
             )}
 
             {ticketCount > 0 && (
-              <div className="fv-card fv-kiosk">
+              <div className="fv-card fv-booking__card fv-kiosk">
                 <button
                   type="button"
                   className="fv-kiosk__header"
                   onClick={() => setKioskOpen(o => !o)}
                   aria-expanded={kioskOpen}
+                  aria-controls="fv-kiosk-items"
                 >
-                  <span className="fv-kiosk__icon" aria-hidden="true">🍿</span>
+                  <span className="fv-kiosk__icon fv-kiosk__emoji" aria-hidden="true">🍿</span>
                   <span className="fv-kiosk__text">
-                    <strong>Bio-Kiosken – Förbeställ snacks &amp; slipp kön!</strong>
+                    <strong>{t('booking.kioskHeading')}</strong>
                     <small>
                       {kioskCount > 0
-                        ? `${kioskCount} valda`
-                        : 'Klicka för att bläddra bland snacks & drycker'}
+                        ? t('booking.kioskSelected', { count: kioskCount })
+                        : t('booking.kioskBrowse')}
                     </small>
                   </span>
                   <i
-                    className={`bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
+                    className={`fv-kiosk__chevron bi ${kioskOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}
                     aria-hidden="true"
                   />
                 </button>
 
-                {kioskOpen && (
-                  <div className="fv-kiosk__items">
-                    {kioskError && <p role="alert">{kioskError}</p>}
-                    {kiosk.map(i => (
-                      <QuantityPicker
-                        key={i.id}
-                        label={`${i.name} (${formatSek(i.price)})`}
-                        value={kioskQty[i.id] ?? 0}
-                        max={20}
-                        onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div id="fv-kiosk-items" className="fv-kiosk__items" hidden={!kioskOpen}>
+                  {kioskError && <p role="alert">{translateApiError(kioskError, locale)}</p>}
+                  {kiosk.map(i => (
+                    <QuantityPicker
+                      key={i.id}
+                      label={`${translateKioskName(i.name, locale)} (${formatSek(i.price, locale)})`}
+                      value={kioskQty[i.id] ?? 0}
+                      max={20}
+                      onChange={next => setKioskQty(q => ({ ...q, [i.id]: next }))}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
           <aside className="fv-booking__aside">
-            <div className="fv-card">
-              <h2>Din bokning</h2>
+            <div className="fv-card fv-booking__card">
+              <h2>{t('booking.yourBooking')}</h2>
 
-              {selectedIds.length > 0 && (
-                <div className="fv-selected">
-                  <span>{screening?.cinema}</span>
-                  <strong>{selectedLabels}</strong>
-                </div>
-              )}
+              <div role="status" aria-live="polite" aria-atomic="true">
+                <p className="visually-hidden">{t('booking.selectionStatus', { selected: selectedIds.length, total: ticketCount })}</p>
+                {selectedIds.length > 0 && (
+                  <div className="fv-selected">
+                    <span>{screening?.cinema}</span>
+                    <strong>{selectedLabels}</strong>
+                  </div>
+                )}
+              </div>
 
               {ticketCount > 0 && (
                 <div className="fv-summary">
-                  {TICKET_TYPES.filter(t => counts[t.type] > 0).map(t => (
-                    <div key={t.type} className="fv-summary__row">
+                  {TICKET_TYPES.filter(ticket => counts[ticket.type] > 0).map(ticket => (
+                    <div key={ticket.type} className="fv-summary__row">
                       <span>
-                        {counts[t.type]}× {t.label}
+                        {counts[ticket.type]}× {translateTicketType(ticket.label, locale)}
                       </span>
-                      <span>{formatSek(counts[t.type] * t.price)}</span>
+                      <span>{formatSek(counts[ticket.type] * ticket.price, locale)}</span>
                     </div>
                   ))}
                   {kioskCount > 0 && (
                     <div className="fv-summary__row">
-                      <span>{kioskCount}× Bio-Kiosken</span>
-                      <span>{formatSek(kioskTotal)}</span>
+                      <span>{kioskCount}× {t('booking.kiosk')}</span>
+                      <span>{formatSek(kioskTotal, locale)}</span>
                     </div>
                   )}
-                  <div className="fv-summary__row fv-summary__row--total">
-                    <span>Totalt</span>
-                    <span>{formatSek(ticketTotal + kioskTotal)}</span>
+                  <div className="fv-summary__row fv-summary__row--total" role="status" aria-live="polite" aria-atomic="true">
+                    <span>{t('booking.total')}</span>
+                    <span>{formatSek(ticketTotal + kioskTotal, locale)}</span>
                   </div>
                 </div>
               )}
 
               <p className="fv-notice">
-                Ingen onlinebetalning krävs. Biljetterna betalas och hämtas ut i kassan
-                senast 15 minuter innan föreställningen börjar.
+                {t('booking.paymentNotice')}
               </p>
+              <p className="small text-secondary">{t('reservationWarnings.bookingNotice')}</p>
 
               {ticketCount > 0 && seatsLeft === 0 && (
                 <div className="fv-checkout">
-                  <label className="fv-checkout__field">
-                    Namn
+                  <label className="fv-checkout__field" htmlFor="guest-name">
+                    {t('form.name')}
                     <input
                       type="text"
-                      placeholder="Förnamn Efternamn"
+                      id="guest-name"
+                      name="guestName"
+                      autoComplete="name"
+                      required
+                      placeholder={t('form.fullNamePlaceholder')}
                       value={name}
                       onChange={e => setName(e.target.value)}
                     />
                   </label>
-                  <label className="fv-checkout__field">
-                    E-post för bokningsbekräftelse
+                  <label className="fv-checkout__field" htmlFor="guest-email">
+                    {t('form.email')}
                     <input
                       type="email"
-                      placeholder="din@epost.se"
+                      id="guest-email"
+                      name="email"
+                      autoComplete="email"
+                      required
+                      placeholder={t('form.emailPlaceholder')}
                       value={email}
                       readOnly={Boolean(user)}
                       onChange={e => setEmail(e.target.value)}
@@ -480,23 +490,23 @@ export default function ScreeningDetail() {
 
               {message && (
                 <p className="fv-booking__error" role="alert">
-                  {message}
+                  {translateApiError(message, locale)}
                 </p>
               )}
-              {!user && <p className="fv-notice">Platserna reserveras först när du har bekräftat bokningen via e-post. Länken gäller i högst 10 minuter.</p>}
-              {guestMessage && <p role="status" className="text-success">{guestMessage}</p>}
+              {!user && <p className="fv-notice">{t('booking.guestNotice')}</p>}
+              {guestMessage && <p role="status" className="text-success">{translateApiMessage(guestMessage, locale)}</p>}
               {user && !user.isVerified && <div role="status" className="fv-notice">
-                <p>Verifiera din e-postadress innan du bokar biljetter. Du kan skicka ett nytt verifieringsmejl via meddelandet överst på sidan.</p>
-                <button type="button" className="btn btn-outline-light btn-sm" disabled={pending}
+                <p>{t('booking.verifyNotice')}</p>
+                <button type="button" className="btn btn-secondary-outline btn-sm" disabled={pending}
                   onClick={async () => {
                     setPending(true)
-                    try { await refreshUser() } catch { setMessage('Kunde inte kontrollera verifieringen. Försök igen.') }
+                    try { await refreshUser() } catch { setMessage(sv['booking.verificationError']) }
                     finally { setPending(false) }
-                  }}>Jag har verifierat min e-post</button>
+                  }}>{t('booking.verifiedButton')}</button>
               </div>}
               {reference && (
                 <p>
-                  Bokningen är bekräftad. Bokningsnummer: <strong>{reference}</strong>
+                  {t('booking.confirmedPrefix')} <strong>{reference}</strong>
                 </p>
               )}
 
@@ -504,7 +514,7 @@ export default function ScreeningDetail() {
                 className="fv-checkout__btn"
                 onClick={handleConfirm}
                 disabled={
-                  ticketCount === 0 ||
+                  reservationBlocked || reservationsClosed || ticketCount === 0 ||
                   seatsLeft !== 0 ||
                   name.trim() === '' ||
                   email.trim() === '' ||
@@ -513,8 +523,10 @@ export default function ScreeningDetail() {
                   || pending || authLoading || Boolean(user && !user.isVerified)
                 }
               >
-                {pending ? 'Vänta...' : ctaLabel}
+                {pending ? t('booking.wait') : ctaLabel}
               </button>
+              {reservationsClosed && <p className="small text-secondary mt-2" role="status">{t('booking.reservationsClosed')}</p>}
+              <ReservationWarningNotice status={reservationStatus} currentTime={currentTime} />
             </div>
           </aside>
         </div>

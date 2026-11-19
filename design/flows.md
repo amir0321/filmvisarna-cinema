@@ -51,22 +51,24 @@ flowchart LR
 **Framtida missbrukshantering:** Följ [booking-security.md](booking-security.md#åtskillnad-och-framtida-adminarbete--krav-inte-implementerad-adminfunktion). Gästförfrågningar ska hållas utanför bekräftade bokningar och statistik. Framtida adminarbete ska stödja beteendebaserad flaggning, säker granskning, uttrycklig adminavbokning som frigör platser och skyddad loggning av åtgärder. Detta dokumenterar krav; ingen sådan adminfunktion byggs i den aktuella ändringen.
 
 1. **Åtkomst till Admin (`/admin`):**
-   - Nåbar för inloggade administratörer (`user.role === 'admin'`) via länken `Admin` (`ADMIN`-badge) i `Navbar` eller `Admin Backoffice` i `MobileDrawer`.
-   - Inne i `/admin` används samma `Navbar`, `MobileDrawer` och `BottomNav` som på vanliga hemsidan, men med admin-länkarna (`Bokningar & Kassa`, `Visningsschema`, `Filmarkiv`, `Salonger`) samt `Till biografen` (`/`) och logotypen `FILMVISARNA` för att gå tillbaka till den publika hemsidan. Utloggning sker via avatar-dropdownen (desktop) eller `MobileDrawer` (mobil).
+   - Nåbar för inloggade administratörer (`user.role === 'admin'`) via `Backoffice` (`/admin`, badge `ADMIN`) i den publika desktopmenyn, avatar-dropdownen eller mobilens sidomeny. Adminrouten skyddas även vid direktnavigering.
+   - Inne i admin finns `Backoffice` som första länk både i desktopmenyn och sidomenyn. Den öppnar administrationsöversikten och är aktiv bara vid exakt `/admin`. Övriga länkar öppnar bokningar, visningsschema, filmarkiv och salonger. `Till biografen` och logotypen går till den publika hemsidan. Utloggning sker via avatar-dropdownen eller sidomenyn.
+   - Filmarkiv och Visningsschema delar `AdminPageHeader`, där `Backoffice` i brödsmulan också leder till översikten. Brödsmulorna ligger uppe till höger på desktop och under rubrikblocket på mobil.
 2. **Flik 1 – Bokningar & Kassa (`BokningarTab.tsx`):**
    - Sökning i realtid på bokningsnummer eller e-post via fältet `Snabb incheckning`.
    - Val av visning i dropdownen `Filtrerar visning`.
    - Klick på `Markera betald` ändrar bokningens status från `'pending'` (`Inväntar`) till `'paid'` (`Betald`), markerar bokningsnumret i grönt och räknar om KPI-kort och `Kassaöversikt`.
    - Klick på `Avboka` raderar bokningen direkt ur listan.
-3. **Flik 2 – Visningsschema (`SchemaTab.tsx`):**
-   - Filtrera visningar med chipsen `Idag`, `Imorgon`, `Hela veckan`.
-   - Klick på `Schemalägg ny visning` (desktop) / `+ Ny Visning` (mobil) öppnar modal / `BottomSheet`. Admin väljer film, salong, datum och starttid, ser automatiskt beräknad sluttid (`inkl. 15 min`) och klickar `Publicera visning`.
-   - Klick på `Ställ in` på en visningsrad visar inline-knapparna `Bekräfta` och `Avbryt`. Vid `Bekräfta` ändras visningens status till `'cancelled'` (`Inställd`, `opacity: 0.5`).
-4. **Flik 3 – Filmarkiv (`FilmarkivTab.tsx`):**
-   - Sök på filmtitel eller regissör.
-   - Klick på `Lägg till ny film` / `+ Ny Film` öppnar modal / `BottomSheet` med tomt formulär; klick på `Redigera` öppnar samma modal förifyllt med filmens värden.
-   - Klick på `Spara film` sparar filmen i listan, visar grön knapp `Sparad!` och stänger modalen.
-   - Klick på `Ta bort` visar inline-knapparna `Bekräfta` och `Avbryt`; vid `Bekräfta` tas filmen bort ur listan.
+3. **Visningsschema (`AdminScreenings.tsx`, aktuell implementation):**
+   - Filtrera med `Alla kommande`, `Idag`, `Imorgon`, `Hela veckan`, datumkalender och salongsval. Listan visar 15 poster per sida, som kort under `1200px` och tabell från `1200px`.
+   - `Schemalägg ny visning` och `Redigera` öppnar samma responsiva formulär. Admin väljer film, salong, datum och starttid; sluttiden inkluderar 20 minuters städning. Lyckat API-svar stänger formuläret, laddar om listan och visar grön återkoppling.
+   - `Ställ in` kräver `Ja, ställ in` / `Avbryt`. Visningar med bokningar kan inte ställas in och har låst datum, tid och salong vid redigering; orsaken visas i klartext. Se [Visningsschema](pages/admin-visningar.md).
+4. **Filmarkiv (`AdminMovies.tsx`, aktuell implementation):**
+   - Sök på filmtitel eller regissör; räknare och sidnumrering uppdateras, med 10 filmer per sida.
+   - `Lägg till film` öppnar ett tomt formulär, `Redigera` ett förifyllt. Admin kan mata in manuellt eller söka i TMDB, välja ett förslag och granska metadata samt skådespelare före sparning.
+   - Affisch kan väljas som fil med förhandsvisning eller bild-URL. Rollistan återanvänder personprofiler och kan kompletteras med bilder, biografier och rollfigurer. Ett öppet profilutkast måste sparas eller avbrytas innan filmen sparas.
+   - Efter lyckad filmsparning visas grön `Sparad!` i dialog och lista. Dialogen förblir öppen, stängs med `Stäng`, och fortsatt redigering uppdaterar samma film-ID.
+   - Borttagning använder inline-bekräftelse. Registrerade visningar, även tidigare, blockerar borttagning med synlig svensk förklaring. Att ta bort en skådespelare från filmen raderar bara filmkopplingen. Se [Filmarkiv](pages/admin-filmer.md).
 5. **Flik 4 – Salonger (`SalongerAdminTab.tsx`):**
    - Klick på `Lägg till ny salong` eller `Redigera rader & stolar` öppnar modalen där admin ställer in salongsnamn, rader (`1`–`20`), stolar per rad (`1`–`20`), teknik/format och rullstolsplatser med en `Live förhandsgranskning` av salongskartan.
    - Klick på `Ta bort` visar inline-knapparna `Bekräfta` och `Avbryt`.
@@ -82,7 +84,7 @@ Prototypen har ingen riktig autentisering eller rollstyrning i state, utan prese
 | **Ej inloggad besökare / Gäst** | `Nav.tsx`, `MobileDrawer.tsx`, `SeatSelectionScreen.tsx` | I `Nav` visas knapparna `Logga in` och `Bli Medlem`. I `MobileDrawer` visas avatar `G` med texten `Gäst` och `Inte inloggad`. I `SeatSelectionScreen` bokar gästen genom att ange sin e-postadress (`E-post för bokningsbekräftelse`) utan konto. | `src/components/Nav.tsx`, `src/components/MobileDrawer.tsx`, `src/components/SeatSelectionScreen.tsx` |
 | **Gästmedlem** | `MyBookingsScreen.tsx` | Visar profilkort med initialer `AL`, e-post (`savedBookings[0]?.email` eller `anna.lindqvist@example.se`) och grön badge `Gästmedlem`. Kan se aktuella bokningar, öppna biljettbekräftelsen och öppna avbokningsmodalen. | `src/components/MyBookingsScreen.tsx` |
 | **Aktiv medlem** | `ProfilScreen.tsx` | Visar avatar (`G` eller initialer från för-/efternamn), e-post med badge `VERIFIERAD`, grön status-pill `Aktiv medlem`, statistik (`Bokningar` och `Poäng: 240`), samt flikar för att redigera personuppgifter, byta lösenord och se bokningshistorik. | `src/components/ProfilScreen.tsx` |
-| **Admin / Superadmin** | `Navbar.tsx`, `MobileDrawer.tsx`, `BottomNav.tsx` & `/admin/*` | Har tillgång till `Admin`-länken (`ADMIN`-badge) i den gemensamma headern (`Navbar`) och mobilmenyn (`MobileDrawer`). Inne i `/admin` används samma header-design (`64px`, `.app-navbar`, avatar-dropdown, `MobileDrawer` och `BottomNav`) med tillgång till samtliga backoffice-vyer (`Bokningar & Kassa`, `Visningsschema`, `Filmarkiv`, `Salonger`). | `Frontend/src/components/Navbar.tsx`, `Frontend/src/components/MobileDrawer.tsx`, `Frontend/src/components/BottomNav.tsx` |
+| **Admin / Superadmin** | `Navbar.tsx`, `MobileDrawer.tsx`, `BottomNav.tsx` & `/admin/*` | I den aktuella appen har rollen `admin` tillgång till `Backoffice` (`/admin`, `ADMIN`-badge) via desktopmeny och mobil sidomeny. Inne i admin finns en länk tillbaka till översikten samt vyerna för bokningar, visningar, filmer och salonger. Route- och API-skydd baseras på serverns session. | `Frontend/src/components/Navbar.tsx`, `Frontend/src/components/MobileDrawer.tsx`, `Frontend/src/components/BottomNav.tsx` |
 
 ---
 

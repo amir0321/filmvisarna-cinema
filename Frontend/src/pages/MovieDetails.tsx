@@ -3,12 +3,18 @@ import { Link, useParams, useSearchParams } from 'react-router'
 import { StarRatingBadge } from '../components/Badge'
 import { EmptyState } from '../components/EmptyState'
 import { FilterPill, LOW_SEATS_DETAIL_THRESHOLD } from '../components/Pills'
+import { Modal } from '../components/Modal'
 import { Poster } from '../components/Poster'
 import { CardListSkeleton, Skeleton } from '../components/Skeleton'
 import TrailerModal from '../components/TrailerModal'
+import { useTranslation } from '../context/LocaleContext'
 import { useMovie } from '../hooks/useMovies'
 import { useScreenings } from '../hooks/useScreenings'
+import type { Translator } from '../i18n'
+import { translateApiError, translateGenre } from '../i18n/mappers'
 import type { Screening } from '../types/screening'
+import type { MovieCastMember } from '../types/movie'
+import { isSafeImageUrl } from '../utils/imageValidation'
 import {
   formatShowtimeDayLabel,
   formatTime,
@@ -16,21 +22,22 @@ import {
 } from '../utils/date'
 import { getBookingUrl } from '../utils/links'
 
-function formatAgeRating(ageRating: string | null): string {
-  if (!ageRating) return 'Ej angiven'
+function formatAgeRating(ageRating: string | null, t: Translator): string {
+  if (!ageRating) return t('movieDetails.notSpecified')
   const normalized = ageRating.trim().toLowerCase()
   if (normalized === '0' || normalized === 'alla' || normalized === 'barntillåten') {
-    return 'Alla åldrar'
+    return t('movieDetails.allAges')
   }
-  return normalized.endsWith('år') ? ageRating : `${ageRating} år`
+  const age = ageRating.trim().replace(/\s*år$/i, '')
+  return t('movie.age', { age })
 }
 
-function formatRuntime(minutes: number): string {
+function formatRuntime(minutes: number, t: Translator): string {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
-  if (hours <= 0) return `${mins} min`
-  if (mins === 0) return `${hours} tim`
-  return `${hours} tim ${mins} min`
+  if (hours <= 0) return t('movieDetails.runtimeMinutes', { mins })
+  if (mins === 0) return t('movieDetails.runtimeHours', { hours })
+  return t('movieDetails.runtimeHoursMinutes', { hours, mins })
 }
 
 function getScreeningFormat(cinemaName: string): string {
@@ -38,11 +45,15 @@ function getScreeningFormat(cinemaName: string): string {
 }
 
 export default function MovieDetails() {
+  const { t, locale } = useTranslation()
   const { id } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const isTrailerOpen = searchParams.get('trailer') === '1'
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [failedHeroSources, setFailedHeroSources] = useState<string[]>([])
+  const [selectedActor, setSelectedActor] = useState<MovieCastMember | null>(null)
+  const [failedCastPhotos, setFailedCastPhotos] = useState<string[]>([])
+  const [castMovieId, setCastMovieId] = useState(id)
   const { data: movie, loading, error, refetch } = useMovie(id)
   const {
     data: screenings,
@@ -50,6 +61,25 @@ export default function MovieDetails() {
     error: screeningsError,
     refetch: refetchScreenings,
   } = useScreenings({ movieId: Number(id) })
+
+  // Route changes must not retain an open profile from the previous movie.
+  if (castMovieId !== id) {
+    setCastMovieId(id)
+    setSelectedActor(null)
+    setFailedCastPhotos([])
+  }
+
+  const castList = useMemo<MovieCastMember[]>(() => {
+    if (movie?.cast_members?.length) return movie.cast_members
+    return movie?.actors?.map((name, index) => ({
+      person_id: -(index + 1), name, photo_url: null, bio: null,
+      character_name: null, tmdb_id: null, billing_order: index,
+    })) ?? []
+  }, [movie])
+
+  function handleCastPhotoError(url: string) {
+    setFailedCastPhotos(current => current.includes(url) ? current : [...current, url])
+  }
 
   const screeningsByDate = useMemo(() => {
     const groups = new Map<string, Screening[]>()
@@ -88,7 +118,7 @@ export default function MovieDetails() {
   if (loading) {
     return (
       <div className='movie-details-page full-bleed' role='status' aria-busy='true'>
-        <span className='visually-hidden'>Laddar film…</span>
+        <span className='visually-hidden'>{t('movieDetails.loading')}</span>
         <div className='movie-details-hero'>
           <Skeleton variant='rect' height='100%' />
         </div>
@@ -118,11 +148,11 @@ export default function MovieDetails() {
       <div className='py-5'>
         <EmptyState
           variant='error'
-          title='Filmen kunde inte hittas'
+          title={t('movieDetails.notFoundTitle')}
           description={
-            error || 'Filmen kunde inte laddas. Kontrollera att länken är korrekt.'
+            error ? translateApiError(error, locale) : t('movieDetails.notFoundDescription')
           }
-          actionLabel='Försök igen'
+          actionLabel={t('common.retry')}
           onAction={refetch}
         />
       </div>
@@ -157,14 +187,14 @@ export default function MovieDetails() {
 
         <Link to='/filmer' className='movie-details-hero__back'>
           <i className='bi bi-chevron-left' aria-hidden='true' />
-          <span>Tillbaka</span>
+          <span>{t('movieDetails.back')}</span>
         </Link>
 
         {movie.trailer_url && (
           <button
             type='button'
             className='movie-details-hero__play'
-            aria-label={`Spela trailer för ${movie.title}`}
+            aria-label={t('movieDetails.playTrailerFor', { title: movie.title })}
             onClick={() => setSearchParams({ trailer: '1' }, { replace: true })}
           >
             <i className='bi bi-play-fill' aria-hidden='true' />
@@ -179,7 +209,7 @@ export default function MovieDetails() {
             <div className='movie-details-meta-row'>
               {movie.genres.map((genre) => (
                 <span key={genre} className='genre-badge'>
-                  {genre}
+                  {translateGenre(genre, locale)}
                 </span>
               ))}
               {movie.imdb_rating != null && (
@@ -191,7 +221,7 @@ export default function MovieDetails() {
 
             {movie.director && (
               <p className='movie-details-director'>
-                Regi: {movie.director}
+                {t('movieDetails.directedBy', { director: movie.director })}
               </p>
             )}
           </header>
@@ -202,38 +232,38 @@ export default function MovieDetails() {
               <Poster
                 src={movie.poster_url}
                 fallbackSrc={movie.landscape_image_url}
-                alt={`Affisch för ${movie.title}`}
+                alt={t('movieDetails.posterAlt', { title: movie.title })}
                 title={movie.title}
                 className='movie-details-poster'
               />
             </div>
 
             <div className='movie-details-facts'>
-              <h2 className='movie-details-facts__heading'>Fakta</h2>
+              <h2 className='movie-details-facts__heading'>{t('movieDetails.factsHeading')}</h2>
 
               <div className='movie-details-facts__row'>
-                <span className='movie-details-facts__label'>Åldersgräns</span>
+                <span className='movie-details-facts__label'>{t('filter.ageLimit')}</span>
                 <span className='movie-details-facts__value'>
-                  {formatAgeRating(movie.age_rating)}
+                  {formatAgeRating(movie.age_rating, t)}
                 </span>
               </div>
 
               <div className='movie-details-facts__row'>
-                <span className='movie-details-facts__label'>Premiärår</span>
+                <span className='movie-details-facts__label'>{t('movieDetails.releaseYear')}</span>
                 <span className='movie-details-facts__value'>
-                  {releaseYear ?? 'Ej angiven'}
+                  {releaseYear ?? t('movieDetails.notSpecified')}
                 </span>
               </div>
 
               <div className='movie-details-facts__row'>
-                <span className='movie-details-facts__label'>Speltid</span>
+                <span className='movie-details-facts__label'>{t('movie.duration')}</span>
                 <span className='movie-details-facts__value'>
-                  {formatRuntime(movie.duration_minutes)}
+                  {formatRuntime(movie.duration_minutes, t)}
                 </span>
               </div>
 
               <div className='movie-details-facts__row'>
-                <span className='movie-details-facts__label'>Originaltitel</span>
+                <span className='movie-details-facts__label'>{t('movieDetails.originalTitle')}</span>
                 <span className='movie-details-facts__value'>{movie.title}</span>
               </div>
 
@@ -251,34 +281,49 @@ export default function MovieDetails() {
           {/* Höger kolumn: synopsis, medverkande och visningsschema */}
           <div className='movie-details-body'>
             <p className='movie-details-synopsis'>
-              {movie.description || 'Synopsis saknas.'}
+              {movie.description || t('movieDetails.noSynopsis')}
             </p>
 
-            {movie.actors && movie.actors.length > 0 && (
-              <section className='movie-details-cast' aria-label='Medverkande'>
-                <h2 className='movie-details-cast__heading'>Medverkande</h2>
+            {castList.length > 0 && (
+              <section className='movie-details-cast' aria-label={t('movieDetails.castHeading')}>
+                <h2 className='movie-details-cast__heading'>{t('movieDetails.castHeading')}</h2>
                 <div className='movie-details-cast__list'>
-                  {movie.actors.map((actor) => (
-                    <span key={actor} className='movie-details-cast__pill'>
-                      {actor}
-                    </span>
+                  {castList.map((member) => (
+                    <button
+                      key={member.person_id}
+                      type='button'
+                      className='movie-details-cast__card'
+                      onClick={() => setSelectedActor(member)}
+                      aria-label={member.character_name ? t('movieDetails.castCardWithRoleAria', { name: member.name, role: member.character_name }) : t('movieDetails.castCardAria', { name: member.name })}
+                      aria-haspopup='dialog'
+                    >
+                      <span className='movie-details-cast__avatar'>
+                        {isSafeImageUrl(member.photo_url) && !failedCastPhotos.includes(member.photo_url) ? (
+                          <img src={member.photo_url} alt='' loading='lazy' onError={() => handleCastPhotoError(member.photo_url!)} />
+                        ) : <i className='bi bi-person-fill' aria-hidden='true' />}
+                      </span>
+                      <span className='movie-details-cast__info'>
+                        <span className='movie-details-cast__name'>{member.name}</span>
+                        {member.character_name ? <span className='movie-details-cast__character'>{member.character_name}</span> : null}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </section>
             )}
 
-            <section className='screening-section' aria-label='Visningsschema'>
-              <h2 className='screening-section__title'>Visningsschema</h2>
+            <section className='screening-section' aria-label={t('movieDetails.scheduleHeading')}>
+              <h2 className='screening-section__title'>{t('movieDetails.scheduleHeading')}</h2>
 
               {screeningsByDate.length > 0 && (
-                <div className='screening-date-chips' role='group' aria-label='Välj datum'>
+                <div className='screening-date-chips' role='group' aria-label={t('calendar.chooseDate')}>
                   {screeningsByDate.map(([date]) => (
                     <FilterPill
                       key={date}
                       active={activeDate === date}
                       onClick={() => setSelectedDate(date)}
                     >
-                      {formatShowtimeDayLabel(date)}
+                      {formatShowtimeDayLabel(date, locale)}
                     </FilterPill>
                   ))}
                 </div>
@@ -288,13 +333,13 @@ export default function MovieDetails() {
 
               {!screeningsLoading && screeningsError && (
                 <div className='alert alert-danger' role='alert'>
-                  Kunde inte ladda visningstider: {screeningsError}
+                  {t('movieDetails.scheduleError', { error: translateApiError(screeningsError, locale) })}
                   <button
                     type='button'
                     className='btn btn-outline-danger btn-sm ms-3'
                     onClick={refetchScreenings}
                   >
-                    Försök igen
+                    {t('common.retry')}
                   </button>
                 </div>
               )}
@@ -303,7 +348,7 @@ export default function MovieDetails() {
                 !screeningsError &&
                 (!screenings || screenings.length === 0) && (
                   <p className='text-secondary mb-0'>
-                    Det finns inga kommande visningar för den här filmen.
+                    {t('movieDetails.noUpcomingScreenings')}
                   </p>
                 )}
 
@@ -333,15 +378,16 @@ export default function MovieDetails() {
                               seatsLeft !== undefined &&
                               seatsLeft > 0 &&
                               seatsLeft < LOW_SEATS_DETAIL_THRESHOLD
+                            const startTime = formatTime(screening.startsAt, locale)
 
                             return (
                               <div key={screening.id} className='screening-row'>
                                 <div className='screening-row__left'>
                                   <span className='screening-row__start'>
-                                    {formatTime(screening.startsAt)}
+                                    {startTime}
                                   </span>
                                   <span className='screening-row__end'>
-                                    –{formatTime(screening.endsAt)}
+                                    –{formatTime(screening.endsAt, locale)}
                                   </span>
                                   <span className='screening-row__format'>
                                     {getScreeningFormat(screening.cinema)}
@@ -355,15 +401,16 @@ export default function MovieDetails() {
                                     }`}
                                   >
                                     {isSoldOut
-                                      ? 'Fullbokad'
-                                      : `${seatsLeft ?? '–'} platser kvar`}
+                                      ? t('screening.soldOut')
+                                      : t('screening.seatsLeft', { count: seatsLeft ?? '–' })}
                                   </span>
 
                                   <Link
                                     to={getBookingUrl(screening.id)}
                                     className='screening-row__cta'
+                                    aria-label={t('movieDetails.selectSeatsAria', { title: movie.title, time: startTime, cinema: screening.cinema })}
                                   >
-                                    Välj platser
+                                    {t('movieDetails.selectSeats')}
                                   </Link>
                                 </div>
                               </div>
@@ -388,6 +435,43 @@ export default function MovieDetails() {
           movieTitle={movie.title}
         />
       )}
+
+      <Modal
+        isOpen={selectedActor !== null}
+        onClose={() => setSelectedActor(null)}
+        title={selectedActor?.name ?? t('movieDetails.actorFallbackTitle')}
+        className='actor-bio-modal'
+      >
+        <Modal.Body>
+          {selectedActor ? (
+            <>
+              <div className='actor-bio-modal__header'>
+                <div className='actor-bio-modal__avatar'>
+                  {isSafeImageUrl(selectedActor.photo_url) && !failedCastPhotos.includes(selectedActor.photo_url) ? (
+                    <img
+                      src={selectedActor.photo_url}
+                      alt={t('movieDetails.actorPhotoAlt', { name: selectedActor.name })}
+                      loading='lazy'
+                      onError={() => handleCastPhotoError(selectedActor.photo_url!)}
+                    />
+                  ) : <i className='bi bi-person-fill' aria-hidden='true' />}
+                </div>
+                <div className='actor-bio-modal__meta'>
+                  {selectedActor.character_name ? (
+                    <>
+                      <p className='actor-bio-modal__role-label'>{t('movieDetails.roleInMovie', { title: movie.title })}</p>
+                      <p className='actor-bio-modal__role-value'>{selectedActor.character_name}</p>
+                    </>
+                  ) : <p className='actor-bio-modal__role-value'>{selectedActor.name}</p>}
+                </div>
+              </div>
+              <p className='actor-bio-modal__bio'>
+                {selectedActor.bio || t('movieDetails.noActorBio')}
+              </p>
+            </>
+          ) : null}
+        </Modal.Body>
+      </Modal>
     </div>
   )
 }

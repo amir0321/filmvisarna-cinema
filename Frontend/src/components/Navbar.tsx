@@ -1,24 +1,30 @@
+import { translateApiError } from '../i18n/mappers'
+import LanguageToggle from './LanguageToggle'
+import { useTranslation } from '../context/LocaleContext'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router'
 import { getUserDisplayName, getUserInitials, useAuth } from '../hooks/useAuth'
 import BrandLogo from './BrandLogo'
 import { BookingCountBadge } from './BookingCountBadge'
+import ThemeToggle from './ThemeToggle'
 
 const BASE_NAV_LINKS = [
-  { name: 'Hem', path: '/', end: true },
-  { name: 'Filmer & Repertoar', path: '/filmer', end: false },
-  { name: 'Salonger', path: '/salonger', end: false },
-  { name: 'Om oss', path: '/om-oss', end: false },
+  { name: 'nav.home', path: '/', end: true },
+  { name: 'nav.programme', path: '/filmer', end: false },
+  { name: 'nav.cinemas', path: '/salonger', end: false },
+  { name: 'nav.about', path: '/om-oss', end: false },
 ] as const
 
 const ADMIN_NAV_LINKS = [
-  { name: 'Bokningar', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
-  { name: 'Schema', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
-  { name: 'Filmer', path: '/admin/filmer', icon: 'bi-film', end: false },
-  { name: 'Salonger', path: '/admin/salonger', icon: 'bi-display', end: false },
-  { name: 'Kiosk', path: '/admin/kiosk', icon: 'bi-cup-straw', end: false },
+  { name: 'nav.backoffice', path: '/admin', icon: 'bi-layers', end: true },
+  { name: 'nav.bookings', path: '/admin/bokningar', icon: 'bi-ticket-perforated', end: false },
+  { name: 'nav.schedule', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
+  { name: 'nav.movies', path: '/admin/filmer', icon: 'bi-film', end: false },
+  { name: 'nav.cinemas', path: '/admin/salonger', icon: 'bi-display', end: false },
+  { name: 'nav.kiosk', path: '/admin/kiosk', icon: 'bi-cup-straw', end: false },
 ] as const
 
 export default function Navbar() {
+  const { t, locale } = useTranslation()
   const { user, logout, loggingOut, logoutError } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -27,7 +33,7 @@ export default function Navbar() {
   const isLoggedIn = user !== null
   const isAdmin = user?.role === 'admin'
   const initials = getUserInitials(user)
-  const displayName = getUserDisplayName(user)
+  const displayName = user ? getUserDisplayName(user) : t('nav.guest')
 
   const handleLogout = async () => {
     try { await logout(); navigate('/') } catch { /* The menu displays the error. */ }
@@ -37,12 +43,12 @@ export default function Navbar() {
     <header className="app-navbar sticky-top">
       <nav
         className="nav-container"
-        aria-label={isAdminRoute ? 'Administrationsnavigering' : 'Huvudnavigering'}
+        aria-label={t(isAdminRoute ? 'nav.adminNavigation' : 'nav.mainNavigation')}
       >
         <div className="d-flex align-items-center gap-2 nav-brand-group">
           <BrandLogo />
           {isAdminRoute ? (
-            <span className="nav-admin-badge d-none d-lg-inline-block">ADMIN</span>
+            <span className="nav-admin-badge d-none d-lg-inline-block">{t('nav.admin')}</span>
           ) : null}
         </div>
 
@@ -60,7 +66,7 @@ export default function Navbar() {
                     }
                   >
                     <i className={`bi ${link.icon} d-none d-xl-inline`} aria-hidden="true"></i>
-                    <span>{link.name}</span>
+                    <span>{t(link.name)}</span>
                   </NavLink>
                 </li>
               ))}
@@ -73,7 +79,7 @@ export default function Navbar() {
                   }
                 >
                   <i className="bi bi-box-arrow-left d-none d-xl-inline" aria-hidden="true"></i>
-                  <span>Till biografen</span>
+                  <span>{t('nav.toCinema')}</span>
                 </NavLink>
               </li>
             </>
@@ -88,7 +94,7 @@ export default function Navbar() {
                       `public-nav-link ${isActive ? 'active' : ''}`
                     }
                   >
-                    {link.name}
+                    {t(link.name)}
                   </NavLink>
                 </li>
               ))}
@@ -101,7 +107,7 @@ export default function Navbar() {
                       `public-nav-link ${isActive ? 'active' : ''}`
                     }
                   >
-                    Mina Bokningar
+                    {t('nav.myBookings')}
                     <BookingCountBadge />
                   </NavLink>
                 </li>
@@ -115,8 +121,8 @@ export default function Navbar() {
                       `public-nav-link d-inline-flex align-items-center gap-2 ${isActive ? 'active' : ''}`
                     }
                   >
-                    <span>Admin</span>
-                    <span className="nav-admin-badge d-none d-lg-inline-block">ADMIN</span>
+                    <span>{t('nav.backoffice')}</span>
+                    <span className="nav-admin-badge d-none d-lg-inline-block">{t('nav.admin')}</span>
                   </NavLink>
                 </li>
               ) : null}
@@ -125,15 +131,18 @@ export default function Navbar() {
         </ul>
 
         {/* Right actions (shared search button + desktop/mobile controls) */}
-        <div className="d-flex align-items-center gap-2 nav-actions-group">
+        <div className="d-flex align-items-center nav-actions-group">
           <button
             type="button"
             className="nav-search-btn"
-            aria-label="Sök filmer"
+            aria-label={t('nav.searchMovies')}
             onClick={() => navigate('/filmer?sok=1')}
           >
             <i className="bi bi-search" aria-hidden="true"></i>
           </button>
+
+          <ThemeToggle />
+          <LanguageToggle />
 
           {/* Desktop auth actions (>= 768px) */}
           <div className="d-none d-md-flex align-items-center gap-2">
@@ -144,28 +153,28 @@ export default function Navbar() {
                   className="nav-avatar-btn dropdown-toggle"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
-                  aria-label={`Användarmeny för ${displayName}`}
+                  aria-label={t('nav.userMenu', { name: displayName })}
                 >
                   <span className="nav-avatar-circle" aria-hidden="true">
                     {initials}
                   </span>
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end nav-user-dropdown">
-                  {logoutError && <li className="px-3 py-2 text-danger small" role="alert">{logoutError}</li>}
-                  <li className="px-3 py-2 border-bottom border-secondary border-opacity-25">
-                    <div className="fw-semibold text-light small text-truncate">{displayName}</div>
+                  {logoutError && <li className="px-3 py-2 text-danger small" role="alert">{translateApiError(logoutError, locale)}</li>}
+                  <li className="px-3 py-2 border-bottom">
+                    <div className="fw-semibold text-body small text-truncate">{displayName}</div>
                     <div className="text-secondary nav-dropdown-email text-truncate">{user.email}</div>
                   </li>
                   <li>
                     <NavLink to="/profil" className="dropdown-item d-flex align-items-center gap-2">
                       <i className="bi bi-person" aria-hidden="true"></i>
-                      <span>Min Profil</span>
+                      <span>{t('nav.myProfile')}</span>
                     </NavLink>
                   </li>
                   <li>
                     <NavLink to="/mina-bokningar" className="dropdown-item d-flex align-items-center gap-2">
                       <i className="bi bi-ticket-perforated" aria-hidden="true"></i>
-                      <span>Mina Bokningar</span>
+                      <span>{t('nav.myBookings')}</span>
                       <BookingCountBadge />
                     </NavLink>
                   </li>
@@ -181,9 +190,9 @@ export default function Navbar() {
                             className={`bi ${isAdminRoute ? 'bi-box-arrow-left' : 'bi-layers'}`}
                             aria-hidden="true"
                           ></i>
-                          <span>{isAdminRoute ? 'Till biografen' : 'Administration'}</span>
+                          <span>{t(isAdminRoute ? 'nav.toCinema' : 'nav.backoffice')}</span>
                         </span>
-                        {!isAdminRoute ? <span className="nav-admin-badge">ADMIN</span> : null}
+                        {!isAdminRoute ? <span className="nav-admin-badge">{t('nav.admin')}</span> : null}
                       </NavLink>
                     </li>
                   ) : null}
@@ -198,7 +207,7 @@ export default function Navbar() {
                       onClick={handleLogout}
                     >
                       <i className="bi bi-box-arrow-right" aria-hidden="true"></i>
-                      <span>{loggingOut ? 'Loggar ut…' : 'Logga ut'}</span>
+                      <span>{t(loggingOut ? 'nav.loggingOut' : 'nav.logout')}</span>
                     </button>
                   </li>
                 </ul>
@@ -211,10 +220,10 @@ export default function Navbar() {
                     `nav-login-btn ${isActive ? 'active' : ''}`
                   }
                 >
-                  Logga in
+                  {t('nav.login')}
                 </NavLink>
                 <Link to="/skapa-konto" className="nav-register-btn">
-                  Bli Medlem
+                  {t('nav.join')}
                 </Link>
               </>
             )}
@@ -228,7 +237,7 @@ export default function Navbar() {
               data-bs-toggle="offcanvas"
               data-bs-target="#mobileDrawer"
               aria-controls="mobileDrawer"
-              aria-label="Öppna meny"
+              aria-label={t('nav.openMenu')}
             >
               <i className="bi bi-list" aria-hidden="true"></i>
             </button>

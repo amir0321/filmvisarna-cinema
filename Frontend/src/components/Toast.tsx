@@ -1,3 +1,4 @@
+import { useTranslation } from '../context/LocaleContext'
 import React, { useState } from 'react'
 import { useInlineFeedback } from '../hooks/useInlineFeedback'
 
@@ -60,7 +61,7 @@ export interface FeedbackButtonProps
 
 export function FeedbackButton({
   children,
-  feedbackText = 'Sparat!',
+  feedbackText,
   feedbackVariant = 'filled',
   durationMs = 2000,
   onAction,
@@ -69,6 +70,7 @@ export function FeedbackButton({
   disabled = false,
   ...rest
 }: FeedbackButtonProps) {
+  const { t } = useTranslation()
   const [isFeedbackActive, triggerFeedback] = useInlineFeedback(durationMs)
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -105,7 +107,7 @@ export function FeedbackButton({
       {isFeedbackActive ? (
         <>
           <i className="bi bi-check-lg me-1" aria-hidden="true" />
-          <span>{feedbackText}</span>
+          <span>{feedbackText ?? t('admin.savedAlternative')}</span>
         </>
       ) : (
         children
@@ -126,13 +128,14 @@ export interface InlineConfirmActionProps {
 
 export function InlineConfirmAction({
   label,
-  confirmLabel = 'Bekräfta',
-  cancelLabel = 'Avbryt',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   variant = 'danger',
   className = '',
   disabled = false,
 }: InlineConfirmActionProps) {
+  const { t } = useTranslation()
   const [isConfirming, setIsConfirming] = useState(false)
   const [isPending, setIsPending] = useState(false)
 
@@ -164,7 +167,7 @@ export function InlineConfirmAction({
           ) : (
             <i className="bi bi-check-lg me-1" aria-hidden="true" />
           )}
-          {confirmLabel}
+          {confirmLabel ?? t('admin.confirm')}
         </button>
         <button
           type="button"
@@ -172,7 +175,7 @@ export function InlineConfirmAction({
           onClick={() => setIsConfirming(false)}
           disabled={isPending}
         >
-          {cancelLabel}
+          {cancelLabel ?? t('admin.abort')}
         </button>
       </div>
     )
@@ -203,13 +206,14 @@ export function PaidActionButton({
   className = '',
   disabled = false,
 }: PaidActionButtonProps) {
+  const { t } = useTranslation()
   const [isPending, setIsPending] = useState(false)
 
   if (isPaid) {
     return (
       <span className={`badge-paid-confirmed ${className}`.trim()}>
         <i className="bi bi-check-lg" aria-hidden="true" />
-        <span>✓ Betald</span>
+        <span>✓ {t('status.paid')}</span>
       </span>
     )
   }
@@ -236,7 +240,7 @@ export function PaidActionButton({
       ) : (
         <i className="bi bi-check-lg" aria-hidden="true" />
       )}
-      <span>Markera betald</span>
+      <span>{t('admin.markPaid')}</span>
     </button>
   )
 }

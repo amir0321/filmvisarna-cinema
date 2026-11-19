@@ -1,3 +1,6 @@
+import { useTranslation } from '../context/LocaleContext'
+import { translateTicketType, translateKioskName } from '../i18n/mappers'
+import { groupSeatLabels } from '../utils/bookingPresentation'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { QRCodeSVG } from 'qrcode.react'
@@ -9,24 +12,18 @@ interface BookingTicketProps {
   bookingRef: string
   data: ConfirmationData | null
   totalLabel?: string
-}
-
-// "Rad E, Stol 1" + "Rad E, Stol 2" → "Rad E: Stol 1, 2"
-function groupSeats(seats: string[]): string[] {
-  const rows = new Map<string, string[]>()
-  for (const s of seats) {
-    const m = s.match(/^Rad (\S+), Stol (\d+)$/)
-    if (!m) continue
-    rows.set(m[1], [...(rows.get(m[1]) ?? []), m[2]])
-  }
-  return [...rows.entries()].map(([row, nums]) => `Rad ${row}: Stol ${nums.join(', ')}`)
+  onCancel?: () => void
+  canCancel?: boolean
 }
 
 export default function BookingTicket({
   bookingRef,
   data,
-  totalLabel = 'Att betala i kassan',
+  totalLabel,
+  onCancel,
+  canCancel = true,
 }: BookingTicketProps) {
+  const { t, locale } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const copy = () => {
@@ -42,16 +39,18 @@ export default function BookingTicket({
   return (
     <>
       <div className="fv-ticket__code">
-        <p className="fv-ticket__label">Bokningskod</p>
+        <p className="fv-ticket__label">{t('ticket.reference')}</p>
         <div className="fv-ticket__codebox">
           <span className="fv-ticket__ref">{bookingRef}</span>
           <button
             type="button"
             className={`fv-ticket__copy ${copied ? 'fv-ticket__copy--done' : ''}`}
             onClick={copy}
+            aria-label={t('ticket.copyReference')}
+            aria-live="polite"
           >
             <i className={`bi ${copied ? 'bi-check-lg' : 'bi-copy'}`} aria-hidden="true" />
-            {copied ? 'Kopierat' : 'Kopiera'}
+            {copied ? t('ticket.copied') : t('ticket.copy')}
           </button>
         </div>
       </div>
@@ -66,66 +65,77 @@ export default function BookingTicket({
                 <h2>{data.movieTitle}</h2>
                 <p>{data.cinema}</p>
                 <p className="fv-ticket__time">
-                  {formatDateLong(toCinemaIsoDate(data.startsAt))} · {formatTime(data.startsAt)}–
-                  {formatTime(data.endsAt)}
+                  {formatDateLong(toCinemaIsoDate(data.startsAt), locale)} · {formatTime(data.startsAt, locale)}–
+                  {formatTime(data.endsAt, locale)}
                 </p>
               </div>
             </div>
 
             <div className="fv-ticket__seats">
-              {groupSeats(data.seats).map(line => (
+              {groupSeatLabels(data.seats, locale).map(line => (
                 <p key={line}>{line}</p>
               ))}
             </div>
 
             <div className="fv-ticket__prices">
-              {data.tickets.map(t => (
-                <div key={t.label} className="fv-ticket__row">
+              {data.tickets.map(ticket => (
+                <div key={ticket.label} className="fv-ticket__row">
                   <span>
-                    {t.quantity}× {t.label}
+                    {ticket.quantity}× {translateTicketType(ticket.label, locale)}
                   </span>
-                  <span>{formatSek(t.quantity * t.price)}</span>
+                  <span>{formatSek(ticket.quantity * ticket.price, locale)}</span>
                 </div>
               ))}
               {data.kiosk.map(k => (
                 <div key={k.name} className="fv-ticket__row">
                   <span>
-                    {k.quantity}× {k.name}
+                    {k.quantity}× {translateKioskName(k.name, locale)}
                   </span>
-                  <span>{formatSek(k.quantity * k.price)}</span>
+                  <span>{formatSek(k.quantity * k.price, locale)}</span>
                 </div>
               ))}
               <div className="fv-ticket__row fv-ticket__row--total">
-                <span>{totalLabel}</span>
-                <span>{formatSek(data.total)}</span>
+                <span>{totalLabel ?? t('ticket.payAtBoxOffice')}</span>
+                <span>{formatSek(data.total, locale)}</span>
               </div>
             </div>
 
             <div className="fv-ticket__qr">
-              <p>Visa upp vid kassan</p>
+              <p>{t('ticket.showAtBoxOffice')}</p>
               <div className="fv-ticket__qrbox">
-                <QRCodeSVG value={data.bookingRef} size={96} title="QR-kod med bokningsreferens" />
+                <QRCodeSVG value={data.bookingRef} size={96} title={t('ticket.qrTitle')} />
               </div>
               <span>{data.bookingRef}</span>
             </div>
 
             <button type="button" className="fv-ticket__btn" onClick={() => window.print()}>
-              Skriv ut / Spara som PDF
+              {t('ticket.print')}
             </button>
 
-            {data.cancelToken && (
+            {onCancel ? (
+              <>
+                <button type="button" className="btn btn-danger fv-ticket__cancel" onClick={onCancel}
+                  disabled={!canCancel} aria-describedby={!canCancel ? 'ticket-cancel-deadline' : undefined}>
+                  {t('ticket.cancel')}
+                </button>
+                {!canCancel && <p id="ticket-cancel-deadline" className="small text-secondary" role="status">
+                  {t('cancellation.deadline')}
+                </p>}
+              </>
+            ) : (
               <Link
-                className="fv-ticket__cancel"
-                to={`/avboka?token=${encodeURIComponent(data.cancelToken)}`}
+                className="btn btn-danger fv-ticket__cancel"
+                to="/avboka"
+                state={{ bookingRef: data.bookingRef, email: data.email }}
               >
-                Avboka biljett
+                {t('ticket.cancel')}
               </Link>
             )}
           </div>
         </>
       ) : (
         <div className="fv-ticket__body">
-          <p>Bokningsdetaljerna finns inte kvar i den här webbläsaren. Kolla din e-post.</p>
+          <p>{t('ticket.missingDetails')}</p>
         </div>
       )}
     </>

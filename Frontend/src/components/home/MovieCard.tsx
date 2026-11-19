@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { useTranslation } from '../../context/LocaleContext'
+import { translateGenre } from '../../i18n/mappers'
 import type { Movie, Screening } from '../../types'
 import { formatShowtimeDayLabel, formatTime, toCinemaIsoDate } from '../../utils/date'
 import { formatDuration, formatDurationLong } from '../../utils/movie'
@@ -30,6 +32,7 @@ function groupScreeningsByDay(screenings: Screening[]) {
 }
 
 export default function MovieCard({ movie, screenings }: MovieCardProps) {
+  const { t, locale } = useTranslation()
   const movieUrl = getMovieUrl(movie.id)
   const image = movie.poster_url ?? movie.landscape_image_url
 
@@ -51,21 +54,21 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
 
         <p className="movie-card__meta mb-2">
           <span aria-hidden="true">{formatDuration(movie.duration_minutes)}</span>
-          <span className="visually-hidden">Speltid: {formatDurationLong(movie.duration_minutes)}</span>
+          <span className="visually-hidden">{t('movie.durationAnnouncement', { duration: formatDurationLong(movie.duration_minutes, locale) })}</span>
           {movie.director && (
             <>
               <span className="mx-2" aria-hidden="true">·</span>
-              <span className="visually-hidden">, regi: </span>
+              <span className="visually-hidden">{t('movie.directorInMeta')} </span>
               {movie.director}
             </>
           )}
         </p>
 
         {movie.genres.length > 0 && (
-          <ul className="list-unstyled d-flex flex-wrap gap-1 mb-3" aria-label="Genrer">
+          <ul className="list-unstyled d-flex flex-wrap gap-1 mb-3" aria-label={t('movie.genres')}>
             {movie.genres.map((genre) => (
               <li key={genre} className="movie-card__genre">
-                {genre}
+                {translateGenre(genre, locale)}
               </li>
             ))}
           </ul>
@@ -73,7 +76,7 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
 
         <div className="mt-auto d-flex flex-column gap-3">
           {groupScreeningsByDay(screenings).map(([date, dayScreenings]) => {
-            const dayLabel = formatShowtimeDayLabel(date)
+            const dayLabel = formatShowtimeDayLabel(date, locale)
             const labelId = `showtimes-${movie.id}-${date}`
             return (
               <div key={date}>
@@ -102,17 +105,18 @@ interface ShowtimePillProps {
 }
 
 function ShowtimePill({ screening, dayLabel }: ShowtimePillProps) {
-  const time = formatTime(screening.startsAt)
+  const { t, locale } = useTranslation()
+  const time = formatTime(screening.startsAt, locale)
   const seatsLeft = screening.availableSeats
   const isSoldOut = seatsLeft === 0
   const isLowOnSeats = !isSoldOut && seatsLeft !== undefined && seatsLeft <= LOW_SEATS_THRESHOLD
-  const label = `${dayLabel.toLowerCase()} ${time} i ${screening.cinema}`
+  const label = t('home.showtimeLabel', { day: dayLabel.toLowerCase(), time, cinema: screening.cinema })
 
   if (isSoldOut) {
     return (
-      <span className="showtime-pill showtime-pill--sold-out" aria-label={`${label}, fullbokad`}>
+      <span className="showtime-pill showtime-pill--sold-out" aria-label={t('home.showtimeSoldOutAria', { label })}>
         {time} · {shortCinemaName(screening.cinema)}
-        <span className="showtime-pill__seats"> (Fullbokad)</span>
+        <span className="showtime-pill__seats"> ({t('screening.soldOut')})</span>
       </span>
     )
   }
@@ -121,10 +125,10 @@ function ShowtimePill({ screening, dayLabel }: ShowtimePillProps) {
     <Link
       to={getBookingUrl(screening.id)}
       className="showtime-pill"
-      aria-label={`Boka ${label}${isLowOnSeats ? `, ${seatsLeft} platser kvar` : ''}`}
+      aria-label={isLowOnSeats && seatsLeft !== undefined ? t('home.bookShowtimeLowAria', { label, count: seatsLeft }) : t('home.bookShowtimeAria', { label })}
     >
       {time} · {shortCinemaName(screening.cinema)}
-      {isLowOnSeats && <span className="showtime-pill__seats"> ({seatsLeft} kvar)</span>}
+      {isLowOnSeats && seatsLeft !== undefined && <span className="showtime-pill__seats"> ({t('screening.seatsLeftShort', { count: seatsLeft })})</span>}
     </Link>
   )
 }
