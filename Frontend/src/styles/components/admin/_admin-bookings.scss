@@ -1,3 +1,9 @@
+// One place that builds the solid colour and its transparent variants
+@mixin tone-color($color) {
+  --tone: #{$color};
+  --tone-bg: #{tint($color, 0.18)};
+  --tone-border: #{tint($color, 0.4)};
+}
 .fv-kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -22,9 +28,9 @@
   border: 1px solid $fv-border;
   border-radius: $fv-card-radius;
 
-  &--info { --tone: #{$fv-info}; }
-  &--success { --tone: #{$fv-success}; }
-  &--warning { --tone: #{$fv-warning}; }
+   &--info { @include tone-color($fv-info); }
+  &--success { @include tone-color($fv-success); }
+  &--warning { @include tone-color($fv-warning); }
 
   &__icon {
     display: grid;
@@ -34,7 +40,7 @@
     border-radius: $fv-radius-lg;
     font-size: 1.25rem;
     color: var(--tone);
-    background: color-mix(in srgb, var(--tone) 18%, transparent);
+    background: var(--tone-bg);
   }
 
   &__label,
@@ -44,10 +50,7 @@
   }
 
   &__value {
-    color: $fv-fg;
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 1.1;
+    font-family: $fv-font-display;
   }
 }
 .fv-checkin {
@@ -226,16 +229,16 @@
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
   border-radius: $fv-radius-pill;
 
-  &--paid { --tone: #{$fv-success}; }
-  &--checkedIn { --tone: #{$fv-info}; }
+  &--paid { @include tone-color($fv-success); }
+  &--checkedIn { @include tone-color($fv-info); }
   &--reserved,
-  &--kiosk { --tone: #{$fv-warning}; }
-  &--expired { --tone: #{$fv-muted-fg}; }
-  &--cancelled { --tone: #{$fv-primary}; }
+  &--kiosk { @include tone-color($fv-warning); }
+  &--expired { @include tone-color($fv-muted-fg); }
+  &--cancelled { @include tone-color($fv-primary); }
 }
 .fv-feedback {
   position: sticky;
@@ -245,16 +248,13 @@
   padding: 0.75rem 1rem;
   color: $fv-fg;
   background-color: $fv-card-bg;
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--tone) 15%, transparent),
-    color-mix(in srgb, var(--tone) 15%, transparent)
-  );
+  background-image: linear-gradient(var(--tone-bg), var(--tone-bg));
   border: 1px solid var(--tone);
   border-radius: $fv-radius-lg;
 
-  &--success { --tone: #{$fv-success}; }
-  &--error { --tone: #{$fv-primary}; }
-  &--info { --tone: #{$fv-info}; }
+  &--info { @include tone-color($fv-info); }
+  &--success { @include tone-color($fv-success); }
+  &--warning { @include tone-color($fv-warning); }
 }
 .fv-admin-bookings {
   display: grid;
@@ -450,4 +450,29 @@
       gap: 0.4rem;
     }
   }
+}
+
+.fv-bookings-table .fv-bookings-table__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  min-width: 8.5rem;
+
+  .btn { width: 100%; white-space: nowrap; }
+}
+
+// Payment deadline text under the buttons
+.fv-bookings-table__deadline {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: $fv-muted-fg;
+}
+// Occupancy block inside the map card
+.fv-side__occupancy {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid $fv-border;
 }

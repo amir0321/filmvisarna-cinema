@@ -6,7 +6,11 @@ import type { Booking } from '../../types/booking'
 
 const REFERENCE = /^FV-[A-Z0-9]{5}$/
 
-export default function QuickCheckIn() {
+interface QuickCheckInProps {
+  onCheckedIn?: () => void
+}
+
+export default function QuickCheckIn({ onCheckedIn }: QuickCheckInProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,6 +24,7 @@ export default function QuickCheckIn() {
     if (!found.isPaid) return setMessage(t('admin.bookings.checkin.payFirst'))
     const result = await checkInBooking(found.id)
     setBooking(result.booking)
+      onCheckedIn?.()
     setMessage(t('admin.bookings.checkin.done', { ref: result.booking.bookingRef }))
   }
 

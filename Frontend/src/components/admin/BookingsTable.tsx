@@ -1,6 +1,7 @@
 import { useTranslation } from '../../context/LocaleContext'
-import { getIntlLocale } from '../../utils/locale'
 import type { Booking, TicketItem } from '../../types/booking'
+import { formatDateShort, formatTime, toCinemaIsoDate } from '../../utils/date'
+import { formatSek } from '../../utils/price'
 
 function seatsByRow(tickets: TicketItem[]) {
   const rows = new Map<string, number[]>()
@@ -22,22 +23,22 @@ function ticketTypes(tickets: TicketItem[]) {
 
 interface BookingsTableProps {
   bookings: Booking[]
+  totalCount?:number
   payingId: number | null
+  checkingInId:number | null
   onPay: (booking: Booking) => void
+  onCheckIn: (booking: Booking) => void
   onCancel: (booking: Booking) => void
 }
 
-export default function BookingsTable({ bookings, payingId, onPay, onCancel }: BookingsTableProps) {
+export default function BookingsTable({ bookings,
+  totalCount,
+  payingId,
+  checkingInId,
+  onPay,
+  onCheckIn,
+  onCancel, }: BookingsTableProps) {
   const { t, locale } = useTranslation()
-  const nf = new Intl.NumberFormat(getIntlLocale(locale))
-  const dateTime = new Intl.DateTimeFormat(getIntlLocale(locale), {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Europe/Stockholm',
-  })
 
   const statusOf = (booking: Booking) => (booking.status === 'confirmed' ? 'paid' : booking.status)
 
@@ -52,8 +53,15 @@ export default function BookingsTable({ bookings, payingId, onPay, onCancel }: B
     </>
   )
 
+     const formatDateTime = (iso: string) =>
+    `${formatDateShort(toCinemaIsoDate(iso), locale)} ${formatTime(iso, locale)}`
+
   const when = (booking: Booking) =>
-    booking.screeningStartsAt ? dateTime.format(new Date(booking.screeningStartsAt)) : ''
+    booking.screeningStartsAt ? formatDateTime(booking.screeningStartsAt) : ''
+
+  // Final payment deadline: 1 hour before the screening starts
+  const payBy = (startsAt: string) =>
+    formatDateTime(new Date(new Date(startsAt).getTime() - 60 * 60 * 1000).toISOString())
 
   const seats = (booking: Booking) => (
     <>
@@ -67,31 +75,55 @@ export default function BookingsTable({ bookings, payingId, onPay, onCancel }: B
     </>
   )
 
-  const actions = (booking: Booking) => (
-    <div className="fv-bookings-table__actions">
-      {booking.status === 'confirmed' ? (
-        <span className="fv-bookings-table__paid">{t('admin.bookings.action.paid')}</span>
-      ) : booking.status !== 'cancelled' ? (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-success"
-          disabled={payingId !== null}
-          onClick={() => onPay(booking)}
-        >
-          {t('admin.bookings.action.markPaid')}
-        </button>
-      ) : null}
-      {booking.status !== 'cancelled' && (
-        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => onCancel(booking)}>
-          {t('admin.bookings.action.cancel')}
-        </button>
-      )}
-    </div>
-  )
-
+    const actions = (booking: Booking) => {
+    const busy = payingId !== null || checkingInId !== null
+    return (
+      <>
+        <div className="fv-bookings-table__actions">
+          {booking.status === 'confirmed' ? (
+            <span className="fv-bookings-table__paid">{t('admin.bookings.action.paid')}</span>
+          ) : booking.status !== 'cancelled' ? (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-success"
+              disabled={busy}
+              onClick={() => onPay(booking)}
+            >
+              {t('admin.bookings.action.markPaid')}
+            </button>
+          ) : null}
+          {booking.status === 'confirmed' && !booking.isCheckedIn && (
+            <button
+              type="button"
+              className="btn btn-sm btn-danger"
+              disabled={busy}
+              onClick={() => onCheckIn(booking)}
+            >
+              {t('admin.bookings.action.checkIn')}
+            </button>
+          )}
+          {booking.status !== 'cancelled' && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              disabled={busy}
+              onClick={() => onCancel(booking)}
+            >
+              {t('admin.bookings.action.cancel')}
+            </button>
+          )}
+        </div>
+        {booking.status === 'reserved' && booking.screeningStartsAt && (
+        <span className="fv-bookings-table__deadline">
+            {t('admin.bookings.table.payBy', { time: payBy(booking.screeningStartsAt) })}
+          </span>
+        )}
+      </>
+    )
+  }
   return (
     <>
-      <p className="fv-bookings-count">{t('admin.bookings.table.count', { count: bookings.length })}</p>
+    <p className="fv-bookings-count">{t('admin.bookings.table.count', { count: totalCount ?? bookings.length })}</p>
 
       <div className="fv-bookings-table">
         <table>
@@ -118,7 +150,7 @@ export default function BookingsTable({ bookings, payingId, onPay, onCancel }: B
                 <td>{booking.cinemaName}</td>
                 <td>{seats(booking)}</td>
                 <td>
-                  <div>{nf.format(booking.totalPrice)} kr</div>
+                  <div>{formatSek(booking.totalPrice, locale)}</div>
                   {badges(booking)}
                 </td>
                 <td>{actions(booking)}</td>
@@ -146,7 +178,7 @@ export default function BookingsTable({ bookings, payingId, onPay, onCancel }: B
                 <div className="fv-bookings-table__muted">{when(booking)}</div>
               </dd>
               <dt>{t('admin.bookings.table.amount')}</dt>
-              <dd>{nf.format(booking.totalPrice)} kr</dd>
+              <dd>{formatSek(booking.totalPrice, locale)}</dd>
               <dt>{t('admin.bookings.table.seats')}</dt>
               <dd>{seats(booking)}</dd>
             </dl>
