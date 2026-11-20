@@ -12,6 +12,8 @@ const MOVIE_SELECT = `
     m.id,
     m.title,
     m.description,
+    m.production_countries, m.production_year, m.distributor, m.audio_language AS language,
+    m.subtitles, m.images, m.youtube_trailers, m.reviews,
     m.duration_minutes,
     m.age_rating,
     m.poster_url,
@@ -59,7 +61,30 @@ const MOVIE_SELECT = `
   LEFT JOIN genre g        ON g.id        = mg.genre_id
 `;
 
+// Cards and hero need no cast biographies, reviews or screening counts.
+const MOVIE_COMPACT_SELECT = `SELECT m.id,m.title,m.description,m.duration_minutes,
+  m.age_rating,m.poster_url,m.landscape_image_url,m.trailer_url,m.director,
+  m.imdb_rating::float AS imdb_rating,m.release_date,
+  COALESCE(array_agg(g.name ORDER BY g.name) FILTER (WHERE g.name IS NOT NULL), '{}') AS genres
+  FROM movie m LEFT JOIN movie_genre mg ON mg.movie_id=m.id
+  LEFT JOIN genre g ON g.id=mg.genre_id`;
+
+const METADATA_COLUMNS = ['production_countries','production_year','distributor','audio_language',
+  'subtitles','images','youtube_trailers','reviews'] as const;
+async function saveMetadata(client: PoolClient, id: number, input: CreateMovieInput | UpdateMovieInput) {
+  const assignments: string[] = [];
+  const values: unknown[] = [id];
+  for (const column of METADATA_COLUMNS) {
+    const value = input[column === 'audio_language' ? 'language' : column];
+    if (value === undefined) continue;
+    values.push(column === 'reviews' ? JSON.stringify(value) : value);
+    assignments.push(`${column}=$${values.length}${column === 'reviews' ? '::jsonb' : ''}`);
+  }
+  if (assignments.length) await client.query(`UPDATE movie SET ${assignments.join(',')} WHERE id=$1`, values);
+}
+
 export interface MovieFilters {
+  compact?: boolean;
   genre?: string;
   search?: string;
   age?: number;
@@ -94,7 +119,7 @@ export async function getAllMovies(filters: MovieFilters = {}): Promise<Movie[]>
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  return query<Movie>(`${MOVIE_SELECT} ${whereClause} GROUP BY m.id ORDER BY m.title`, params);
+  return query<Movie>(`${filters.compact ? MOVIE_COMPACT_SELECT : MOVIE_SELECT} ${whereClause} GROUP BY m.id ORDER BY m.title`, params);
 }
 
 export async function getMovieById(id: number, db: Queryable = pool): Promise<Movie> {
@@ -129,6 +154,7 @@ export async function createMovie(input: CreateMovieInput): Promise<Movie> {
       ],
     );
 
+    await saveMetadata(client, newMovie.id, input);
     await saveGenres(client, newMovie.id, input.genres ?? []);
     await saveCastMembers(client, newMovie.id, input.cast_members ?? []);
     return getMovieById(newMovie.id, client);
@@ -186,6 +212,7 @@ export async function updateMovie(
       ],
     );
 
+    await saveMetadata(client, id, input);
     if (input.genres !== undefined) {
       await saveGenres(client, id, input.genres);
     }

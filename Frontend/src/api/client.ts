@@ -1,3 +1,4 @@
+import { invalidatePublicData } from '../utils/dataCache.ts'
 import type { ApiResponse } from '../types'
 
 const API_BASE_URL = '/api'
@@ -82,6 +83,9 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
       !['/api/auth/login', '/api/auth/change-password'].includes(path)) {
     window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
   }
+
+  if (response.ok && !['GET', 'HEAD', 'OPTIONS'].includes(restConfig.method ?? 'GET') &&
+      !requestUrl.pathname.startsWith('/api/auth/')) invalidatePublicData()
 
   // Handle 204 No Content
   if (response.status === 204) {

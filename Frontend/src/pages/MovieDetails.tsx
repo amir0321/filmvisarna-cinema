@@ -13,6 +13,7 @@ import { useScreenings } from '../hooks/useScreenings'
 import type { Translator } from '../i18n'
 import { translateApiError, translateGenre } from '../i18n/mappers'
 import type { Screening } from '../types/screening'
+import { synopsisParagraphs } from '../utils/synopsis'
 import type { MovieCastMember } from '../types/movie'
 import { isSafeImageUrl } from '../utils/imageValidation'
 import {
@@ -143,7 +144,7 @@ export default function MovieDetails() {
     )
   }
 
-  if (error || !movie) {
+  if (!movie) {
     return (
       <div className='py-5'>
         <EmptyState
@@ -159,13 +160,21 @@ export default function MovieDetails() {
     )
   }
 
-  const heroSrc = [movie.landscape_image_url, movie.poster_url].find(
+  const trailerUrl = movie.trailer_url ?? movie.youtube_trailers?.[0]
+  const heroSrc = [movie.landscape_image_url, movie.poster_url, ...(movie.images ?? [])].find(
     (source): source is string => Boolean(source && !failedHeroSources.includes(source)),
   )
 
-  const releaseYear = movie.release_date
+  const releaseYear = movie.production_year ?? (movie.release_date
     ? new Date(movie.release_date).getFullYear()
-    : null
+    : null)
+
+  const displayCodes = (codes: string[], type: "language" | "region") => {
+    const names = new Intl.DisplayNames([locale], { type })
+    return codes.map(code => {
+      try { return names.of(code.trim()) ?? code } catch { return code }
+    }).join(", ")
+  }
 
   return (
     <div className='movie-details-page full-bleed'>
@@ -190,7 +199,7 @@ export default function MovieDetails() {
           <span>{t('movieDetails.back')}</span>
         </Link>
 
-        {movie.trailer_url && (
+        {trailerUrl && (
           <button
             type='button'
             className='movie-details-hero__play'
@@ -267,6 +276,18 @@ export default function MovieDetails() {
                 <span className='movie-details-facts__value'>{movie.title}</span>
               </div>
 
+              {[
+                [t('movieDetails.countries'), displayCodes(movie.production_countries ?? [], 'region')],
+                [t('movieDetails.distributor'), movie.distributor],
+                [t('movieDetails.language'), displayCodes(movie.language?.split(',') ?? [], 'language')],
+                [t('movieDetails.subtitles'), displayCodes(movie.subtitles ?? [], 'language')],
+              ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                <div key={label} className='movie-details-facts__row'>
+                  <span className='movie-details-facts__label'>{label}</span>
+                  <span className='movie-details-facts__value'>{value}</span>
+                </div>
+              ))}
+
               {movie.imdb_rating != null && (
                 <div className='movie-details-facts__row'>
                   <span className='movie-details-facts__label'>IMDb</span>
@@ -280,9 +301,36 @@ export default function MovieDetails() {
 
           {/* Höger kolumn: synopsis, medverkande och visningsschema */}
           <div className='movie-details-body'>
-            <p className='movie-details-synopsis'>
-              {movie.description || t('movieDetails.noSynopsis')}
-            </p>
+            <div className='movie-details-synopsis'>
+              {synopsisParagraphs(movie.description || t('movieDetails.noSynopsis')).map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </div>
+
+            {Boolean(movie.reviews?.length) && (
+              <section className='movie-details-reviews' aria-label={t('movieDetails.reviews')}>
+                <h2>{t('movieDetails.reviews')}</h2>
+                {movie.reviews!.map((review, index) => (
+                  <figure key={`${review.source}:${index}`}>
+                    <blockquote><p>{review.quote}</p></blockquote>
+                    <figcaption>
+                      <cite>{review.source}</cite>
+                      <span aria-label={t('movieDetails.reviewRating', { stars: review.stars, max: review.max })}>
+                        {' '}★ {review.stars}/{review.max}
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </section>
+            )}
+
+            {Boolean(movie.images?.length) && (
+              <div className='movie-details-gallery'>
+                {movie.images!.filter(isSafeImageUrl).map((image, index) => (
+                  <img key={`${image}:${index}`} src={image} alt={t('movieDetails.imageAlt', { title: movie.title, number: index + 1 })} loading='lazy' decoding='async' />
+                ))}
+              </div>
+            )}
 
             {castList.length > 0 && (
               <section className='movie-details-cast' aria-label={t('movieDetails.castHeading')}>
@@ -427,11 +475,11 @@ export default function MovieDetails() {
         </div>
       </div>
 
-      {movie.trailer_url && (
+      {trailerUrl && (
         <TrailerModal
           isOpen={isTrailerOpen}
           onClose={() => setSearchParams({}, { replace: true })}
-          trailerUrl={movie.trailer_url}
+          trailerUrl={trailerUrl}
           movieTitle={movie.title}
         />
       )}

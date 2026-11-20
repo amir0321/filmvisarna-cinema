@@ -16,6 +16,8 @@ export function useScreenings(filters?: ScreeningFilters, scope: 'public' | 'das
   )
 
   return useFetch<Screening[]>(fetchScreenings, {
+    cacheKey: scope === 'public' ? JSON.stringify(['screenings', filters?.when, filters?.date, filters?.age, filters?.movieId, filters?.cinemaId]) : undefined,
+    staleTime: 10_000,
     deps: [filters?.when, filters?.date, filters?.age, filters?.movieId, filters?.cinemaId, scope],
   })
 }

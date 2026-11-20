@@ -12,7 +12,23 @@ import {
   updateMovie,
 } from "../services/movies.service.js";
 
+const metadataBody = {
+  production_countries: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
+  production_year: z.number().int().min(1888).max(2100).nullable().optional(),
+  distributor: z.string().trim().max(200).nullable().optional(),
+  language: z.string().trim().max(200).nullable().optional(),
+  subtitles: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
+  images: z.array(imageUrlSchema).max(30).optional(),
+  youtube_trailers: z.array(httpUrlSchema).max(10).optional(),
+  reviews: z.array(z.object({
+    source: z.string().trim().min(1).max(200),
+    quote: z.string().trim().min(1).max(2000),
+    stars: z.number().min(0), max: z.number().positive().max(100),
+  }).refine(review => review.stars <= review.max, 'Betyget får inte överstiga skalan.')).max(30).optional(),
+};
+
 export const createMovieBody = z.object({
+  ...metadataBody,
   title: z
     .string()
     .trim()
@@ -63,6 +79,7 @@ export const createMovieBody = z.object({
 });
 
 export const updateMovieBody = z.object({
+  ...metadataBody,
   title: z
     .string()
     .trim()
@@ -115,6 +132,7 @@ export const updateMovieBody = z.object({
 });
 
 export const listMoviesQuerySchema = z.object({
+  compact: z.enum(["true", "false"]).optional().transform(value => value === "true"),
   genre: z.string().trim().min(1).optional(),
   search: z.string().trim().min(1).optional(),
   age: z.coerce.number().int().min(0).max(120).optional(),

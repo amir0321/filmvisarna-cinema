@@ -47,7 +47,15 @@ CREATE TABLE movie (
   trailer_url         text,
   director            text,
   imdb_rating         numeric(3, 1) CHECK (imdb_rating >= 0 AND imdb_rating <= 10),
-  release_date        date
+  release_date        date,
+  production_countries text[] NOT NULL DEFAULT '{}',
+  production_year     int CHECK (production_year BETWEEN 1888 AND 2100),
+  distributor         text,
+  audio_language      text,
+  subtitles           text[] NOT NULL DEFAULT '{}',
+  images              text[] NOT NULL DEFAULT '{}',
+  youtube_trailers    text[] NOT NULL DEFAULT '{}',
+  reviews             jsonb NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(reviews) = 'array')
 );
 
 CREATE TABLE genre (

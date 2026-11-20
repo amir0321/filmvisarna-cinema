@@ -1,6 +1,7 @@
 import type { Seat } from './seat'
 
 export interface CinemaOverview {
+  seatsPerRow?: number[]
   id: number
   name: string
   total_seats: number

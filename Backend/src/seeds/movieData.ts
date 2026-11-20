@@ -1,3 +1,5 @@
+import type { MovieMetadata } from "../interfaces/types.js";
+import { getRepertoireMovies } from "./repertoire.js";
 import { todayIn } from "../utils/dates.js";
 import { seedActorProfiles } from "./actorProfiles.js";
 
@@ -10,14 +12,14 @@ export interface SeedCastMember {
   billing_order: number;
 }
 
-export interface SeedMovie {
+export interface SeedMovie extends MovieMetadata {
   title: string;
   duration_minutes: number;
-  age_rating: string;
+  age_rating: string | null;
   director: string;
   actors: string[];
   cast_members: SeedCastMember[];
-  imdb_rating: number;
+  imdb_rating: number | null;
   description: string;
   trailer_url: string | null;
   poster_url: string;
@@ -226,8 +228,10 @@ export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] 
   for (const movie of movies) {
     for (const name of movie.actors) filmography.set(name, [...(filmography.get(name) ?? []), movie.title]);
   }
-  return movies.map(movie => ({
+  return [...movies.map(movie => ({
     ...movie,
+    images: [movie.landscape_image_url],
+    youtube_trailers: movie.trailer_url ? [movie.trailer_url] : [],
     cast_members: movie.actors.map((name, index) => {
       const profile = seedActorProfiles[name];
       const character = seedCharacters[movie.title]?.[index];
@@ -238,5 +242,5 @@ export function getSeedMovies(today = todayIn('Europe/Stockholm')): SeedMovie[] 
         character_name: character, billing_order: index,
       };
     }),
-  }));
+  })), ...getRepertoireMovies(seedDateOffset(today, -30))];
 }

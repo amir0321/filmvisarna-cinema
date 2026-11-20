@@ -16,7 +16,7 @@ const MovieFormModal = lazy(() => import('../../components/admin/MovieFormModal'
 
 export default function AdminMovies() {
   const { t, locale } = useTranslation()
-  const { data: movies, loading, error, refetch, setData } = useMovies()
+  const { data: movies, loading, error, refetch, setData } = useMovies(undefined, false)
   const [query, setQuery] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)

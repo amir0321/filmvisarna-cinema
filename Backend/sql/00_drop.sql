@@ -1,4 +1,4 @@
-DROP VIEW IF EXISTS booking_totals, screening_times, cinema_overview;
+DROP VIEW IF EXISTS booking_totals, screening_times, cinema_overview, movie_catalogue;
 DROP TABLE IF EXISTS
   booking_item, combo_item, menu_item,
   guest_booking_intent, booking_rate_limit, ticket, booking, price_group,

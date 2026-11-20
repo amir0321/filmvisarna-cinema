@@ -1,13 +1,11 @@
 import { useCallback } from 'react'
-import { getCinemaById, getCinemas } from '../api/cinemas'
+import apiClient from '../api/client'
 import type { CinemaDetail } from '../types/cinema'
 import { useFetch, type UseFetchResult } from './useFetch'
 
 export function useCinemas(): UseFetchResult<CinemaDetail[]> {
-  const load = useCallback(async (signal: AbortSignal) => {
-    const list = await getCinemas(signal)
-    return Promise.all(list.map((c) => getCinemaById(c.id, signal)))
-  }, [])
-
-  return useFetch<CinemaDetail[]>(load)
+  const load = useCallback((signal: AbortSignal) => apiClient.get<CinemaDetail[]>('/cinemas', {
+    signal, params: { includeSeats: true },
+  }), [])
+  return useFetch<CinemaDetail[]>(load, { cacheKey: 'cinemas:seats' })
 }
