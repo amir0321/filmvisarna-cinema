@@ -43,9 +43,7 @@ function parseWheelchair(
       if (!Number.isInteger(number) || number < 1 || number > seatsPerRow) return null
       if (!seats.some((s) => s.row === row && s.number === number)) {
         seats.push({ row, number })
-      }
-    }
-  }
+      }}}
   return seats
 }
 
@@ -55,8 +53,7 @@ function wheelchairToText(cinema: CinemaDetail | null): string {
   for (const s of cinema.seats) {
     if (s.isWheelchair === true || s.seatType === 'wheelchair') {
       byRow.set(s.row, [...(byRow.get(s.row) ?? []), s.number])
-    }
-  }
+    }}
   return [...byRow]
     .map(([row, numbers]) => `${row}: ${[...numbers].sort((a, b) => a - b).join(', ')}`)
     .join('; ')
@@ -85,7 +82,6 @@ function Stepper({ id, label, value, min, max, disabled, onChange }: StepperProp
           disabled={disabled || value <= min}
           aria-label={t('admin.cinemas.modal.decrease')}
         >
-          −
         </button>
         <output className="fv-stepper__value">{value}</output>
         <button
@@ -95,7 +91,6 @@ function Stepper({ id, label, value, min, max, disabled, onChange }: StepperProp
           disabled={disabled || value >= max}
           aria-label={t('admin.cinemas.modal.increase')}
         >
-          +
         </button>
       </div>
     </div>
@@ -122,10 +117,14 @@ export default function CinemaFormModal({
   const [tech, setTech] = useState<string[]>(
     (cinema?.tech ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   )
-  const [wheelchairText, setWheelchairText] = useState(wheelchairToText(cinema))
+    // A new auditorium gets A1 and A2 as wheelchair seats from the backend, so the preview starts the same way
+  const [wheelchairText, setWheelchairText] = useState(cinema ? wheelchairToText(cinema) : 'A: 1, 2')
 
-  const wheelchairSeats = parseWheelchair(wheelchairText, rows, seatsPerRow)
-  const canSave = name.trim().length > 0 && wheelchairSeats !== null && !saving
+   const wheelchairSeats = parseWheelchair(wheelchairText, rows, seatsPerRow)
+  // The backend can only replace wheelchair seats, never clear them, so at least one is required
+  const wheelchairError =
+    wheelchairSeats === null ? 'invalid' : wheelchairSeats.length === 0 ? 'required' : null
+  const canSave = name.trim().length > 0 && wheelchairError === null && !saving
 
   const toggleTech = (option: string) =>
     setTech((prev) =>
@@ -144,8 +143,7 @@ export default function CinemaFormModal({
       onClose={saving ? () => {} : onClose}
       size="md"
       title={t(isEdit ? 'admin.cinemas.modal.editTitle' : 'admin.cinemas.modal.addTitle')}
-      id="cinema-form-modal"
-    >
+      id="cinema-form-modal">
       <form onSubmit={handleSubmit} noValidate>
         <Modal.Body className="fv-cinema-form">
           <div className="fv-cinema-form__field">
@@ -158,8 +156,7 @@ export default function CinemaFormModal({
               value={name}
               maxLength={100}
               placeholder={t('admin.cinemas.modal.namePlaceholder')}
-              onChange={(e) => setName(e.target.value)}
-            />
+              onChange={(e) => setName(e.target.value)}/>
           </div>
 
           <div className="fv-cinema-form__steppers">
@@ -170,8 +167,7 @@ export default function CinemaFormModal({
               min={1}
               max={26}
               disabled={isEdit}
-              onChange={setRows}
-            />
+              onChange={setRows}/>
             <Stepper
               id="cinema-seats"
               label={t('admin.cinemas.modal.seatsPerRow')}
@@ -179,8 +175,7 @@ export default function CinemaFormModal({
               min={1}
               max={50}
               disabled={isEdit}
-              onChange={setSeatsPerRow}
-            />
+              onChange={setSeatsPerRow}/>
           </div>
           {isEdit && <p className="fv-cinema-form__hint">{t('admin.cinemas.modal.lockedHint')}</p>}
 
@@ -193,11 +188,9 @@ export default function CinemaFormModal({
                   type="button"
                   className="fv-cinema-form__tech"
                   aria-pressed={tech.includes(option)}
-                  onClick={() => toggleTech(option)}
-                >
+                  onClick={() => toggleTech(option)}>
                   {option}
-                </button>
-              ))}
+                </button>))}
             </div>
           </div>
 
@@ -205,20 +198,21 @@ export default function CinemaFormModal({
             <label htmlFor="cinema-wheelchair" className="fv-cinema-form__label">
               {t('admin.cinemas.modal.wheelchair')}
             </label>
-            <input
+               <input
               id="cinema-wheelchair"
               className="form-control"
               value={wheelchairText}
               placeholder={t('admin.cinemas.modal.wheelchairPlaceholder')}
-              aria-invalid={wheelchairSeats === null}
-              aria-describedby={wheelchairSeats === null ? 'cinema-wheelchair-error' : undefined}
-              onChange={(e) => setWheelchairText(e.target.value)}
-            />
-            {wheelchairSeats === null && (
+              aria-invalid={wheelchairError !== null}
+              aria-describedby={wheelchairError ? 'cinema-wheelchair-error' : undefined}
+              onChange={(e) => setWheelchairText(e.target.value)}/>
+            {wheelchairError && (
               <p id="cinema-wheelchair-error" className="fv-cinema-form__error" role="alert">
-                {t('admin.cinemas.modal.wheelchairInvalid')}
-              </p>
-            )}
+                {t(
+                  wheelchairError === 'invalid'
+                    ? 'admin.cinemas.modal.wheelchairInvalid'
+                    : 'admin.cinemas.modal.wheelchairRequired',
+                )} </p>)}
           </div>
 
           <section className="fv-cinema-form__preview" aria-label={t('admin.cinemas.modal.preview')}>
@@ -232,9 +226,7 @@ export default function CinemaFormModal({
               rows={rows}
               seatsPerRow={seatsPerRow}
               wheelchairSeats={
-                new Set((wheelchairSeats ?? []).map((s) => `${s.row}-${s.number}`))
-              }
-            />
+                new Set((wheelchairSeats ?? []).map((s) => `${s.row}-${s.number}`))}/>
           </section>
 
           {error ? (
@@ -254,5 +246,4 @@ export default function CinemaFormModal({
         </Modal.Footer>
       </form>
     </Modal>
-  )
-}
+  )}

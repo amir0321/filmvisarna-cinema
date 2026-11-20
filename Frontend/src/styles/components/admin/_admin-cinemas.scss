@@ -28,8 +28,9 @@
     gap: 0.25rem;
   }
 
-  &__label {
+   &__label {
     width: 1rem;
+    font-family: $fv-font-mono;
     font-size: 0.7rem;
     text-align: center;
     color: $fv-muted-fg;
@@ -102,13 +103,13 @@
   &__name { margin: 0; font-size: 1.25rem; font-weight: 700; }
   &__sub { margin: 0; color: $fv-muted-fg; }
 
-  &__badge {
+    &__badge {
     padding: 0.25rem 0.75rem;
     border-radius: $fv-radius-pill;
     font-size: 0.85rem;
     font-weight: 600;
-    color: $fv-fg;
-    background: color-mix(in srgb, $fv-primary 15%, transparent);
+    color: $fv-danger-light;
+    background: tint($fv-primary, 0.15);
   }
 
   &__stats {
@@ -202,9 +203,10 @@
     color: $fv-fg;
     font-size: 0.9rem;
 
-    &[aria-pressed='true'] {
+       &[aria-pressed='true'] {
       border-color: $fv-primary;
-      background: color-mix(in srgb, $fv-primary 15%, transparent);
+      background: tint($fv-primary, 0.15);
+      color: $fv-danger-light;
       font-weight: 600;
     }
   }
