@@ -1,12 +1,10 @@
 import { useCallback } from 'react'
-import apiClient from '../api/client'
+import { getAdminMenuItems } from '../api/kiosk'
 import type { AdminMenuItem } from '../types'
 import { useFetch, type UseFetchResult } from './useFetch'
 
 export function useAdminMenuItems(): UseFetchResult<AdminMenuItem[]> {
-  const fetchItems = useCallback(
-    (signal: AbortSignal) => apiClient.get<AdminMenuItem[]>('/admin/menu-items', { signal }),
-    [],
-  )
+  const fetchItems = useCallback((signal: AbortSignal) => getAdminMenuItems(signal), [])
   return useFetch<AdminMenuItem[]>(fetchItems)
 }
+

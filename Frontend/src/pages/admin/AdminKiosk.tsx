@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import apiClient from '../../api/client'
-import { useAdminMenuItems } from '../../hooks'
+import { updateAdminMenuItem } from '../../api/kiosk'
+import { useTranslation } from '../../context/LocaleContext'
+import { useAdminMenuItems, usePagination } from '../../hooks'
+import { translateApiError } from '../../i18n/mappers'
 import type { AdminMenuItem } from '../../types'
 import { EmptyState } from '../../components/EmptyState'
+import Pagination from '../../components/Pagination'
 import { FilterPillGroup } from '../../components/Pills'
 import { CardListSkeleton } from '../../components/Skeleton'
 import { InlineFeedback, type InlineFeedbackVariant } from '../../components/Toast'
@@ -12,12 +15,8 @@ import AdminStatCard from '../../components/admin/AdminStatCard'
 import KioskTable from '../../components/admin/KioskTable'
 import { KIOSK_CATEGORIES, getKioskCategory, type KioskCategory } from '../../utils/kiosk'
 
-const CATEGORY_OPTIONS = [
-  { value: 'all', label: 'Alla' },
-  ...Object.entries(KIOSK_CATEGORIES).map(([value, { label }]) => ({ value, label })),
-]
-
 export default function AdminKiosk() {
+  const { t, locale } = useTranslation()
   const { data, loading, error, refetch, setData } = useAdminMenuItems()
   const items = data ?? []
   const activeCount = items.filter((item) => item.isAvailable).length
@@ -28,16 +27,23 @@ export default function AdminKiosk() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<AdminMenuItem | null>(null)
 
+  const categoryOptions = [
+    { value: 'all', label: t('admin.kiosk.category.all') },
+    ...Object.entries(KIOSK_CATEGORIES).map(([value, { labelKey }]) => ({ value, label: t(labelKey) })),
+  ]
+
   const query = search.trim().toLowerCase()
   const filteredItems = items
     .filter((item) => category === 'all' || getKioskCategory(item) === category)
     .filter((item) => `${item.name} ${item.description ?? ''}`.toLowerCase().includes(query))
 
+  const pagination = usePagination(filteredItems, 10)
+
   async function toggleAvailable(item: AdminMenuItem) {
     setSavingId(item.id)
     setFeedback(null)
     try {
-      const updated = await apiClient.patch<AdminMenuItem>(`/admin/menu-items/${item.id}`, {
+      const updated = await updateAdminMenuItem(item.id, {
         isAvailable: !item.isAvailable,
       })
       // Swap in the saved row instead of reloading the whole list
@@ -45,7 +51,7 @@ export default function AdminKiosk() {
     } catch (err) {
       setFeedback({
         variant: 'danger',
-        message: err instanceof Error ? err.message : 'Det gick inte att spara ändringen.',
+        message: err instanceof Error ? translateApiError(err.message, locale) : t('admin.kiosk.saveError'),
       })
     } finally {
       setSavingId(null)
@@ -65,41 +71,59 @@ export default function AdminKiosk() {
 
   return (
     <div className="admin-kiosk">
-      <AdminPageHeader title="Kiosksortiment" subtitle="Hantera kioskprodukter, priser och tillgänglighet" />
+      <AdminPageHeader title={t('nav.kioskAssortment')} subtitle={t('admin.kiosk.subtitle')} />
 
       <div className="admin-stats">
-        <AdminStatCard label="Totalt sortiment" value={`${items.length} st`} color="info" />
-        <AdminStatCard label="Aktiva produkter" value={`${activeCount} st`} color="success" />
-        <AdminStatCard label="Inaktiva produkter" value={`${items.length - activeCount} st`} color="warning" />
+        <AdminStatCard
+          label={t('admin.kiosk.stats.total')}
+          value={t('admin.kiosk.stats.count', { count: items.length })}
+          color="info"
+        />
+        <AdminStatCard
+          label={t('admin.kiosk.stats.active')}
+          value={t('admin.kiosk.stats.count', { count: activeCount })}
+          color="success"
+        />
+        <AdminStatCard
+          label={t('admin.kiosk.stats.inactive')}
+          value={t('admin.kiosk.stats.count', { count: items.length - activeCount })}
+          color="warning"
+        />
       </div>
 
       <div className="admin-kiosk__search-row">
         <div className="admin-search">
           <label htmlFor="kiosk-search" className="visually-hidden">
-            Sök produkt
+            {t('admin.kiosk.searchLabel')}
           </label>
           <i className="bi bi-search" aria-hidden="true"></i>
           <input
             id="kiosk-search"
             type="search"
             className="form-control"
-            placeholder="Sök på produktnamn eller beskrivning..."
+            placeholder={t('admin.kiosk.searchPlaceholder')}
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              pagination.setPage(1)
+            }}
           />
         </div>
         <button type="button" className="btn btn-danger admin-toolbar__create" onClick={() => openForm(null)}>
           <i className="bi bi-plus-lg me-2" aria-hidden="true"></i>
-          Lägg till ny produkt
+          {t('admin.kiosk.add')}
         </button>
       </div>
 
       <FilterPillGroup
-        ariaLabel="Kategori"
+        ariaLabel={t('admin.kiosk.categoryAria')}
         variant="genre"
-        options={CATEGORY_OPTIONS}
+        options={categoryOptions}
         value={category}
-        onChange={(value) => setCategory(value as KioskCategory | 'all')}
+        onChange={(value) => {
+          setCategory(value as KioskCategory | 'all')
+          pagination.setPage(1)
+        }}
         className="mb-4"
       />
 
@@ -110,24 +134,35 @@ export default function AdminKiosk() {
       {error && (
         <EmptyState
           variant="error"
-          title="Kunde inte ladda produkter"
-          description={error}
-          actionLabel="Försök igen"
+          title={t('admin.kiosk.loadError')}
+          description={translateApiError(error, locale)}
+          actionLabel={t('common.retry')}
           onAction={refetch}
         />
       )}
 
       {!loading && !error && filteredItems.length === 0 && (
-        <EmptyState icon="bi-search" title="Inga produkter" description="Inga produkter matchar din sökning." />
+        <EmptyState
+          icon="bi-search"
+          title={t('admin.kiosk.emptyTitle')}
+          description={t('admin.kiosk.emptyDescription')}
+        />
       )}
 
       {!loading && !error && filteredItems.length > 0 && (
-        <KioskTable
-          items={filteredItems}
-          savingId={savingId}
-          onEdit={openForm}
-          onToggleAvailable={toggleAvailable}
-        />
+        <>
+          <KioskTable
+            items={pagination.pageItems}
+            savingId={savingId}
+            onEdit={openForm}
+            onToggleAvailable={toggleAvailable}
+          />
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.setPage}
+          />
+        </>
       )}
 
       {isFormOpen && (
@@ -136,3 +171,4 @@ export default function AdminKiosk() {
     </div>
   )
 }
+

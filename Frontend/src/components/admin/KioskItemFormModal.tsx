@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import apiClient from '../../api/client'
+import { createAdminMenuItem, updateAdminMenuItem } from '../../api/kiosk'
+import { useTranslation } from '../../context/LocaleContext'
+import { translateApiError } from '../../i18n/mappers'
 import type { AdminMenuItem } from '../../types'
 import { Modal } from '../Modal'
 import { InlineFeedback } from '../Toast'
@@ -34,12 +36,15 @@ function getInitialValues(item: AdminMenuItem | null): FormValues {
 }
 
 export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItemFormModalProps) {
+  const { t, locale } = useTranslation()
   const [values, setValues] = useState(() => getInitialValues(item))
+  const [createdItem, setCreatedItem] = useState<AdminMenuItem | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
+  const targetItem = item ?? createdItem
   const isEditing = item !== null
-  const isCombo = item?.isCombo ?? false
+  const isCombo = targetItem?.isCombo ?? false
   const isComplete = values.name.trim() !== '' && values.price !== ''
 
   function update<K extends keyof FormValues>(field: K, value: FormValues[K]) {
@@ -48,52 +53,65 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!isComplete) return
+    if (!isComplete || isSaving) return
     setError(null)
     setIsSaving(true)
 
-    const body = {
+    const baseBody = {
       name: values.name.trim(),
       price: Number(values.price),
       description: values.description.trim() || null,
       imageUrl: values.imageUrl.trim() || null,
-      // Menus keep their category, it can't be changed here
-      ...(isCombo ? {} : { category: values.category }),
     }
 
     try {
-      if (isEditing) {
-        await apiClient.patch(`/admin/menu-items/${item.id}`, { ...body, isAvailable: values.isAvailable })
-        onSaved(`${body.name} har sparats.`)
+      if (targetItem) {
+        await updateAdminMenuItem(targetItem.id, {
+          ...baseBody,
+          ...(isCombo ? {} : { category: values.category }),
+          isAvailable: values.isAvailable,
+        })
+        onSaved(t(isEditing ? 'admin.kiosk.modal.saved' : 'admin.kiosk.modal.added', { name: baseBody.name }))
       } else {
-        const created = await apiClient.post<AdminMenuItem>('/admin/menu-items', body)
+        const created = await createAdminMenuItem({
+          ...baseBody,
+          category: values.category,
+        })
+        setCreatedItem(created)
         // New products are active by default, so only update if it should start inactive
         if (!values.isAvailable) {
-          await apiClient.patch(`/admin/menu-items/${created.id}`, { isAvailable: false })
+          await updateAdminMenuItem(created.id, { isAvailable: false })
         }
-        onSaved(`${body.name} har lagts till.`)
+        onSaved(t('admin.kiosk.modal.added', { name: baseBody.name }))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Det gick inte att spara produkten.')
+      setError(
+        err instanceof Error ? translateApiError(err.message, locale) : t('admin.kiosk.modal.error'),
+      )
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={isEditing ? 'Redigera produkt' : 'Lägg till ny produkt'} size="md">
+    <Modal
+      isOpen
+      onClose={isSaving ? () => {} : onClose}
+      title={t(isEditing ? 'admin.kiosk.modal.editTitle' : 'admin.kiosk.modal.addTitle')}
+      size="md"
+    >
       <form className="admin-form" onSubmit={handleSubmit}>
         <Modal.Body>
           {error && <InlineFeedback variant="danger" message={error} className="mb-3" />}
 
           <div className="mb-3">
             <label htmlFor="kiosk-name" className="admin-form__label">
-              Produktnamn *
+              {t('admin.kiosk.modal.nameLabel')}
             </label>
             <input
               id="kiosk-name"
               className="form-control admin-form__input"
-              placeholder="t.ex. Lilla Popcornmenyn"
+              placeholder={t('admin.kiosk.modal.namePlaceholder')}
               required
               maxLength={100}
               value={values.name}
@@ -104,7 +122,7 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
           <div className="row g-3 mb-3">
             <div className="col-6">
               <label htmlFor="kiosk-category" className="admin-form__label">
-                Kategori
+                {t('admin.kiosk.modal.categoryLabel')}
               </label>
               <select
                 id="kiosk-category"
@@ -113,14 +131,14 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
                 value={isCombo ? 'combo' : values.category}
                 onChange={(event) => update('category', event.target.value as 'food' | 'drink')}
               >
-                {isCombo && <option value="combo">{KIOSK_CATEGORIES.combo.label}</option>}
-                <option value="food">{KIOSK_CATEGORIES.food.label}</option>
-                <option value="drink">{KIOSK_CATEGORIES.drink.label}</option>
+                {isCombo && <option value="combo">{t(KIOSK_CATEGORIES.combo.labelKey)}</option>}
+                <option value="food">{t(KIOSK_CATEGORIES.food.labelKey)}</option>
+                <option value="drink">{t(KIOSK_CATEGORIES.drink.labelKey)}</option>
               </select>
             </div>
             <div className="col-6">
               <label htmlFor="kiosk-price" className="admin-form__label">
-                Pris (SEK) *
+                {t('admin.kiosk.modal.priceLabel')}
               </label>
               <input
                 id="kiosk-price"
@@ -138,14 +156,14 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
 
           <div className="mb-3">
             <label htmlFor="kiosk-description" className="admin-form__label">
-              Beskrivning / innehåll
+              {t('admin.kiosk.modal.descriptionLabel')}
             </label>
             <textarea
               id="kiosk-description"
               className="form-control admin-form__input"
               rows={2}
               maxLength={500}
-              placeholder="t.ex. Varma popcorn 1.5L + valfri läsk 33cl"
+              placeholder={t('admin.kiosk.modal.descriptionPlaceholder')}
               value={values.description}
               onChange={(event) => update('description', event.target.value)}
             />
@@ -153,7 +171,7 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
 
           <div className="mb-3">
             <label htmlFor="kiosk-image" className="admin-form__label">
-              Bild-URL (valfritt)
+              {t('admin.kiosk.modal.imageLabel')}
             </label>
             <input
               id="kiosk-image"
@@ -168,9 +186,9 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
           <div className="kiosk-form__toggle">
             <div>
               <label htmlFor="kiosk-available" className="kiosk-form__toggle-title">
-                Aktiv / visas i kiosken
+                {t('admin.kiosk.modal.availableTitle')}
               </label>
-              <p className="kiosk-form__toggle-text">Aktiva produkter kan köpas i kassan och förbokas vid biljettköp</p>
+              <p className="kiosk-form__toggle-text">{t('admin.kiosk.modal.availableHint')}</p>
             </div>
             <div className="form-check form-switch kiosk-switch">
               <input
@@ -187,14 +205,15 @@ export default function KioskItemFormModal({ item, onClose, onSaved }: KioskItem
 
         <Modal.Footer>
           <button type="button" className="btn admin-form__cancel" onClick={onClose} disabled={isSaving}>
-            Avbryt
+            {t('admin.abort')}
           </button>
           <button type="submit" className="btn btn-danger admin-form__submit" disabled={isSaving || !isComplete}>
             {isSaving && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>}
-            Spara produkt
+            {t(isSaving ? 'admin.saving' : 'admin.kiosk.modal.save')}
           </button>
         </Modal.Footer>
       </form>
     </Modal>
   )
 }
+

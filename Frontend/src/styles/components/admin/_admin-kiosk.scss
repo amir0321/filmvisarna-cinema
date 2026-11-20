@@ -111,3 +111,58 @@
   color: $text-secondary;
   font-size: $font-size-12;
 }
+
+.admin-kiosk-cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li + li {
+    margin-top: $space-2;
+  }
+}
+
+.admin-kiosk-card {
+  padding: $space-2;
+  border: 1px solid $border-strong;
+  border-radius: $radius-card;
+  background-color: $color-surface;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  &__heading {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__title {
+    margin: 0;
+    color: $text-heading;
+    font-size: $font-size-16;
+    font-weight: 700;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-2;
+    margin: $space-2 0;
+  }
+
+  &__actions {
+    display: flex;
+
+    .admin-table__edit {
+      width: 100%;
+      min-height: 44px;
+    }
+  }
+}
+
