@@ -255,6 +255,7 @@
   &--info { @include tone-color($fv-info); }
   &--success { @include tone-color($fv-success); }
   &--warning { @include tone-color($fv-warning); }
+  &--error { @include tone-color($fv-primary); }
 }
 .fv-admin-bookings {
   display: grid;
