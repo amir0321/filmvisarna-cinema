@@ -623,6 +623,7 @@ export const sv = {
   'admin.cinemas.wheelchairRow': 'Rad {row}: Stol {seats}',
   'admin.cinemas.wheelchairNone': 'Inga rullstolsplatser',
   'admin.cinemas.hallName': 'Salong {n}',
+  'admin.cinemas.add': 'Lägg till ny salong',
   'admin.cinemas.modal.addTitle': 'Lägg till ny salong',
   'admin.cinemas.modal.editTitle': 'Redigera salong',
   'admin.cinemas.modal.name': 'Salongsnamn',

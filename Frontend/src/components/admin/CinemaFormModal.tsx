@@ -82,6 +82,7 @@ function Stepper({ id, label, value, min, max, disabled, onChange }: StepperProp
           disabled={disabled || value <= min}
           aria-label={t('admin.cinemas.modal.decrease')}
         >
+          −
         </button>
         <output className="fv-stepper__value">{value}</output>
         <button
@@ -91,6 +92,7 @@ function Stepper({ id, label, value, min, max, disabled, onChange }: StepperProp
           disabled={disabled || value >= max}
           aria-label={t('admin.cinemas.modal.increase')}
         >
+          +
         </button>
       </div>
     </div>

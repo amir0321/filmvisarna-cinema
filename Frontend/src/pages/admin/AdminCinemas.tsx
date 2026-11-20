@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { updateCinema, deleteCinema } from '../../api/cinemas'
+import { createCinema, updateCinema, deleteCinema } from '../../api/cinemas'
 import CinemaFormModal, { type CinemaFormValues } from '../../components/admin/CinemaFormModal'
 import type { CinemaDetail } from '../../types/cinema'
 import { useTranslation } from '../../context/LocaleContext'
@@ -34,7 +34,7 @@ export default function AdminCinemas() {
   type ApiErrorInput = Parameters<typeof translateApiError>[0]
 
   // modal: null = closed, { cinema: null } = add new, { cinema } = edit
- const [modal, setModal] = useState<{ cinema: CinemaDetail } | null>(null)
+  const [modal, setModal] = useState<{ cinema: CinemaDetail | null } | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<ApiErrorInput | null>(null)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
@@ -46,22 +46,45 @@ export default function AdminCinemas() {
     setSaveError(null)
   }
 
-    const handleSubmit = async (values: CinemaFormValues) => {
+  const handleSubmit = async (values: CinemaFormValues) => {
     if (!modal) return
     setSaving(true)
     setSaveError(null)
     setFeedback(null)
+    let createdId: number | null = null
     try {
-      await updateCinema(modal.cinema.id, {
-        name: values.name,
-        tech: values.tech.join(', ') || null,
-        wheelchairSeats: values.wheelchairSeats,
-      })
+      const tech = values.tech.join(', ') || null
+      if (modal.cinema) {
+        await updateCinema(modal.cinema.id, {
+          name: values.name,
+          tech,
+          wheelchairSeats: values.wheelchairSeats,
+        })
+      } else {
+        const created = await createCinema({
+          name: values.name,
+          format: values.tech.join(' ') || null,
+          tech,
+          rows: values.rows,
+          seatsPerRow: values.seatsPerRow,
+        })
+        createdId = created.id
+        if (values.wheelchairSeats.length > 0) {
+          await updateCinema(created.id, { wheelchairSeats: values.wheelchairSeats })
+        }
+      }
       closeModal()
       setFeedback({ kind: 'success', text: t('admin.cinemas.saved') })
       refetch()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      if (createdId !== null) {
+        closeModal()
+        setFeedback({ kind: 'error', text: translateApiError(message, locale) })
+        refetch()
+      } else {
+        setSaveError(message)
+      }
     } finally {
       setSaving(false)
     }
@@ -88,13 +111,16 @@ export default function AdminCinemas() {
   return (
     <div className="fv-admin-cinemas">
       <AdminPageHeader title={t('nav.cinemas')} subtitle={t('admin.cinemas.intro')} />
-            <div className="fv-admin-cinemas__head">
+      <div className="fv-admin-cinemas__head">
         <div>
           <h2 className="fv-admin-cinemas__title">{t('admin.cinemas.sectionTitle')}</h2>
           {!loading && !error && (
             <p className="fv-admin-cinemas__summary">
               {t('admin.cinemas.sectionSummary', { count: cinemas.length, totalSeats })}
             </p> )}</div>
+        <button type="button" className="btn btn-primary" onClick={() => setModal({ cinema: null })}>
+          <i className="bi bi-plus-lg" aria-hidden="true" /> {t('admin.cinemas.add')}
+        </button>
       </div>
       {feedback && (
         <p className={`fv-feedback fv-feedback--${feedback.kind}`} role="status">

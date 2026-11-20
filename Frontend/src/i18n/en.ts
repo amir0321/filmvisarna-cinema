@@ -625,6 +625,7 @@ export const en = {
   'admin.cinemas.wheelchairRow': 'Row {row}: Seat {seats}',
   'admin.cinemas.wheelchairNone': 'No wheelchair seats',
   'admin.cinemas.hallName': 'Auditorium {n}',
+  'admin.cinemas.add': 'Add new auditorium',
   'admin.cinemas.modal.addTitle': 'Add new auditorium',
   'admin.cinemas.modal.editTitle': 'Edit auditorium',
   'admin.cinemas.modal.name': 'Auditorium name',
