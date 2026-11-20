@@ -1,0 +1,24 @@
+// Shared by the admin pages (bookings, auditoriums)
+@mixin tone-color($color) {
+  --tone: #{$color};
+  --tone-bg: #{tint($color, 0.18)};
+  --tone-border: #{tint($color, 0.4)};
+}
+
+.fv-feedback {
+  position: sticky;
+  top: calc(#{$fv-admin-nav-height} + 0.75rem);
+  z-index: $fv-z-sticky;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  color: $fv-fg;
+  background-color: $fv-card-bg;
+  background-image: linear-gradient(var(--tone-bg), var(--tone-bg));
+  border: 1px solid var(--tone);
+  border-radius: $fv-radius-lg;
+
+  &--info { @include tone-color($fv-info); }
+  &--success { @include tone-color($fv-success); }
+  &--warning { @include tone-color($fv-warning); }
+  &--error { @include tone-color($fv-primary); }
+}
