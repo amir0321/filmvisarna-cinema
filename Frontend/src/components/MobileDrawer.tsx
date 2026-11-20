@@ -26,6 +26,7 @@ const ADMIN_DRAWER_LINKS = [
   { name: 'nav.screeningSchedule', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
   { name: 'nav.movieArchive', path: '/admin/filmer', icon: 'bi-film', end: false },
   { name: 'nav.cinemas', path: '/admin/salonger', icon: 'bi-display', end: false },
+  { name: 'nav.kioskAssortment', path: '/admin/kiosk', icon: 'bi-cup-straw', end: false },
 ] as const
 
 export default function MobileDrawer() {

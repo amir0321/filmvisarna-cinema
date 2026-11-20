@@ -101,6 +101,8 @@ export const router = createBrowserRouter([
       // Salonger
       { path: 'salonger', lazy: lazyPage(() => import('./pages/admin/AdminCinemas')) },
       { path: 'cinemas', lazy: lazyPage(() => import('./pages/admin/AdminCinemas')) },
+      // Kiosk
+      { path: 'kiosk', lazy: lazyPage(() => import('./pages/admin/AdminKiosk')) },
     ],
   },
   // Catch-all 404 Not Found route

@@ -9,3 +9,15 @@ export interface KioskItem {
   is_available: boolean
   combo_items: { id: number; name: string; quantity: number }[] | null
 }
+
+// Shape returned by /api/admin/menu-items
+export interface AdminMenuItem {
+  id: number
+  name: string
+  description: string | null
+  category: 'food' | 'drink'
+  price: number
+  isCombo: boolean
+  imageUrl: string | null
+  isAvailable: boolean
+}
