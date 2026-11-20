@@ -50,7 +50,11 @@
   }
 
   &__value {
+    color: $fv-fg;
     font-family: $fv-font-display;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
   }
 }
 .fv-checkin {

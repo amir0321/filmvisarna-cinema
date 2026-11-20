@@ -200,7 +200,13 @@ function handleCancel() {
           onAction={refetchBookings}
         />
       )}
-            {bookings && bookings.length > 0 && (
+      {feedback && (
+        <p role="status" className={`fv-feedback fv-feedback--${feedback.kind}`}>{feedback.text}</p>
+      )}
+      {bookings && bookings.length === 0 && (
+        <EmptyState title={t('admin.bookings.table.empty')} />
+      )}
+      {bookings && bookings.length > 0 && (
         <>
           <BookingsTable
             bookings={pagination.pageItems}
@@ -217,9 +223,6 @@ function handleCancel() {
             onPageChange={pagination.setPage}
           />
         </>
-      )}
-      {feedback && (
-       <p role="status" className={`fv-feedback fv-feedback--${feedback.kind}`}>{feedback.text}</p>
       )}
      </div>
        <div className="fv-admin-bookings__side">
