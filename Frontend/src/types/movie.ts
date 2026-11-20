@@ -18,7 +18,7 @@ export type MovieCastInput = Partial<Pick<PersonProfile, 'photo_url' | 'bio' | '
   billing_order?: number
 } & ({ person_id: number; name?: string } | { person_id?: never; name: string })
 
-export interface MovieFormPayload {
+export interface MovieFormPayload extends MovieMetadata {
   title: string
   duration_minutes: number
   description?: string | null
@@ -51,7 +51,18 @@ export interface ExternalMovieDetails extends Omit<Movie,
   cast_members: Omit<MovieCastMember, 'person_id'>[]
 }
 
-export interface Movie {
+export interface MovieMetadata {
+  production_countries?: string[]
+  production_year?: number | null
+  distributor?: string | null
+  language?: string | null
+  subtitles?: string[]
+  images?: string[]
+  youtube_trailers?: string[]
+  reviews?: Array<{ source: string; quote: string; stars: number; max: number }>
+}
+
+export interface Movie extends MovieMetadata {
   id: number
   title: string
   description: string | null

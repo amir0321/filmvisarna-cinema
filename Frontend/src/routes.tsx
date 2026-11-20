@@ -6,7 +6,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/Home'
-import Movies from './pages/Movies'
 import NotFound from './pages/NotFound'
 
 const lazyPage = (load: () => Promise<{ default: ComponentType }>) => async () => ({
@@ -23,7 +22,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
 
       // Filmer (Svenska primär, engelska alias/redirect)
-      { path: 'filmer', element: <Movies /> },
+      { path: 'filmer', lazy: lazyPage(() => import('./pages/Movies')) },
       { path: 'filmer/:id', lazy: lazyPage(() => import('./pages/MovieDetails')) },
       { path: 'movies', element: <Navigate to="/filmer" replace /> },
       { path: 'movies/:id', lazy: lazyPage(() => import('./pages/MovieDetails')) },

@@ -1,4 +1,5 @@
-import { query, withTransaction } from "../utils/dbHelpers.js";
+import { pool } from "../db.js";
+import { query, withTransaction, type Queryable } from "../utils/dbHelpers.js";
 import { HttpError } from "../utils/httpErorr.js";
 
 import {
@@ -16,40 +17,36 @@ export type {
   UpdateCinemaInput,
 };
 
-export async function getAllCinemas(): Promise<CinemaOverview[]> {
-  return query<CinemaOverview>(
-    "SELECT id, name, total_seats, format, tech, screen_size, opened_year FROM cinema_overview ORDER BY id ASC",
-  );
+export async function getAllCinemas(includeSeats = false): Promise<CinemaOverview[]> {
+  if (!includeSeats) return query<CinemaOverview>(
+    'SELECT *, seats_per_row AS "seatsPerRow" FROM cinema_overview ORDER BY id');
+  return query<CinemaDetail>(`${CINEMA_DETAIL_SELECT} GROUP BY c.id ORDER BY c.id`);
 }
 
-export async function getCinemaById(id: number): Promise<CinemaDetail> {
-  const rows = await query<CinemaDetail>(
-    `SELECT c.id, c.name, c.format, c.tech, c.screen_size, c.opened_year,
-            COUNT(s.id)::int AS total_seats,
-            COALESCE(
-              json_agg(
-                json_build_object(
-                  'id', s.id,
-                  'row', s.row_label,
-                  'number', s.seat_number,
-                  'seatType', s.seat_type,
-                  'isWheelchair', (s.seat_type = 'wheelchair')
-                )
-                ORDER BY s.row_label, s.seat_number
-              ) FILTER (WHERE s.id IS NOT NULL),
-              '[]'::json
-            ) AS seats
-     FROM cinema c
-     LEFT JOIN seat s ON s.cinema_id = c.id
-     WHERE c.id = $1
-     GROUP BY c.id, c.name, c.format, c.tech, c.screen_size, c.opened_year`,
-    [id],
-  );
+const CINEMA_DETAIL_SELECT = `SELECT c.id,c.name,c.format,c.tech,c.screen_size,c.opened_year,
+  count(s.id)::int AS total_seats,
+  COALESCE((SELECT array_agg(row_count ORDER BY row_label) FROM
+    (SELECT row_label,count(*)::int AS row_count FROM seat WHERE cinema_id=c.id GROUP BY row_label) layout), '{}') AS "seatsPerRow",
+  COALESCE(json_agg(json_build_object('id',s.id,'row',s.row_label,'number',s.seat_number,
+    'seatType',s.seat_type,'isWheelchair',s.seat_type='wheelchair')
+    ORDER BY s.row_label,s.seat_number) FILTER (WHERE s.id IS NOT NULL),'[]') AS seats
+  FROM cinema c LEFT JOIN seat s ON s.cinema_id=c.id`;
 
-  if (!rows[0]) {
-    throw new HttpError(404, "Salongen hittades inte.");
+function layout(rows: number | undefined, seatsPerRow: number | number[]): number[] {
+  const counts = Array.isArray(seatsPerRow) ? seatsPerRow : Array.from({ length: rows ?? 0 }, () => seatsPerRow);
+  if (!counts.length || (rows !== undefined && rows !== counts.length)) {
+    throw new HttpError(400, 'Antalet rader måste motsvara seatsPerRow.');
   }
+  return counts;
+}
+const INSERT_SEATS = `INSERT INTO seat (cinema_id,row_label,seat_number,seat_type)
+  SELECT $1,chr(64+r::int),n,CASE WHEN r=1 AND n<=2 THEN 'wheelchair' ELSE 'regular' END
+  FROM unnest($2::int[]) WITH ORDINALITY AS row_sizes(count,r)
+  CROSS JOIN LATERAL generate_series(1,count) n`;
 
+export async function getCinemaById(id: number, db: Queryable = pool): Promise<CinemaDetail> {
+  const { rows } = await db.query<CinemaDetail>(`${CINEMA_DETAIL_SELECT} WHERE c.id=$1 GROUP BY c.id`, [id]);
+  if (!rows[0]) throw new HttpError(404, 'Salongen hittades inte.');
   return rows[0];
 }
 
@@ -78,16 +75,8 @@ export async function createCinema(
     );
     const cinemaId = created[0].id;
 
-    // Generate seats using PostgreSQL series
-    await client.query(
-      `INSERT INTO seat (cinema_id, row_label, seat_number, seat_type)
-       SELECT $1, chr(64 + r), n,
-              CASE WHEN r = 1 AND n <= 2 THEN 'wheelchair' ELSE 'regular' END
-       FROM generate_series(1, $2::int) r, generate_series(1, $3::int) n`,
-      [cinemaId, input.rows, input.seatsPerRow],
-    );
-
-    return getCinemaById(cinemaId);
+    await client.query(INSERT_SEATS, [cinemaId, layout(input.rows, input.seatsPerRow)]);
+    return getCinemaById(cinemaId, client);
   });
 }
 
@@ -121,31 +110,23 @@ export async function updateCinema(
       [name, format, tech, screen_size, opened_year, id],
     );
 
-    // If rows and seatsPerRow are given, re-generate grid if no active bookings exist
-    if (input.rows !== undefined && input.seatsPerRow !== undefined) {
-      const activeBookings = await client.query(
-        `SELECT 1 FROM booking b
-         JOIN screening s ON s.id = b.screening_id
-         WHERE s.cinema_id = $1 AND b.status = 'confirmed'
-         LIMIT 1`,
-        [id],
-      );
-      if (activeBookings.rowCount && activeBookings.rowCount > 0) {
-        throw new HttpError(409, "Kan inte ändra rader/stolar eftersom det finns aktiva bokningar i salongen.");
-      }
-
-      await client.query("DELETE FROM seat WHERE cinema_id = $1", [id]);
-      await client.query(
-        `INSERT INTO seat (cinema_id, row_label, seat_number, seat_type)
-         SELECT $1, chr(64 + r), n,
-                CASE WHEN r = 1 AND n <= 2 THEN 'wheelchair' ELSE 'regular' END
-         FROM generate_series(1, $2::int) r, generate_series(1, $3::int) n`,
-        [id, input.rows, input.seatsPerRow],
-      );
+    // Reconcile the row layout without recreating retained seats.
+    if (input.seatsPerRow !== undefined) {
+      // Preserve IDs and historical ticket references for seats retained in the new layout.
+      await client.query('SELECT id FROM cinema WHERE id=$1 FOR UPDATE', [id]);
+      const counts = layout(input.rows, input.seatsPerRow);
+      const removed = await client.query(`SELECT s.id FROM seat s WHERE cinema_id=$1
+        AND (ascii(row_label)-64 > cardinality($2::int[])
+          OR seat_number > ($2::int[])[ascii(row_label)-64])
+        AND EXISTS (SELECT 1 FROM ticket t WHERE t.seat_id=s.id)`, [id,counts]);
+      if (removed.rowCount) throw new HttpError(409, 'Kan inte ta bort stolar med bokningshistorik.');
+      await client.query(`DELETE FROM seat WHERE cinema_id=$1 AND
+        (ascii(row_label)-64 > cardinality($2::int[]) OR seat_number > ($2::int[])[ascii(row_label)-64])`, [id,counts]);
+      await client.query(INSERT_SEATS + ' ON CONFLICT (cinema_id,row_label,seat_number) DO NOTHING', [id,counts]);
     }
 
     // If specific wheelchairSeats are designated
-    if (input.wheelchairSeats && input.wheelchairSeats.length > 0) {
+    if (input.wheelchairSeats !== undefined) {
       await client.query("UPDATE seat SET seat_type = 'regular' WHERE cinema_id = $1", [id]);
       for (const ws of input.wheelchairSeats) {
         await client.query(
@@ -155,7 +136,7 @@ export async function updateCinema(
       }
     }
 
-    return getCinemaById(id);
+    return getCinemaById(id, client);
   });
 }
 

@@ -482,3 +482,23 @@
     filter: brightness(1.1);
   }
 }
+
+.movie-details-synopsis p { white-space: pre-line; margin-bottom: 1.25rem; }
+.movie-details-synopsis p:last-child { margin-bottom: 0; }
+.movie-details-reviews {
+  margin: 2rem 0;
+  color: $fv-fg;
+  h2 { font-size: 1.25rem; }
+  figure { padding: 1.25rem; border-left: 3px solid $fv-primary; background: $fv-bg; border-radius: 0.5rem; }
+  blockquote { margin: 0 0 0.75rem; font-size: 1.1rem; }
+  blockquote p { margin: 0; }
+  figcaption { color: $fv-muted-fg; }
+  cite { font-style: normal; }
+}
+.movie-details-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+  img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 0.75rem; }
+}

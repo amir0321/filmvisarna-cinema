@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { pool } from '../db.js';
 import { getSeedMovies, seedDateOffset } from '../seeds/movieData.js';
+import { CINEMA_LAYOUTS } from '../seeds/cinemaLayouts.js';
 import { todayIn } from '../utils/dates.js';
 
 async function verifyPublicApi(screeningId: number) {
@@ -33,7 +34,25 @@ async function verify() {
     assert.equal(catalogue.rows.length, titles.length);
     assert.ok(catalogue.rows.every((movie) => movie.count === 1), 'Repeated seeding must not duplicate movies');
     const cinemas = await pool.query<{ name: string; total_seats: number }>('SELECT name,total_seats FROM cinema_overview ORDER BY total_seats DESC');
-    assert.deepEqual(cinemas.rows, [{name:'Stora Salongen',total_seats:80},{name:'Lilla Salongen',total_seats:40}]);
+    assert.deepEqual(cinemas.rows, [{name:'Stora Salongen',total_seats:81},{name:'Lilla Salongen',total_seats:55}]);
+    for (const cinema of CINEMA_LAYOUTS) {
+      const counts = await pool.query<{ seats: number }>(`SELECT count(*)::int AS seats FROM seat s
+        JOIN cinema c ON c.id=s.cinema_id WHERE c.name=$1 GROUP BY s.row_label ORDER BY s.row_label`, [cinema.name]);
+      assert.deepEqual(counts.rows.map(row => row.seats), cinema.seatsPerRow);
+    }
+    const programme = await pool.query<{ date: string; count: number }>(`SELECT
+      to_char(st.starts_at AT TIME ZONE 'Europe/Stockholm','YYYY-MM-DD') AS date,count(*)::int AS count
+      FROM screening_times st WHERE (st.starts_at AT TIME ZONE 'Europe/Stockholm')::date
+        BETWEEN ((now() AT TIME ZONE 'Europe/Stockholm')::date-4) AND ((now() AT TIME ZONE 'Europe/Stockholm')::date+23)
+      GROUP BY 1 ORDER BY 1`);
+    assert.equal(programme.rows.length,28,'Programme spans four full weeks');
+    assert.ok(programme.rows.every(day => day.count>=3),'At least three screenings each evening');
+    assert.ok(programme.rows.reduce((sum,day) => sum+day.count,0)>84);
+    const metadata = await pool.query(`SELECT id FROM movie WHERE title=ANY($1::text[])
+      AND production_year IS NOT NULL AND cardinality(production_countries)>0
+      AND audio_language IS NOT NULL AND distributor IS NOT NULL AND jsonb_array_length(reviews)>0`,
+      [['Past Lives','Aftersun','Perfect Days','Världens värsta människa']]);
+    assert.equal(metadata.rowCount,4,'Four repertoire films have metadata and reviews');
     const repertoire = await pool.query<{ movies: number }>(`SELECT count(DISTINCT st.movie_id)::int AS movies
       FROM screening_times st WHERE st.starts_at>now()`);
     assert.ok(repertoire.rows[0].movies >= 12, 'The upcoming programme must include twelve different movies');

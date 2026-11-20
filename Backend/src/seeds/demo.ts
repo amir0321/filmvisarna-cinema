@@ -5,10 +5,11 @@ import { pool } from '../db.js';
 import { todayIn } from '../utils/dates.js';
 import { getSeedMovies, seedDateOffset } from './movieData.js';
 import { BOOKING_REF_ALPHABET } from '../utils/bookingRef.js';
+import { CINEMA_LAYOUTS } from './cinemaLayouts.js';
 import { savePerson } from '../services/persons.service.js';
 
 const DEMO_EMAILS = ['admin@filmvisarna.se', 'medlem@filmvisarna.se', 'testuser1@example.com'];
-const SHOW_TIMES = ['10:00:00', '14:00:00', '18:00:00'];
+const SHOW_TIMES = ['17:00:00', '21:00:00'];
 const FREE_SEATS = ['D4', 'D5', 'H9'];
 
 interface DemoScreening { id: number; cinemaId: number; date: string; title: string }
@@ -29,6 +30,10 @@ export async function seedMovies(client: PoolClient, today: string) {
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, values);
       id = inserted.rows[0].id;
     }
+    await client.query(`UPDATE movie SET production_countries=$2,production_year=$3,distributor=$4,
+      audio_language=$5,subtitles=$6,images=$7,youtube_trailers=$8,reviews=$9::jsonb WHERE id=$1`,
+      [id,movie.production_countries ?? [],movie.production_year ?? null,movie.distributor ?? null,
+        movie.language ?? null,movie.subtitles ?? [],movie.images ?? [],movie.youtube_trailers ?? [],JSON.stringify(movie.reviews ?? [])]);
     for (const name of movie.genres) {
       const genre = await client.query<{ id: number }>(`INSERT INTO genre (name) VALUES ($1)
         ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, [name]);
@@ -54,16 +59,26 @@ export async function seedMovies(client: PoolClient, today: string) {
 
 async function seedCinemas(client: PoolClient) {
   const ids: number[] = [];
-  for (const [index, name] of ['Stora Salongen', 'Lilla Salongen'].entries()) {
+  for (const [index, { name, seatsPerRow }] of CINEMA_LAYOUTS.entries()) {
     const { rows } = await client.query<{ id: number }>(`INSERT INTO cinema (name,format,tech,screen_size,opened_year)
       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
       [name, index === 0 ? '4K Dolby Atmos' : '2D Intimt', index === 0 ? 'Laser 4K, Dolby Atmos 7.1' : '2K Digital, Dolby 5.1', index === 0 ? '18×8 m' : '10×4,5 m', index === 0 ? 1987 : 2019]);
     const id = rows[0].id;
+    // Keep seat IDs. Refuse to remove any seat referenced by a ticket, even historical.
+    await client.query('SELECT id FROM cinema WHERE id=$1 FOR UPDATE', [id]);
+    const blocked = await client.query(`SELECT s.id FROM seat s WHERE cinema_id=$1
+      AND (ascii(row_label)-64>cardinality($2::int[]) OR seat_number>($2::int[])[ascii(row_label)-64])
+      AND EXISTS (SELECT 1 FROM ticket t WHERE t.seat_id=s.id)`, [id,seatsPerRow]);
+    if (blocked.rowCount) throw new Error(`${name}: a removed seat has booking history; migrate that booking before changing the demo layout`);
+    await client.query(`DELETE FROM seat WHERE cinema_id=$1 AND
+      (ascii(row_label)-64>cardinality($2::int[]) OR seat_number>($2::int[])[ascii(row_label)-64])`, [id,seatsPerRow]);
     await client.query(`INSERT INTO seat (cinema_id,row_label,seat_number,seat_type)
-      SELECT $1,chr(65+r),s,CASE WHEN r=0 AND s IN (1,$3::int) THEN 'wheelchair' ELSE 'regular' END
-      FROM generate_series(0,$2::int-1) r CROSS JOIN generate_series(1,$3::int) s
-      ON CONFLICT (cinema_id,row_label,seat_number) DO NOTHING`, [id, index === 0 ? 8 : 5, index === 0 ? 10 : 8]);
-    await client.query("UPDATE seat SET seat_type='wheelchair' WHERE cinema_id=$1 AND row_label='A' AND seat_number IN (1,$2)", [id, index === 0 ? 10 : 8]);
+      SELECT $1,chr(64+r::int),s,CASE WHEN r=1 AND s IN (1,count) THEN 'wheelchair' ELSE 'regular' END
+      FROM unnest($2::int[]) WITH ORDINALITY AS row_sizes(count,r)
+      CROSS JOIN LATERAL generate_series(1,count) s
+      ON CONFLICT (cinema_id,row_label,seat_number) DO NOTHING`, [id,seatsPerRow]);
+    await client.query(`UPDATE seat SET seat_type=CASE WHEN row_label='A' AND seat_number IN (1,$2)
+      THEN 'wheelchair' ELSE 'regular' END WHERE cinema_id=$1`, [id,seatsPerRow[0]]);
     ids.push(id);
   }
   return ids;
@@ -184,15 +199,17 @@ export async function seedDemoData() {
       ON CONFLICT (name) DO NOTHING`);
     const priceId = price.rows[0].id;
     const nowShowing = movies.filter((movie) => movie.release_date <= today);
-    for (let offset = 0; offset < 14; offset++) {
+    for (let offset = -4; offset < 24; offset++) {
       const date = seedDateOffset(today, offset);
       const existing = await client.query<{ title: string }>(`SELECT m.title FROM screening s JOIN movie m ON m.id=s.movie_id
         WHERE s.cinema_id=ANY($1::int[]) AND (s.starts_at AT TIME ZONE 'Europe/Stockholm')::date=$2::date`, [cinemas,date]);
       const used = new Set(existing.rows.map((row) => row.title));
-      const half = Math.floor(Date.parse(`${date}T12:00:00Z`) / 86400000) % 2;
-      const ordered = [...nowShowing.slice(half*6), ...nowShowing.slice(0,half*6)];
+      const rotation = ((Math.floor(Date.parse(`${date}T12:00:00Z`) / 86400000) * 5) % nowShowing.length + nowShowing.length) % nowShowing.length;
+      const ordered = [...nowShowing.slice(rotation), ...nowShowing.slice(0,rotation)];
       for (const cinemaId of cinemas) {
-        for (const time of SHOW_TIMES) {
+        for (const baseTime of SHOW_TIMES) {
+          const minute = (Math.floor(Date.parse(`${date}T12:00:00Z`) / 86400000) % 3) * 10 + (cinemaId === cinemas[1] ? 5 : 0);
+          const time = `${baseTime.slice(0,2)}:${String(minute).padStart(2,'0')}:00`;
           const movie = ordered.find((movie) => !used.has(movie.title));
           if (!movie) continue;
           const showing = await ensureScreening(client,movie,cinemaId,date,time,true);
@@ -224,16 +241,13 @@ export async function seedDemoData() {
     }
     const upcoming = await client.query<DemoScreening>(`SELECT s.id,s.cinema_id AS "cinemaId",
       to_char(s.starts_at AT TIME ZONE 'Europe/Stockholm','YYYY-MM-DD') AS date,m.title FROM screening s JOIN movie m ON m.id=s.movie_id
-      WHERE s.starts_at>now()+interval '1 day' AND m.title='Inception' AND s.cinema_id=ANY($1::int[])
+      WHERE s.starts_at>now()+interval '1 day' AND s.cinema_id=ANY($1::int[]) AND NOT EXISTS (SELECT 1 FROM booking crowd WHERE crowd.screening_id=s.id AND crowd.guest_email LIKE '%crowd%@example.test')
       ORDER BY EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.user_id=ANY($2::int[])) DESC,s.starts_at LIMIT 6`, [cinemas,userIds]);
     const history = await client.query<DemoScreening>(`SELECT s.id,s.cinema_id AS "cinemaId",
-      to_char(s.starts_at AT TIME ZONE 'Europe/Stockholm','YYYY-MM-DD') AS date,m.title FROM screening s JOIN movie m ON m.id=s.movie_id
-      WHERE s.starts_at<now() AND s.cinema_id=ANY($1::int[]) AND EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.user_id=ANY($2::int[]))
-      ORDER BY s.starts_at DESC LIMIT 6`, [cinemas,userIds]);
-    for (let index=history.rows.length; index<6; index++) {
-      const showing = await ensureScreening(client,nowShowing[index],cinemas[0],seedDateOffset(today,-index-1),'18:00:00');
-      if (showing) history.rows.push(showing);
-    }
+      to_char(s.starts_at AT TIME ZONE 'Europe/Stockholm','YYYY-MM-DD') AS date,m.title
+      FROM screening s JOIN movie m ON m.id=s.movie_id WHERE s.starts_at<now() AND s.cinema_id=ANY($1::int[])
+      AND NOT EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.guest_email LIKE '%crowd%@example.test')
+      ORDER BY EXISTS (SELECT 1 FROM booking b WHERE b.screening_id=s.id AND b.user_id=ANY($2::int[])) DESC,s.starts_at DESC LIMIT 6`, [cinemas,userIds]);
     if (upcoming.rows.length<6 || history.rows.length<6) throw new Error('Not enough fixtures for booking pagination');
     for (const [userIndex,userId] of userIds.entries()) {
       for (const [past,shows] of [[false,upcoming.rows],[true,history.rows]] as const) {
@@ -248,7 +262,7 @@ export async function seedDemoData() {
     const details = await client.query<{ id: number; title: string; cinema: string; startsAt: Date }>(`SELECT s.id,m.title,c.name AS cinema,s.starts_at AS "startsAt"
       FROM screening s JOIN movie m ON m.id=s.movie_id JOIN cinema c ON c.id=s.cinema_id WHERE s.id=ANY($1::int[])`, [[nearFull.id,soldOut.id]]);
     await client.query('COMMIT');
-    console.log(`Demo ready: ${movies.length} movies (${nowShowing.length} now showing), only Stora Salongen (80 seats) and Lilla Salongen (40 seats), 14 days.`);
+    console.log(`Demo ready: ${movies.length} movies (${nowShowing.length} now showing), only Stora Salongen (81 seats) and Lilla Salongen (55 seats), 28 days (-4 through +23).`);
     details.rows.forEach((show)=>console.log(`${show.title}: ${show.cinema}, ${show.startsAt.toLocaleString('sv-SE',{timeZone:'Europe/Stockholm'})}, /boka/${show.id}`));
     console.log('Dune free seats: D4, D5, H9. Interstellar: sold out. Use the weekend filter for repertoire pagination.');
     console.log('Demo accounts retain passwords and have at least 6 upcoming and 6 historical bookings. No emails are sent.');

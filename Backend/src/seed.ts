@@ -1,3 +1,4 @@
+import { CINEMA_LAYOUTS } from "./seeds/cinemaLayouts.js";
 import { getSeedMovies } from "./seeds/movieData.js";
 import { seedDemoData } from "./seeds/demo.js";
 import { pool } from "./db.js";
@@ -32,9 +33,9 @@ async function seedCinemasAndSeats() {
   `);
   const largeCinemaId = resLarge.rows[0].id;
 
-  for (let r = 0; r < 8; r++) {
+  for (let r = 0; r < CINEMA_LAYOUTS[0].seatsPerRow.length; r++) {
     const rowLabel = String.fromCharCode(65 + r);
-    for (let s = 1; s <= 10; s++) {
+    for (let s = 1; s <= CINEMA_LAYOUTS[0].seatsPerRow[r]; s++) {
       await pool.query(
         `INSERT INTO seat (cinema_id, row_label, seat_number) VALUES ($1, $2, $3)`,
         [largeCinemaId, rowLabel, s],
@@ -49,9 +50,9 @@ async function seedCinemasAndSeats() {
   `);
   const smallCinemaId = resSmall.rows[0].id;
 
-  for (let r = 0; r < 5; r++) {
+  for (let r = 0; r < CINEMA_LAYOUTS[1].seatsPerRow.length; r++) {
     const rowLabel = String.fromCharCode(65 + r);
-    for (let s = 1; s <= 8; s++) {
+    for (let s = 1; s <= CINEMA_LAYOUTS[1].seatsPerRow[r]; s++) {
       await pool.query(
         `INSERT INTO seat (cinema_id, row_label, seat_number) VALUES ($1, $2, $3)`,
         [smallCinemaId, rowLabel, s],

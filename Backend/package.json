@@ -20,7 +20,9 @@
     "migrate:cast": "tsx src/scripts/migrate-cast.ts",
     "cleanup:bookings": "tsx src/scripts/cleanup-bookings.ts",
     "refill:screenings": "node dist/scripts/add-screenings.js",
-    "media:localize": "node dist/scripts/localize-media.js"
+    "media:localize": "node dist/scripts/localize-media.js",
+    "seed:refresh": "tsx src/seed.ts --demo",
+    "migrate:metadata": "tsx src/scripts/migrate-metadata.ts"
   },
   "keywords": [],
   "author": "",

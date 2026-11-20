@@ -19,7 +19,7 @@ export interface CreateCinemaInput {
   format?: string | null
   tech?: string | null
   rows: number
-  seatsPerRow: number
+  seatsPerRow: number | number[]
 }
 
 export interface UpdateCinemaInput {
