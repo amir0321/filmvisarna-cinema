@@ -9,7 +9,7 @@ export function getBookingState(
 
   const startsAt = new Date(booking.screeningStartsAt ?? '').getTime()
   if (!Number.isFinite(startsAt)) return 'unknown'
-  if (!booking.isPaid && startsAt - now <= 15 * 60_000) return 'expired'
+  if (!booking.isPaid && startsAt - now <= 60 * 60_000) return 'expired'
   if (startsAt > now) return 'upcoming'
 
   const endsAt = new Date(booking.screeningEndsAt ?? '').getTime()
@@ -24,5 +24,5 @@ export function canCancelBooking(
 ): boolean {
   if (booking.status !== 'confirmed' && booking.status !== 'reserved') return false
   const remaining = new Date(booking.screeningStartsAt ?? '').getTime() - now
-  return booking.isPaid ? remaining >= 2 * 60 * 60 * 1000 : remaining > 15 * 60_000
+  return booking.isPaid ? remaining >= 2 * 60 * 60 * 1000 : remaining > 60 * 60_000
 }

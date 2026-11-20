@@ -9,7 +9,7 @@
 
 #### Bindande krav för tema (mörkt/ljust) och översättning (`sv` / `en`)
 
-När `/admin/bokningar` (`AdminBookings.tsx`) och administrationsöversikten (`/admin`, `AdminDashboard.tsx`) byggs ut från nuvarande platshållare gäller följande krav:
+När `/admin/bokningar` (`AdminBookings.tsx`) byggs ut från nuvarande platshållare gäller följande krav. Administrationsöversikten på `/admin` följer samma tema- och språkkrav enligt [Backoffice-specifikationen](admin-dashboard.md).
 - **Mörkt och ljust tema (`dark` / `light`, FE-36):**
   - Fasta hex-värden i prototypbeskrivningen nedan (`#161F30`, `#0B0F19`, `#F8FAFC`, `#94A3B8`, `#10B981`, `#F59E0B`, `#E50914`, `#3B82F6`) avser endast prototypens mörka tema.
   - I implementationen **måste** semantiska tokens från [design/tokens.md](../tokens.md) användas: `$fv-card-bg` (`--color-surface`) för kort/tabell/sidopanel, `$fv-muted-bg` (`--color-surface-muted`) för sökfält/select, `$fv-fg` (`--text-primary`) för primär text, `$fv-muted-fg` (`--text-muted`) för dämpad text, `$fv-border` (`--border-default`) för kantlinjer samt `$fv-primary`, `$fv-success`, `$fv-warning`, `$fv-info` och `tint(...)` / `$white-overlay-*` för statusbadges, KPI-kort och knappar.
@@ -37,13 +37,13 @@ Dessa regler gäller både medlems- och gästbokningar. E-postbekräftad gästbo
 
 | API-status | Visas för personalen | Platser och tillåtna åtgärder |
 | --- | --- | --- |
-| `reserved`, `isPaid: false` | Reserverad – obetald / Reserved – unpaid | Platserna hålls fram till 15 minuter före filmstart. Visa betalningsfrist och `Markera betald`. Incheckning kräver betalning. |
+| `reserved`, `isPaid: false` | Reserverad – obetald / Reserved – unpaid | Platserna hålls fram till en timme före filmstart. Visa betalningsfrist och `Markera betald`. Incheckning kräver betalning. |
 | `confirmed`, `isPaid: true` | Betald / Paid | Platserna behålls även vid sen ankomst. `Checka in` är en separat åtgärd. Visa dessutom `Incheckad` / `Checked in` när `isCheckedIn` är sann. |
 | `expired`, `isPaid: false` | Reservationen har släppts / Reservation released | Ursprungliga stolar är inte garanterade och får säljas till andra. Före filmens slut kan personalen försöka registrera ett sent köp med ny ledighetskontroll och vid behov nya platser. |
 | `cancelled` | Avbokad / Cancelled | Ingen betalning eller incheckning. Historik behålls; bokningen får inte återaktiveras via betalningsknappen. |
 
-- **Exakt reservationsfrist:** Vid start kl. 18:00 gäller reservationen fram till kl. 17:45. Från och med kl. 17:45 släpps obetalda platser. Nya obetalda nätreservationer stoppas samtidigt; sena kunder hänvisas till kassan. Betalda platser släpps inte på grund av sen ankomst.
-- **Kundens avbokning:** Betalda bokningar kan avbokas senast två timmar före start. Obetalda reservationer får avbokas fram tills platserna släpps 15 minuter före start; vid själva fristen är reservationen redan släppt. Detta gäller både medlemsavbokning och gästernas referens-/e-postflöde. En uttryckligt avbokad bokning ska hållas åtskild från uteblivet besök.
+- **Exakt reservationsfrist:** Vid start kl. 18:00 gäller reservationen fram till kl. 17:00. Från och med kl. 17:00 släpps obetalda platser. Nya obetalda nätreservationer stoppas samtidigt; sena kunder hänvisas till kassan. Betalda platser släpps inte på grund av sen ankomst.
+- **Kundens avbokning:** Betalda bokningar kan avbokas senast två timmar före start. Obetalda reservationer får avbokas fram tills platserna släpps en timme före start; vid själva fristen är reservationen redan släppt. Detta gäller både medlemsavbokning och gästernas referens-/e-postflöde. En uttryckligt avbokad bokning ska hållas åtskild från uteblivet besök.
 - **Tidskälla:** Backend avgör status, ledighet och tidsgränser. Frontend får visa en lokal nedräkning och uppdatera noteringen vid fristen, men får aldrig bekräfta ett köp utifrån enbart lokal tid eller cachad platskarta. Datum och tider visas i `Europe/Stockholm` med valt språk.
 - **Historik är inte beläggning:** Släppta biljetter finns kvar som inaktiva (`ticket.is_active = false`) så att ursprungliga platser, biljettkategorier och belopp kan visas. De ska aldrig ritas som upptagna stolar eller räknas som aktuella reservationer. Platskartan och API:ts beräknade status gäller även om minutjobbet inte har hunnit köras.
 - **Sjudagarsrensning:** Obetalda, utgångna bokningar och deras biljetter/kioskbeställningar raderas automatiskt sju dagar efter filmens sluttid. Betalda och avbokade bokningar behålls. Det ska inte finnas en separat manuell rensningsknapp i kassavyn. Om en historikrad har rensats ska `404` hanteras med synligt meddelande och omladdad lista.
@@ -82,7 +82,7 @@ Använd den gemensamma API-klienten för sessionscookie och CSRF-header. Bokning
 
 #### Återstående backendkrav – får inte simuleras i frontend
 
-- **Nytt köp för en kund utan befintlig bokning:** Någon separat adminendpoint för nya kassaköp finns ännu inte. Den publika `POST /api/bookings` skapar en obetald reservation för en verifierad medlem och stoppar nya reservationer sista 15 minuterna; den får inte användas som genväg för walk-in-köp. När nytt kassaköp byggs behövs ett adminskyddat API med atomär platskontroll, priser från servern, betalregistrering och poäng enligt samma regler. Befintliga sena köp med boknings-ID stöds redan enligt ovan.
+- **Nytt köp för en kund utan befintlig bokning:** Någon separat adminendpoint för nya kassaköp finns ännu inte. Den publika `POST /api/bookings` skapar en obetald reservation för en verifierad medlem och stoppar nya reservationer sista timmen; den får inte användas som genväg för walk-in-köp. När nytt kassaköp byggs behövs ett adminskyddat API med atomär platskontroll, priser från servern, betalregistrering och poäng enligt samma regler. Befintliga sena köp med boknings-ID stöds redan enligt ovan.
 - **Adminavbokning av andras bokningar:** Nuvarande `DELETE /api/bookings/:id` är kundens ägarstyrda avbokning med betalningsberoende tidsgräns, inte en generell adminavbokning. De publika referens-/e-postrutterna får inte användas som genväg. Separat admin-API med motivering, granskningslogg och regler för betalda bokningar krävs enligt säkerhetskraven ovan. Tills dess ska gränssnittet tydligt ange begränsningen och aldrig enbart ta bort en rad lokalt.
 - **Granskningslogg och missbrukshantering:** Kraven ovan är framtida arbete. Befintliga betalnings-/incheckningsrutter betyder inte att generell adminavbokning, återbetalning eller administrativ granskningslogg redan är implementerad.
 
@@ -90,7 +90,7 @@ Använd den gemensamma API-klienten för sessionscookie och CSRF-header. Bokning
 
 **Beslut:** Tre giltiga varningar inom en rullande period på 90 dagar ger 30 dagars spärr för nya obetalda reservationer. Automatisk varningsräkning, beständig spärrlagring, mejlkö, reservationskontroller och kundinformation är implementerade. Personalens vy och API för granskning, rättelser och hävning ska byggas senare enligt kraven nedan. Bygg vidare på den befintliga automatiken; ersätt den inte med lokal frontendlogik.
 
-- **När en varning skapas:** Först när filmens sluttid har passerat och en tidigare skapad bokning fortfarande är obetald och inte uttryckligen avbokad. Att stolarna släpps 15 minuter före start ger inte en varning i sig. En kund som kommer sent och betalar före filmens slut får ingen varning. Gästförfrågningar som aldrig bekräftats via e-post ger aldrig varningar.
+- **När en varning skapas:** Först när filmens sluttid har passerat och en tidigare skapad bokning fortfarande är obetald och inte uttryckligen avbokad. Att stolarna släpps en timme före start ger inte en varning i sig. En kund som kommer sent och betalar före filmens slut får ingen varning. Gästförfrågningar som aldrig bekräftats via e-post ger aldrig varningar.
 - **En bokning, en varning:** En bokning ger högst en varning oavsett antal stolar/kioskvaror, omstarter eller upprepade städkörningar. Använd serverberäknad sluttid och en beständig unik koppling till bokningen. Kontroll och registrering ska vara atomära så att samtidig kassabetalning inte kan skapa en felaktig varning.
 - **Konto och e-post:** Samma verifierade identitet ska dela varningar mellan gäst- och medlemsbokningar. Normalisera e-post med trimning och gemener enligt befintlig bokningskod. Koppla medlemsbokningars varningar till kontot också; växling mellan inloggad bokning och gästbokning med samma adress får inte kringgå spärren. En obekräftad e-postförfrågan får inte användas för att ge någon annan varningar.
 - **Tröskel och sluttid:** När den tredje giltiga varningen registreras inom de senaste 90 dagarna sätts en beständig spärr med start- och sluttid, 30 dagar från aktivering. Äldre och rättade varningar ska inte räknas. Samma tre händelser får inte återutlösa eller förlänga spärren när jobbet körs igen. Efter spärrtiden ska kunden kunna reservera igen; nya beslut måste bygga på nya uteblivanden, inte enbart återanvända den gamla tröskeln.
@@ -105,7 +105,7 @@ Acceptans för automatiken och kommande adminintegration: ett obetalt uteblivet 
 
 #### Acceptanskriterier för kommande implementation
 
-1. En obetald reservation till kl. 18:00 visar betalningsfristen 17:45. Vid 17:45 visas den som släppt och stolarna som lediga, även om städjobbet inte körts. En betald bokning behåller stolarna.
+1. En obetald reservation till kl. 18:00 visar betalningsfristen 17:00. Vid 17:00 visas den som släppt och stolarna som lediga, även om städjobbet inte körts. En betald bokning behåller stolarna.
 2. En sen kund kan betala före filmens sluttid om ursprungliga eller uttryckligen valda alternativa platser är lediga. Om två kassor försöker köpa samma stol lyckas högst ett anrop; det andra ger konflikt utan betalning eller poäng.
 3. Betalning och incheckning visas separat. Obetald/avbokad bokning kan inte checkas in. Samma betalningsanrop kan upprepas utan dubbla poäng; gäster får inga medlemspoäng.
 4. Släppta/avbokade bokningar och gästförfrågningar räknas inte som aktuell beläggning eller pengar att ta emot. KPI:er hämtas från servern och blandas inte med lokalt filtrerade exempeldata.

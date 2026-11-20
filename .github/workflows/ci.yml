@@ -45,6 +45,9 @@ jobs:
       - name: Type check and build
         run: npm run build
 
+      - name: Check frontend gzip budget
+        run: node ../scripts/check-bundle-size.cjs
+
   backend:
     name: Backend (Type check & Build)
     runs-on: ubuntu-latest

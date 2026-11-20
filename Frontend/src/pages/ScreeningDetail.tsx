@@ -276,7 +276,7 @@ export default function ScreeningDetail() {
     .join(' · ')
 
   const screening = screenings?.find(s => s.id === id)
-  const reservationsClosed = Boolean(screening && new Date(screening.startsAt).getTime() - currentTime <= 15 * 60_000)
+  const reservationsClosed = Boolean(screening && new Date(screening.startsAt).getTime() - currentTime <= 60 * 60_000)
   const when = screening
     ? t('common.dateTime', { date: formatDateLong(toCinemaIsoDate(screening.startsAt), locale), time: formatTime(screening.startsAt, locale) })
     : ''

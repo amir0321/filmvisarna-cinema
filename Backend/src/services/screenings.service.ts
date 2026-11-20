@@ -98,6 +98,7 @@ async function getScreeningOverviewById(client: PoolClient, id: number): Promise
  */
 export async function listUpcomingScreenings(
   filters: ScreeningFilters,
+  includeStartedToday = false,
 ): Promise<ScreeningOverview[]> {
   return query<ScreeningOverview>(
     `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
@@ -109,17 +110,18 @@ export async function listUpcomingScreenings(
              FROM ticket t
              JOIN booking b ON b.id = t.booking_id
              WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-               AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '15 minutes')) AS "bookedSeats",
+               AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')) AS "bookedSeats",
             ((SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) -
              (SELECT COUNT(*)::int
               FROM ticket t
               JOIN booking b ON b.id = t.booking_id
               WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-                AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '15 minutes')))::int AS "availableSeats"
+                AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')))::int AS "availableSeats"
      FROM screening_times st
      JOIN movie m  ON m.id = st.movie_id
      JOIN cinema c ON c.id = st.cinema_id
-     WHERE st.starts_at > now()
+     WHERE (st.starts_at > now() OR ($7::boolean AND
+       (st.starts_at AT TIME ZONE $5)::date = (now() AT TIME ZONE $5)::date))
        AND ($1::int  IS NULL OR st.movie_id  = $1)
        AND ($2::int  IS NULL OR st.cinema_id = $2)
        AND ($3::date IS NULL OR (st.starts_at AT TIME ZONE $5)::date >= $3::date)
@@ -133,6 +135,7 @@ export async function listUpcomingScreenings(
       filters.to ?? null,
       config.timezone,
       filters.age ?? null,
+      includeStartedToday,
     ],
   );
 }
@@ -170,7 +173,7 @@ export async function getScreeningSeats(
            AND t.seat_id = s.id
            AND b.status = 'confirmed'
            AND t.is_active
-           AND (b.is_paid OR sc.starts_at > statement_timestamp() + interval '15 minutes')
+           AND (b.is_paid OR sc.starts_at > statement_timestamp() + interval '1 hour')
        )
        THEN 'booked'
        ELSE 'available'
@@ -249,7 +252,7 @@ export async function updateScreening(
       validateScreeningStartsAt(startsAt);
     }
 
-    await assertCinemaExists(client, cinemaId);
+    await assertCinemaExists(client, cinemaId, true);
     const duration = await getMovieDuration(client, movieId);
     await assertNoScreeningOverlap(client, cinemaId, startsAt, duration, id);
 

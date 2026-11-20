@@ -21,7 +21,7 @@ const SALONG_INFO: readonly {
     titleKey: 'salonger.hall1.title',
     tone: 'primary',
     labelKey: 'salonger.hall1.label',
-    image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&h=450&fit=crop&auto=format',
+    image: '/images/hall-large.webp',
     tagKeys: ['salonger.hall1.tag1', 'salonger.hall1.tag2'],
     pointKeys: [
       'salonger.hall1.point1',
@@ -35,7 +35,7 @@ const SALONG_INFO: readonly {
     titleKey: 'salonger.hall2.title',
     tone: 'success',
     labelKey: 'salonger.hall2.label',
-    image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&h=450&fit=crop&auto=format',
+    image: '/images/hall-small.webp',
     tagKeys: ['salonger.hall2.tag1', 'salonger.hall2.tag2'],
     pointKeys: [
       'salonger.hall2.point1',

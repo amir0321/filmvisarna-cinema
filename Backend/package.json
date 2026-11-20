@@ -18,7 +18,9 @@
     "migrate:auth": "tsx src/scripts/migrate-auth.ts",
     "migrate:bookings": "tsx src/scripts/migrate-bookings.ts",
     "migrate:cast": "tsx src/scripts/migrate-cast.ts",
-    "cleanup:bookings": "tsx src/scripts/cleanup-bookings.ts"
+    "cleanup:bookings": "tsx src/scripts/cleanup-bookings.ts",
+    "refill:screenings": "node dist/scripts/add-screenings.js",
+    "media:localize": "node dist/scripts/localize-media.js"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +36,7 @@
     "multer": "^2.4.0",
     "nodemailer": "^10.1.0",
     "pg": "^8.23.1",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {

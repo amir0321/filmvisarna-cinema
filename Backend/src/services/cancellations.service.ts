@@ -75,7 +75,7 @@ export function validateCancellationDeadline(
   const currentTime = typeof now === "number" ? now : now.getTime();
 
   if (!isPaid) {
-    if (startsAt - currentTime <= 15 * 60_000) {
+    if (startsAt - currentTime <= 60 * 60_000) {
       throw new HttpError(400, 'Reservationen har redan släppts och kan inte avbokas.');
     }
     return;
