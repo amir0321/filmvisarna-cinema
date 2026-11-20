@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { tmdbPosterSrcSet } from '../utils/responsiveImages'
 
 export interface PosterProps {
   src?: string | null
@@ -13,6 +14,7 @@ export interface PosterProps {
   banner?: React.ReactNode
   className?: string
   loading?: 'lazy' | 'eager'
+  sizes?: string
 }
 
 export function Poster({
@@ -28,6 +30,7 @@ export function Poster({
   banner,
   className = '',
   loading = 'lazy',
+  sizes = '100vw',
 }: PosterProps) {
   const [prevSrc, setPrevSrc] = useState(src)
   const [prevFallbackSrc, setPrevFallbackSrc] = useState(fallbackSrc)
@@ -41,6 +44,7 @@ export function Poster({
   }
 
   const imageSrc = [src, fallbackSrc].find((source) => source && !failedSources.includes(source))
+  const imageSrcSet = tmdbPosterSrcSet(imageSrc)
   const showFallback = !imageSrc
   const displayTitle = title || alt
 
@@ -68,6 +72,9 @@ export function Poster({
       ) : (
         <img
           src={imageSrc}
+          srcSet={imageSrcSet}
+          sizes={imageSrcSet ? sizes : undefined}
+          decoding='async'
           alt={alt}
           loading={loading}
           className="fv-poster-img"

@@ -67,12 +67,40 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
     }
   }
 
-  const response = await fetch(url, {
+  const requestOptions: RequestInit = {
     ...restConfig,
     credentials: restConfig.credentials ?? 'same-origin',
     headers,
     body: finalBody,
-  })
+  }
+  async function fetchAndRead() {
+    const response = await fetch(url, requestOptions)
+    if (response.status === 204) return { response, responseData: null }
+    let responseData: unknown
+    try {
+      responseData = response.headers.get('content-type')?.includes('application/json')
+        ? await response.json() : await response.text()
+    } catch (error) {
+      // A truncated successful response must not be cached as a successful null value.
+      if (response.ok) throw error
+      responseData = null
+    }
+    return { response, responseData }
+  }
+  let result: Awaited<ReturnType<typeof fetchAndRead>>
+  try {
+    result = await fetchAndRead()
+  } catch (error) {
+    // Browsers report connection resets as TypeError. Retry a read once, including
+    // interrupted response bodies. Never replay writes, HTTP errors or old sessions.
+    if (requestOptions.method !== 'GET' || !(error instanceof TypeError) ||
+        restConfig.signal?.aborted || sessionRevision !== revision) throw error
+    await new Promise(resolve => setTimeout(resolve, 200))
+    restConfig.signal?.throwIfAborted()
+    if (sessionRevision !== revision) throw error
+    result = await fetchAndRead()
+  }
+  const { response, responseData } = result
 
   // Ignore late failures from requests made with an older session.
   const requestUrl = new URL(url, window.location.origin)
@@ -90,24 +118,6 @@ async function request<T>(endpoint: string, config: RequestConfig = {}): Promise
   // Handle 204 No Content
   if (response.status === 204) {
     return null as T
-  }
-
-  // Parse JSON response or handle text
-  let responseData: unknown
-  const contentType = response.headers.get('content-type')
-
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      responseData = await response.json()
-    } catch {
-      responseData = null
-    }
-  } else {
-    try {
-      responseData = await response.text()
-    } catch {
-      responseData = null
-    }
   }
 
   if (!response.ok) {

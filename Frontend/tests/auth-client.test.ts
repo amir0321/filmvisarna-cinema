@@ -95,3 +95,88 @@ test('failed logout is returned to the UI and does not report successful sign-ou
   await assert.rejects(apiClient.post('/auth/logout', {}, { ignoreUnauthorized: true }), /Network unavailable/)
   assert.equal(unauthorizedEvents, 0)
 })
+
+test('a read retries one connection reset and returns the successful response', async () => {
+  let calls = 0
+  globalThis.fetch = async (_url, options) => {
+    assert.equal(options?.method, 'GET')
+    if (++calls === 1) throw new TypeError('Failed to fetch')
+    return Response.json({ success: true, data: [1, 2] })
+  }
+  assert.deepEqual(await apiClient.get('/screenings'), [1, 2])
+  assert.equal(calls, 2)
+})
+
+test('a disconnected response body retries a read instead of reporting successful null data', async () => {
+  let calls = 0
+  globalThis.fetch = async () => {
+    if (++calls > 1) return Response.json({ success: true, data: [3] })
+    return new Response(new ReadableStream({
+      start(controller) { controller.error(new TypeError('Connection reset while reading')) },
+    }), { headers: { 'Content-Type': 'application/json' } })
+  }
+  assert.deepEqual(await apiClient.get('/screenings'), [3])
+  assert.equal(calls, 2)
+})
+
+test('persistent read failures stop after two attempts without expiring the session', async () => {
+  let calls = 0
+  globalThis.fetch = async () => { calls++; throw new TypeError('Failed to fetch') }
+  await assert.rejects(apiClient.get('/bookings/reservation-status'), /Failed to fetch/)
+  assert.equal(calls, 2)
+  assert.equal(unauthorizedEvents, 0)
+})
+
+test('HTTP errors and invalid JSON are not retried', async () => {
+  for (const status of [401, 403, 429, 500, 503]) {
+    let calls = 0
+    globalThis.fetch = async () => { calls++; return Response.json({ error: 'Rejected' }, { status }) }
+    await assert.rejects(apiClient.get('/screenings'), { status })
+    assert.equal(calls, 1)
+  }
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls++
+    return new Response('{invalid JSON', { headers: { 'Content-Type': 'application/json' } })
+  }
+  await assert.rejects(apiClient.get('/movies'), SyntaxError)
+  assert.equal(calls, 1)
+})
+
+test('writes are never replayed after a connection or response-body failure', async () => {
+  for (const method of ['post', 'put', 'patch', 'delete'] as const) {
+    let calls = 0
+    globalThis.fetch = async () => { calls++; throw new TypeError('Failed to fetch') }
+    await assert.rejects(apiClient[method]('/bookings/1'), /Failed to fetch/)
+    assert.equal(calls, 1)
+  }
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls++
+    return new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('Lost response')) } }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  await assert.rejects(apiClient.post('/bookings', {}), /Lost response/)
+  assert.equal(calls, 1)
+})
+
+test('cancelling a read or changing sessions during retry delay prevents another request', async () => {
+  let calls = 0
+  globalThis.fetch = async () => { calls++; throw new TypeError('Failed to fetch') }
+  const controller = new AbortController()
+  const pending = apiClient.get('/screenings', { signal: controller.signal })
+  const cancelled = assert.rejects(pending, { name: 'AbortError' })
+  await new Promise(resolve => setTimeout(resolve, 5))
+  controller.abort()
+  await cancelled
+  assert.equal(calls, 1)
+
+  calls = 0
+  const previous = apiClient.get('/bookings/reservation-status')
+  const expired = assert.rejects(previous, /Failed to fetch/)
+  await new Promise(resolve => setTimeout(resolve, 5))
+  advanceSessionRevision()
+  await expired
+  assert.equal(calls, 1)
+})

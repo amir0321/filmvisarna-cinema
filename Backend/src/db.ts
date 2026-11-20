@@ -28,6 +28,8 @@ export const pool = new Pool(
     ? {
         connectionString: process.env.DATABASE_URL,
         ssl: sslConfig,
+        connectionTimeoutMillis: 5000,
+        keepAlive: true,
       }
     : {
         host: process.env.DB_HOST || "localhost",
@@ -36,8 +38,16 @@ export const pool = new Pool(
         password: process.env.DB_PASSWORD || "postgrespassword",
         database: process.env.DB_NAME || "filmvisarna",
         ssl: sslConfig,
+        connectionTimeoutMillis: 5000,
+        keepAlive: true,
       },
 );
+
+// pg emits errors for disconnected idle clients outside any request promise.
+// Handle them so a transient database disconnect cannot crash the HTTP process.
+pool.on('error', (error: Error & { code?: string }) => {
+  console.error('[Database] Idle connection failed', { code: error.code ?? 'UNKNOWN' });
+});
 
 export async function initDb() {
   try {

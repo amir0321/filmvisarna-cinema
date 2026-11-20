@@ -6,6 +6,36 @@ For a single Node server serving both the API and built frontend, run `npm run s
 
 ---
 
+## Målgruppsbeskrivning
+
+Filmvisarna är en mindre lokal biograf i Småstad. Eftersom biografen riktar sig till invånarna på orten är målgruppen bred och består av allt från ungdomar och vuxna till barnfamiljer och pensionärer. Gemensamt för besökarna är att de snabbt vill kunna se vilka filmer som går, kolla en trailer och boka platser utan krångel.
+
+Vi har anpassat gränssnittet efter målgruppen på följande sätt:
+
+- **Barnfamiljer:** Det går att filtrera visningar direkt på åldersgräns (barntillåten, 7, 11 och 15 år) och datum på startsidan och filmsidan. På så sätt slipper föräldrar klicka sig in på filmer som barnen ändå inte får se. Barnbiljetter (80 kr) väljs direkt i bokningssteget.
+- **Äldre besökare och pensionärer:** Tydlig typografi, hög kontrast (både mörkt och ljust tema finns) och ett rakt bokningsflöde där pensionärspris (120 kr) är tydligt utskrivet. Man behöver inte heller betala online med kort eller BankID, utan bokar sina platser på webben och betalar på plats i kassan med sitt bokningsnummer.
+- **Sällskap och vanliga biobesökare:** Salongskartan markerar automatiskt bästa lediga sammanhängande platser utifrån hur många biljetter man valt, men det är enkelt att klicka om man vill sitta på en annan rad. Rullstolsplatser är tydligt markerade i stolskartan.
+- **Mobil- och datoranvändare:** Många kollar visningstider i mobilen. Därför är hela sajten responsiv med anpassad bottenmeny och tydliga knappar på mindre skärmar, samtidigt som man får bra överblick på vanlig datorskärm.
+- **Både gäster och återkommande besökare:** Den som bara vill boka snabbt kan boka som gäst med sin e-postadress och få bokningsbekräftelse på mejl. Den som går på bio ofta kan skapa konto för att samla sina bokningar, se historik och avboka direkt under *Mina bokningar*.
+
+---
+
+## Tidsplan och arbetssätt
+
+Projektet har drivits agilt i sprintar med fokusområdena från kursens lektionsplanering. Vi har haft dagliga standups när vi arbetat tillsammans, estimerat kort med planning poker, parprogrammerat vid klurigare delar och avslutat sprinterna med demo för produktägaren samt retrospektiv.
+
+Under den första planeringen i början av projektet använde vi **Trello** för att strukturera backloggen och våra första tasks. Inför de två följande planeringarna och resten av utvecklingen flyttade vi över planeringen till **GitHub Projects**, eftersom det var smidigare att ha sprinttavlan på samma ställe som våra feature-branches och pull requests.
+
+| Sprint / fas | Fokusområde | Vad som gjordes |
+| :--- | :--- | :--- |
+| **Sprint 1** | UX, wireframes & prototyp | Genomgång av user stories och konkurrenter (Filmstaden, Kino). Första planeringen i Trello. Framtagning av målgruppsbeskrivning, wireframes och klickbar prototyp i Figma för både mobil och desktop som godkändes av produktägaren. |
+| **Sprint 2** | Backend & databas | Planeringen flyttades till GitHub Projects. Databasschema i PostgreSQL (Supabase), tabeller, vyer och seed-data för salonger, stolar, filmer och visningar. REST-API i Node.js/Express med TypeScript samt Postman-tester. |
+| **Sprint 3** | MVP (Frontend + Backend) | Grundstruktur i React med TypeScript, Bootstrap och Sass. Koppling mot API:et för startsidan, filmsidan, filmdetaljer med trailer, datum-/åldersfilter och första versionen av bokningsflödet med stolskarta. |
+| **Sprint 4** | Färdig produkt & konton | Inloggning, registrering, *Mina bokningar*, avbokning (både via konto och för gäster), mejlutskick med bokningsnummer, cookie-ruta enligt GDPR samt responsiva justeringar. |
+| **Sprint 5** | Buggfix, admin & finslipning | Admin-gränssnitt (bokningar/kassa, visningsschema, filmer, salonger och kiosk), ljust/mörkt tema, språkstöd (svenska/engelska), extra bokningsskydd, tester och sista buggfixar inför inlämning. |
+
+---
+
 ## Tech Stack
 
 ### Frontend

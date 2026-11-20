@@ -38,9 +38,9 @@ export default function MovieCard({ movie, screenings }: MovieCardProps) {
 
   return (
     <article className="movie-card h-100">
-      {/* The title already links to the movie */}
-      <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-hidden="true">
-        <Poster src={image} fallbackSrc={movie.landscape_image_url} alt="" title={movie.title} className="movie-card__poster" />
+      {/* The title is the keyboard tab target; the poster link remains named and exposed to assistive technology. */}
+      <Link to={movieUrl} className="movie-card__image-link" tabIndex={-1} aria-label={movie.title}>
+        <Poster src={image} fallbackSrc={movie.landscape_image_url} alt="" title={movie.title} className="movie-card__poster" sizes="(min-width: 1200px) 280px, (min-width: 992px) 300px, (min-width: 576px) 45vw, 90vw" />
       </Link>
 
       <AgeBadge ageRating={movie.age_rating} className="movie-card__age" />

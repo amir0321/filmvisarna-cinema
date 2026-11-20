@@ -582,3 +582,11 @@ Spärren kontrolleras före medlemsbokning, gästförfrågan och gästbekräftel
 - Movie routes and vendor bundles are split. Google Fonts load as a print stylesheet and an external CSP-compatible script enables the loaded sheet; fallback fonts render immediately.
 
 Validation: `npm run build`, `npm test` (set `AUTH_TEST_DATABASE_URL` to enable PostgreSQL integration tests), `npm run seed:demo`, `npm run seed:check` in Backend; `npm run lint`, `npm test`, `npm run build` in Frontend. Use an isolated database for tests and seed verification. For browser timing comparisons, select Fast 4G / 3G in DevTools, disable the browser cache for cold loads, and inspect transferred bytes and requests; do not treat local build sizes as measured mobile loading times.
+
+### Intermittent connection failures
+
+The PostgreSQL pool handles idle-client errors and logs only their error code. Network partitions can otherwise emit an unhandled pool error (see [node-postgres pooling](https://node-postgres.com/features/pooling)). New database connections and waits for a pool slot time out after five seconds; TCP keepalive is enabled. This does not establish the cause of any particular production reset: compare the error timestamp with PM2 restarts, Node logs and Caddy logs.
+
+The frontend retries a failed GET once after 200 ms only when fetch or response-body reading reports a network `TypeError`. Writes, HTTP errors, malformed JSON, cancelled requests and requests from a previous session are not retried. An interrupted successful response is surfaced as an error rather than being cached as null. `smoke` now prints the failing URL and underlying cause, and limits each request to 20 seconds.
+
+TMDB poster images expose responsive width candidates, following [TMDB image URL sizes](https://developer.themoviedb.org/docs/image-basics). Film cards supply their rendered slot width; uploads and non-TMDB media retain their original URLs. This reduces oversized downloads when a smaller candidate fits the screen. Production still needs image localization if the database contains external artwork URLs; deploy code and applying the schema migration alone do not rewrite existing media or cinema seat data.
