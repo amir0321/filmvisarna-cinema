@@ -46,3 +46,7 @@ Prototypens 28 filer under `docs/figma-make/src/` är inventerade enligt tabelle
 | `Frontend/src/pages/admin/AdminScreenings.tsx`, `components/admin/ScreeningsTable.tsx` och `ScreeningFormModal.tsx` | [Visningsschema](pages/admin-visningar.md): filter, 15 visningar per sida, kort under 1200px, två kortkolumner på surfplatta och responsivt formulär. |
 | `Frontend/src/pages/MovieDetails.tsx`, `components/Modal.tsx` och `styles/components/_movie-details.scss` | [Skådespelarprofiler](pages/movie-detail.md#klickbara-skådespelarprofiler): profilbilder, reservikon, rollfigur och biografimodal. |
 | `Backend/src/services/movies.service.ts`, `persons.service.ts`, `tmdb.service.ts`, `routes/upload.ts` och cast-migrationen | [Backend/README.md](../Backend/README.md#cast-profiles-and-image-uploads): API, personregister, transaktioner, validering och seed-berikning som de aktuella vyerna använder. |
+
+### Backoffice-översikt (FE-39)
+
+`Frontend/src/pages/admin/AdminDashboard.tsx`, `utils/adminDashboard.ts` och `styles/components/admin/_admin-dashboard.scss` följer [Backoffice-specifikationen](pages/admin-dashboard.md): live-nyckeltal, moduler, körschema, salonger och driftrutiner med tema- och språkstöd. Backendens adminskyddade `/api/screenings/dashboard` inkluderar hela dagens visningar.

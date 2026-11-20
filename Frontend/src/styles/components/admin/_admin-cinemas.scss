@@ -1,0 +1,240 @@
+.fv-seatpreview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+
+  &__screen {
+    width: 80%;
+    height: 0.35rem;
+    border-radius: 50%;
+    background: $fv-border;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__seats {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+   &__label {
+    width: 1rem;
+    font-family: $fv-font-mono;
+    font-size: 0.7rem;
+    text-align: center;
+    color: $fv-muted-fg;
+  }
+
+  &__seat {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 0.2rem;
+    background: $fv-seat-available;
+
+    &--wheelchair { background: $fv-info; }
+  }
+
+  &__legend {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: $fv-muted-fg;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+}
+.fv-admin-cinemas {
+    &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  &__title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+  &__summary { margin: 0; color: $fv-muted-fg; }
+
+  &__grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+
+    @media (min-width: 992px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+.fv-admin-cinema {
+  display: flex;
+  flex-direction: column;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-radius-lg;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  &__name { margin: 0; font-size: 1.25rem; font-weight: 700; }
+  &__sub { margin: 0; color: $fv-muted-fg; }
+
+    &__badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: $fv-radius-pill;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $fv-danger-light;
+    background: tint($fv-primary, 0.15);
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 0;
+    border-top: 1px solid $fv-border;
+    border-bottom: 1px solid $fv-border;
+    text-align: center;
+
+    > div {
+      padding: 0.75rem 0.25rem;
+      & + div { border-left: 1px solid $fv-border; }
+    }
+    dt { order: 2; font-size: 0.8rem; font-weight: 400; color: $fv-muted-fg; }
+    dd { margin: 0; padding-inline: 0.25rem; font-size: 1rem; font-weight: 700; color: $fv-fg; overflow-wrap: anywhere; }
+  }
+
+  &__map { padding: 1.25rem 1.5rem; }
+  &__map-title {
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__info {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid $fv-border;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    list-style: none;
+
+    li {
+      padding: 0.25rem 0.75rem;
+      border-radius: $fv-radius-pill;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $fv-fg;
+      background: $fv-muted-bg;
+      border: 1px solid $fv-border;
+    }
+  }
+
+  &__wheelchair { margin: 0; color: $fv-muted-fg; i { color: $fv-info; } }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid $fv-border;
+
+    .btn:first-child { flex: 1; }
+  }
+
+  &__confirm { display: flex; gap: 0.5rem; }
+}
+.fv-cinema-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__field { display: flex; flex-direction: column; gap: 0.4rem; }
+  &__label { font-size: 0.85rem; font-weight: 600; color: $fv-fg; }
+  &__hint { margin: 0; font-size: 0.8rem; color: $fv-muted-fg; }
+  &__error { margin: 0; font-size: 0.8rem; color: $fv-primary; }
+
+  &__steppers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  &__techs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  &__tech {
+    padding: 0.4rem 0.9rem;
+    border-radius: $fv-radius-md;
+    border: 1px solid $fv-border;
+    background: $fv-muted-bg;
+    color: $fv-fg;
+    font-size: 0.9rem;
+
+       &[aria-pressed='true'] {
+      border-color: $fv-primary;
+      background: tint($fv-primary, 0.15);
+      color: $fv-danger-light;
+      font-weight: 600;
+    }
+  }
+
+  &__preview {
+    padding: 1rem;
+    border: 1px solid $fv-border;
+    border-radius: $fv-radius-md;
+    background: $fv-card-bg;
+  }
+
+  &__preview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+}
+
+.fv-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &__value {
+    min-width: 2.5rem;
+    text-align: center;
+    font-weight: 700;
+    color: $fv-fg;
+  }
+}

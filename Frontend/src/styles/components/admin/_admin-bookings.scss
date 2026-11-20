@@ -1,0 +1,483 @@
+// One place that builds the solid colour and its transparent variants
+@mixin tone-color($color) {
+  --tone: #{$color};
+  --tone-bg: #{tint($color, 0.18)};
+  --tone-border: #{tint($color, 0.4)};
+}
+.fv-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .fv-kpi:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+.fv-kpi {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+   &--info { @include tone-color($fv-info); }
+  &--success { @include tone-color($fv-success); }
+  &--warning { @include tone-color($fv-warning); }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: $fv-radius-lg;
+    font-size: 1.25rem;
+    color: var(--tone);
+    background: var(--tone-bg);
+  }
+
+  &__label,
+  &__detail {
+    color: $fv-muted-fg;
+    font-size: 0.875rem;
+  }
+
+  &__value {
+    color: $fv-fg;
+    font-family: $fv-font-display;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+}
+.fv-checkin {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  &__title {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  &__field {
+    position: relative;
+    flex: 1 1 16rem;
+
+    i {
+      position: absolute;
+      top: 50%;
+      left: 1rem;
+      transform: translateY(-50%);
+      color: $fv-muted-fg;
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      color: $fv-fg;
+      background: $fv-muted-bg;
+      border: 1px solid $fv-border;
+      border-radius: $fv-radius-lg;
+
+      &:focus-visible {
+        outline: 2px solid $fv-primary;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+  }
+
+  &__message {
+    margin: 0.75rem 0 0;
+    color: $fv-muted-fg;
+  }
+
+  &__result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid $fv-border;
+    color: $fv-fg;
+
+    strong {
+      font-family: $fv-font-mono;
+    }
+  }
+}
+.fv-screening-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__select {
+    flex: 1 1 18rem;
+    max-width: 32rem;
+    padding: 0.625rem 1rem;
+    color: $fv-fg;
+    background: $fv-muted-bg;
+    border: 1px solid $fv-border;
+    border-radius: $fv-radius-lg;
+  }
+
+  &__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    font-weight: 600;
+    color: $fv-success;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $fv-success;
+  }
+}
+.fv-bookings-table {
+  overflow-x: auto;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    color: $fv-fg;
+  }
+
+  th {
+    padding: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-align: left;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+    border-bottom: 1px solid $fv-border;
+  }
+
+  td {
+    padding: 1rem;
+    vertical-align: top;
+    border-bottom: 1px solid $fv-border;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  &__muted {
+    font-size: 0.875rem;
+    color: $fv-muted-fg;
+  }
+}
+
+.fv-ref {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  font-family: $fv-font-mono;
+  font-size: 0.875rem;
+  background: $fv-muted-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-radius-md;
+}
+
+.fv-badge {
+  display: inline-block;
+  margin: 0.375rem 0.375rem 0 0;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tone);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
+  border-radius: $fv-radius-pill;
+
+  &--paid { @include tone-color($fv-success); }
+  &--checkedIn { @include tone-color($fv-info); }
+  &--reserved,
+  &--kiosk { @include tone-color($fv-warning); }
+  &--expired { @include tone-color($fv-muted-fg); }
+  &--cancelled { @include tone-color($fv-primary); }
+}
+.fv-feedback {
+  position: sticky;
+  top: calc(#{$fv-admin-nav-height} + 0.75rem);
+  z-index: $fv-z-sticky;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  color: $fv-fg;
+  background-color: $fv-card-bg;
+  background-image: linear-gradient(var(--tone-bg), var(--tone-bg));
+  border: 1px solid var(--tone);
+  border-radius: $fv-radius-lg;
+
+  &--info { @include tone-color($fv-info); }
+  &--success { @include tone-color($fv-success); }
+  &--warning { @include tone-color($fv-warning); }
+  &--error { @include tone-color($fv-primary); }
+}
+.fv-admin-bookings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16rem;
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  &__side {
+    @media (max-width: 767px) {
+      display: none;
+    }
+  }
+}
+
+.fv-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__card {
+    padding: 1.25rem;
+    background: $fv-card-bg;
+    border: 1px solid $fv-border;
+    border-radius: $fv-card-radius;
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $fv-muted-fg;
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: $fv-fg;
+  }
+
+  &__list {
+    margin: 0.75rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    dd { margin: 0; }
+  }
+
+  &__value {
+    font-weight: 700;
+    &--warning { color: $fv-warning; }
+    &--success { color: $fv-success; }
+  }
+
+  &__muted {
+    margin: 0.5rem 0 0;
+    font-size: 0.875rem;
+    color: $fv-muted-fg;
+  }
+}
+
+.fv-progress {
+  height: 8px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  background: $fv-muted-bg;
+  border-radius: $fv-radius-pill;
+
+  &__bar {
+    height: 100%;
+    border-radius: $fv-radius-pill;
+
+    &--success { background: $fv-success; }
+    &--warning { background: $fv-warning; }
+    &--danger { background: $fv-primary; }
+  }
+}
+.fv-bookings-count {
+  display: none;
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: $fv-muted-fg;
+}
+
+.fv-booking-cards {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fv-booking-card {
+  padding: 1rem;
+  background: $fv-card-bg;
+  border: 1px solid $fv-border;
+  border-radius: $fv-card-radius;
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  &__list {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem 1rem;
+    margin: 0;
+
+    dt {
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: $fv-muted-fg;
+    }
+
+    dd {
+      margin: 0;
+      color: $fv-fg;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__actions {
+    margin-top: 1rem;
+
+    .fv-bookings-table__actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .fv-bookings-table { display: none; }
+  .fv-bookings-count { display: block; }
+  .fv-booking-cards { display: flex; }
+}
+// Live seat map in the side panel
+.fv-minimap-admin {
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    margin-block: 0.75rem;
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+  }
+
+  &__seat {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.15rem;
+    background: $fv-seat-available;
+
+    &--free { background: $fv-seat-available; }
+    &--booked { background: $fv-primary; }
+    &--pending { background: $fv-success; }
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: $fv-muted-fg;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  }
+}
+
+.fv-bookings-table .fv-bookings-table__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  min-width: 8.5rem;
+
+  .btn { width: 100%; white-space: nowrap; }
+}
+
+// Payment deadline text under the buttons
+.fv-bookings-table__deadline {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: $fv-muted-fg;
+}
+// Occupancy block inside the map card
+.fv-side__occupancy {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid $fv-border;
+}
