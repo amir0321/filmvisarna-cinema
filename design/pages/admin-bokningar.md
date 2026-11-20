@@ -9,7 +9,7 @@
 
 #### Bindande krav för tema (mörkt/ljust) och översättning (`sv` / `en`)
 
-När `/admin/bokningar` (`AdminBookings.tsx`) och administrationsöversikten (`/admin`, `AdminDashboard.tsx`) byggs ut från nuvarande platshållare gäller följande krav:
+När `/admin/bokningar` (`AdminBookings.tsx`) byggs ut från nuvarande platshållare gäller följande krav. Administrationsöversikten på `/admin` följer samma tema- och språkkrav enligt [Backoffice-specifikationen](admin-dashboard.md).
 - **Mörkt och ljust tema (`dark` / `light`, FE-36):**
   - Fasta hex-värden i prototypbeskrivningen nedan (`#161F30`, `#0B0F19`, `#F8FAFC`, `#94A3B8`, `#10B981`, `#F59E0B`, `#E50914`, `#3B82F6`) avser endast prototypens mörka tema.
   - I implementationen **måste** semantiska tokens från [design/tokens.md](../tokens.md) användas: `$fv-card-bg` (`--color-surface`) för kort/tabell/sidopanel, `$fv-muted-bg` (`--color-surface-muted`) för sökfält/select, `$fv-fg` (`--text-primary`) för primär text, `$fv-muted-fg` (`--text-muted`) för dämpad text, `$fv-border` (`--border-default`) för kantlinjer samt `$fv-primary`, `$fv-success`, `$fv-warning`, `$fv-info` och `tint(...)` / `$white-overlay-*` för statusbadges, KPI-kort och knappar.

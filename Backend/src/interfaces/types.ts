@@ -64,7 +64,18 @@ export interface CastMemberInput extends UpdatePersonInput {
   billing_order?: number;
 }
 
-export interface Movie {
+export interface MovieMetadata {
+  production_countries?: string[];
+  production_year?: number | null;
+  distributor?: string | null;
+  language?: string | null;
+  subtitles?: string[];
+  images?: string[];
+  youtube_trailers?: string[];
+  reviews?: Array<{ source: string; quote: string; stars: number; max: number }>;
+}
+
+export interface Movie extends MovieMetadata {
   id: number;
   title: string;
   description: string | null;
@@ -83,7 +94,7 @@ export interface Movie {
   genres: string[];
 }
 
-export interface CreateMovieInput {
+export interface CreateMovieInput extends MovieMetadata {
   title: string;
   description?: string | null;
   duration_minutes: number;
@@ -98,7 +109,7 @@ export interface CreateMovieInput {
   cast_members?: CastMemberInput[];
 }
 
-export interface UpdateMovieInput {
+export interface UpdateMovieInput extends MovieMetadata {
   title?: string;
   description?: string | null;
   duration_minutes?: number;
@@ -123,6 +134,7 @@ export interface SeatInfo {
 }
 
 export interface CinemaOverview {
+  seatsPerRow?: number[];
   id: number;
   name: string;
   format?: string | null;
@@ -142,8 +154,8 @@ export interface CreateCinemaInput {
   tech?: string | null;
   screen_size?: string | null;
   opened_year?: number | null;
-  rows: number;
-  seatsPerRow: number;
+  rows?: number;
+  seatsPerRow: number | number[];
 }
 
 export interface UpdateCinemaInput {
@@ -153,7 +165,7 @@ export interface UpdateCinemaInput {
   screen_size?: string | null;
   opened_year?: number | null;
   rows?: number;
-  seatsPerRow?: number;
+  seatsPerRow?: number | number[];
   wheelchairSeats?: Array<{ row: string; number: number }>;
 }
 

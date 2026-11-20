@@ -21,7 +21,10 @@ import { csrfProtection } from './middleware/csrf';
 import { uploadsFolder } from './paths.js';
 import { createFrontendRouter } from './frontend.js';
 
+import { compression } from "./middleware/compression.js";
+
 export const app = express();
+app.use(compression);
 if (config.trustProxy.length) app.set('trust proxy', config.trustProxy);
 
 app.use(helmet({
@@ -44,7 +47,10 @@ app.use(express.json({ limit: "100kb" }));
 
 // Static serving for uploaded files
 app.use("/uploads", express.static(uploadsFolder, {
-  setHeaders: (res) => {
+  setHeaders: (res, filename) => {
+    if (/[/\\]media-[a-f0-9]+\.webp$/i.test(filename)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    }
     res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     res.setHeader("X-Content-Type-Options", "nosniff");
   },

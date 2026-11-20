@@ -20,6 +20,7 @@ const ADMIN_NAV_LINKS = [
   { name: 'nav.schedule', path: '/admin/visningar', icon: 'bi-calendar3', end: false },
   { name: 'nav.movies', path: '/admin/filmer', icon: 'bi-film', end: false },
   { name: 'nav.cinemas', path: '/admin/salonger', icon: 'bi-display', end: false },
+  { name: 'nav.kiosk', path: '/admin/kiosk', icon: 'bi-cup-straw', end: false },
 ] as const
 
 export default function Navbar() {

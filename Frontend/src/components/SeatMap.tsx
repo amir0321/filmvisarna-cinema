@@ -84,7 +84,7 @@ export default function SeatMap({ seats, selectedIds, onToggle }: Props) {
           {rows.map(row => (
             <div key={row} className="fv-seatmap__row" role="group" aria-label={t('seatMap.row', { row })}>
               <span className="fv-seatmap__label" aria-hidden="true">{row}</span>
-              <div className="fv-seatmap__seats">
+              <div className={`fv-seatmap__seats fv-seatmap__seats--count-${orderedSeats.filter(s => s.row_label === row).length}`}>
                 {orderedSeats
                   .filter(s => s.row_label === row)
                   .map(s => {

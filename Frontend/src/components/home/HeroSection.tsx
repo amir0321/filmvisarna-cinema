@@ -5,9 +5,38 @@ import { translateGenre } from "../../i18n/mappers";
 import type { Movie } from "../../types";
 import { formatDuration, formatDurationLong, getYouTubeBackgroundUrl } from "../../utils/movie";
 import { getMovieTrailerUrl, getMovieUrl } from "../../utils/links";
+import { synopsisParagraphs } from '../../utils/synopsis';
 import AgeBadge from "./AgeBadge";
 import { loadYouTubeApi, type YouTubePlayer } from "../../utils/youtubeApi";
 import { createPlaybackVisibilityTracker } from "../../utils/playbackVisibility";
+
+import { shouldPlayBackgroundVideo, type NetworkInformation } from '../../utils/network';
+
+function useBackgroundVideoEnabled() {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer: number | undefined;
+    function update() {
+      window.clearTimeout(timer);
+      setEnabled(false);
+      if (!motion.matches && shouldPlayBackgroundVideo(connection)) {
+        // Let the active image, fonts and programme finish before contacting YouTube.
+        timer = window.setTimeout(() => setEnabled(true), 5000);
+      }
+    }
+    update();
+    connection?.addEventListener('change', update);
+    motion.addEventListener('change', update);
+    return () => {
+      window.clearTimeout(timer);
+      connection?.removeEventListener('change', update);
+      motion.removeEventListener('change', update);
+    };
+  }, []);
+  return enabled;
+}
 
 const ROTATE_INTERVAL_MS = 15_000;
 
@@ -109,11 +138,12 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
 
+  const backgroundVideoEnabled = useBackgroundVideoEnabled();
   const movie = movies[index % movies.length];
   const hasMultiple = movies.length > 1;
   const isRotating = hasMultiple && !isPaused && !isHovered && !hasKeyboardFocus;
   // The pause button stops the trailer too
-  const videoUrl = !isPaused && movie.trailer_url ? getYouTubeBackgroundUrl(movie.trailer_url, window.location.origin) : null;
+  const videoUrl = backgroundVideoEnabled && !isPaused && movie.trailer_url ? getYouTubeBackgroundUrl(movie.trailer_url, window.location.origin) : null;
 
   // Restarts on every slide change, so manual navigation also resets the timer
   useEffect(() => {
@@ -146,16 +176,12 @@ export default function HeroSection({ movies }: HeroSectionProps) {
       onFocus={handleFocus}
       onBlur={handleBlur}
     >
-      {movies.map((slide, slideIndex) => {
-        return (
-          <HeroBackdrop
-            key={`${slide.id}:${slide.landscape_image_url}:${slide.poster_url}`}
-            movie={slide}
-            active={slideIndex === index}
-            priority={slideIndex === 0}
-          />
-        );
-      })}
+      <HeroBackdrop
+        key={`${movie.id}:${movie.landscape_image_url}:${movie.poster_url}`}
+        movie={movie}
+        active
+        priority
+      />
 
       {videoUrl && (
         <HeroBackgroundVideo
@@ -191,7 +217,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           <h1 className="hero-section__title mb-3">{movie.title}</h1>
 
           {movie.description && (
-            <p className="hero-section__description mb-4">{movie.description}</p>
+            <p className="hero-section__description mb-4">{synopsisParagraphs(movie.description).join(' ')}</p>
           )}
 
           <div className="d-flex flex-wrap gap-3">
@@ -266,14 +292,12 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 export function HeroSectionSkeleton() {
   const { t } = useTranslation();
   return (
-    <section className="hero-section" aria-busy="true" aria-label={t("hero.loadingFeaturedMovies")}>
+    <section className="hero-section hero-section--loading" aria-busy="true" aria-label={t("hero.loadingFeaturedMovies")}>
       <div className="hero-section__content container-fluid">
-        <div className="hero-section__text placeholder-glow" aria-hidden="true">
-          <span className="placeholder col-4 mb-3 rounded"></span>
-          <span className="placeholder col-10 placeholder-lg mb-2 rounded"></span>
-          <span className="placeholder col-7 placeholder-lg mb-4 rounded"></span>
-          <span className="placeholder col-12 mb-1 rounded"></span>
-          <span className="placeholder col-9 mb-4 rounded"></span>
+        <div className="hero-section__text" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map(index => (
+            <span key={index} className="fv-skeleton hero-section__placeholder" />
+          ))}
         </div>
       </div>
     </section>

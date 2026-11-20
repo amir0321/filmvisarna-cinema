@@ -47,6 +47,7 @@ export function MiniAuditoriumMap({ seats }: Props) {
                   : ''
               return <span key={seat.id} className={`fv-minimap__seat${state}`} />
             })}
+            <span className="fv-minimap__label fv-minimap__label--end" aria-hidden="true">{row.label}</span>
           </div>
         ))}
       </div>

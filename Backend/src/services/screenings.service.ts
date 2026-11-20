@@ -98,28 +98,31 @@ async function getScreeningOverviewById(client: PoolClient, id: number): Promise
  */
 export async function listUpcomingScreenings(
   filters: ScreeningFilters,
+  includeStartedToday = false,
 ): Promise<ScreeningOverview[]> {
   return query<ScreeningOverview>(
     `SELECT st.id, st.starts_at AS "startsAt", st.ends_at AS "endsAt",
             m.id AS "movieId", m.title AS "movieTitle", m.poster_url AS "posterUrl",
             m.age_rating AS "ageRating", (${AGE_LIMIT}) AS "ageLimit",
             c.id AS "cinemaId", c.name AS "cinema",
-            (SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) AS "totalSeats",
-            (SELECT COUNT(*)::int
-             FROM ticket t
-             JOIN booking b ON b.id = t.booking_id
-             WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-               AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')) AS "bookedSeats",
-            ((SELECT COUNT(*)::int FROM seat s WHERE s.cinema_id = c.id) -
-             (SELECT COUNT(*)::int
-              FROM ticket t
-              JOIN booking b ON b.id = t.booking_id
-              WHERE t.screening_id = st.id AND t.is_active AND b.status = 'confirmed'
-                AND (b.is_paid OR st.starts_at > statement_timestamp() + interval '1 hour')))::int AS "availableSeats"
+            COALESCE(capacity.total,0)::int AS "totalSeats",
+            COALESCE(occupied.total,0)::int AS "bookedSeats",
+            (COALESCE(capacity.total,0)-COALESCE(occupied.total,0))::int AS "availableSeats"
      FROM screening_times st
-     JOIN movie m  ON m.id = st.movie_id
-     JOIN cinema c ON c.id = st.cinema_id
-     WHERE st.starts_at > now()
+     JOIN movie m ON m.id=st.movie_id
+     JOIN cinema c ON c.id=st.cinema_id
+     LEFT JOIN (SELECT cinema_id,count(*)::int AS total FROM seat GROUP BY cinema_id) capacity
+       ON capacity.cinema_id=st.cinema_id
+     LEFT JOIN (
+       SELECT t.screening_id,count(*)::int AS total
+       FROM ticket t JOIN booking b ON b.id=t.booking_id
+       JOIN screening sc ON sc.id=t.screening_id
+       WHERE t.is_active AND b.status='confirmed'
+         AND (b.is_paid OR sc.starts_at>statement_timestamp()+interval '1 hour')
+       GROUP BY t.screening_id
+     ) occupied ON occupied.screening_id=st.id
+     WHERE (st.starts_at > now() OR ($7::boolean AND
+       (st.starts_at AT TIME ZONE $5)::date = (now() AT TIME ZONE $5)::date))
        AND ($1::int  IS NULL OR st.movie_id  = $1)
        AND ($2::int  IS NULL OR st.cinema_id = $2)
        AND ($3::date IS NULL OR (st.starts_at AT TIME ZONE $5)::date >= $3::date)
@@ -133,6 +136,7 @@ export async function listUpcomingScreenings(
       filters.to ?? null,
       config.timezone,
       filters.age ?? null,
+      includeStartedToday,
     ],
   );
 }

@@ -3,20 +3,21 @@ import apiClient from '../api/client'
 import type { Movie, MovieFilters } from '../types'
 import { useFetch, type UseFetchResult } from './useFetch'
 
-export function useMovies(filters?: MovieFilters): UseFetchResult<Movie[]> {
+export function useMovies(filters?: MovieFilters, compact = true): UseFetchResult<Movie[]> {
   const fetchMovies = useCallback(
     (signal: AbortSignal) => {
       return apiClient.get<Movie[]>('/movies', {
         signal,
-        params: filters as Record<string, string | number | undefined>,
+        params: { ...filters, compact },
       })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters?.genre, filters?.search, filters?.age],
+    [filters?.genre, filters?.search, filters?.age, compact],
   )
 
   return useFetch<Movie[]>(fetchMovies, {
-    deps: [filters?.genre, filters?.search, filters?.age],
+    cacheKey: JSON.stringify(["movies", filters?.genre, filters?.search, filters?.age, compact]),
+    deps: [filters?.genre, filters?.search, filters?.age, compact],
   })
 }
 
@@ -33,6 +34,7 @@ export function useMovie(id: number | string | undefined): UseFetchResult<Movie>
 
   return useFetch<Movie>(fetchMovie, {
     immediate: Boolean(id),
+    cacheKey: `movie:${id}`,
     deps: [id],
   })
 }

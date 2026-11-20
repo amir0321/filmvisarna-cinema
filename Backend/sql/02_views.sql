@@ -1,5 +1,8 @@
 CREATE VIEW cinema_overview WITH (security_invoker = true) AS
-SELECT c.id, c.name, COUNT(s.id)::int AS total_seats, c.format, c.tech, c.screen_size, c.opened_year
+SELECT c.id, c.name, COUNT(s.id)::int AS total_seats, c.format, c.tech, c.screen_size, c.opened_year,
+       COALESCE((SELECT array_agg(row_count ORDER BY row_label)
+         FROM (SELECT row_label, count(*)::int AS row_count FROM seat
+           WHERE cinema_id=c.id GROUP BY row_label) layout), '{}'::int[]) AS seats_per_row
 FROM cinema c
 LEFT JOIN seat s ON s.cinema_id = c.id
 GROUP BY c.id, c.name, c.format, c.tech, c.screen_size, c.opened_year;
@@ -29,3 +32,7 @@ LEFT JOIN (
   JOIN menu_item mi ON mi.id = bi.menu_item_id
   GROUP BY bi.booking_id
 ) i ON i.booking_id = b.id;
+
+-- The catalogue JSON uses language; the storage column remains explicit.
+CREATE VIEW movie_catalogue WITH (security_invoker = true) AS
+SELECT movie.*, audio_language AS language FROM movie;

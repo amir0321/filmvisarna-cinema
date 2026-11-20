@@ -10,6 +10,8 @@
     "lint": "npm run lint --prefix Frontend",
     "smoke": "node scripts/smoke-production.cjs",
     "refill:screenings": "npm run refill:screenings --prefix Backend",
-    "media:localize": "npm run media:localize --prefix Backend --"
+    "media:localize": "npm run media:localize --prefix Backend --",
+    "seed:refresh": "npm run seed:refresh --prefix Backend",
+    "migrate:metadata": "npm run migrate:metadata --prefix Backend"
   }
 }

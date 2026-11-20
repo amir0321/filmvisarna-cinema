@@ -4,6 +4,7 @@
 // ============================================================================
 
 .fv-seatmap {
+  --fv-seat-gap: 4px;
   container-type: inline-size;
   display: flex;
   flex-direction: column;
@@ -14,6 +15,9 @@
   @for $columns from 1 through 50 {
     &--columns-#{$columns} {
       --fv-seat-columns: #{$columns};
+    }
+    &__seats--count-#{$columns} {
+      --fv-row-seats: #{$columns};
     }
   }
 
@@ -64,8 +68,10 @@
 
   &__seats {
     display: grid;
-    grid-template-columns: repeat(var(--fv-seat-columns), minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(var(--fv-row-seats), minmax(0, 1fr));
+    gap: var(--fv-seat-gap);
+    width: calc((100% + var(--fv-seat-gap)) * var(--fv-row-seats) / var(--fv-seat-columns) - var(--fv-seat-gap));
+    justify-self: center;
 
     .fv-seat {
       width: 100%;
@@ -78,20 +84,17 @@
 
   @container (max-width: 360px) {
     &__row {
-      grid-template-columns: 10px minmax(0, 1fr);
+      grid-template-columns: 10px minmax(0, 1fr) 10px;
       gap: 2px;
     }
 
     &__label {
       width: 10px;
 
-      &:last-child {
-        display: none;
-      }
     }
 
     &__seats {
-      gap: 2px;
+      --fv-seat-gap: 2px;
     }
   }
 

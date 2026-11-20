@@ -263,6 +263,7 @@
 }
 
 .fv-minimap__row {
+  justify-content: center;
   position: relative;
   display: flex;
   gap: 4px;
@@ -399,4 +400,11 @@
   strong {
     color: $fv-fg;
   }
+}
+
+.fv-minimap__label--end {
+  right: auto;
+  left: 100%;
+  margin-right: 0;
+  margin-left: 0.5rem;
 }
