@@ -266,14 +266,12 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 export function HeroSectionSkeleton() {
   const { t } = useTranslation();
   return (
-    <section className="hero-section" aria-busy="true" aria-label={t("hero.loadingFeaturedMovies")}>
+    <section className="hero-section hero-section--loading" aria-busy="true" aria-label={t("hero.loadingFeaturedMovies")}>
       <div className="hero-section__content container-fluid">
-        <div className="hero-section__text placeholder-glow" aria-hidden="true">
-          <span className="placeholder col-4 mb-3 rounded"></span>
-          <span className="placeholder col-10 placeholder-lg mb-2 rounded"></span>
-          <span className="placeholder col-7 placeholder-lg mb-4 rounded"></span>
-          <span className="placeholder col-12 mb-1 rounded"></span>
-          <span className="placeholder col-9 mb-4 rounded"></span>
+        <div className="hero-section__text" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map(index => (
+            <span key={index} className="fv-skeleton hero-section__placeholder" />
+          ))}
         </div>
       </div>
     </section>

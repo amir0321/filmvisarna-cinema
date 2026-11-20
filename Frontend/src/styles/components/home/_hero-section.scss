@@ -6,7 +6,8 @@
   align-items: flex-end;
   min-height: max(520px, min(85vh, 720px));
   overflow: hidden;
-  background-color: $color-bg;
+  // Media keeps a dark backing while images and the player initialise in either theme.
+  background-color: $image-scrim;
   isolation: isolate;
 
   // Keep contrast behind the copy without washing out the whole trailer.
@@ -22,17 +23,6 @@
       tint($image-scrim, 0.85) 90%,
       tint($image-scrim, 0.7) 100%
     );
-  }
-
-  // Only the bottom edge blends into the current page theme.
-  &::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 0;
-    height: 64px;
-    z-index: -1;
-    pointer-events: none;
-    background: linear-gradient(to top, var(--color-bg), transparent);
   }
 
   @media (min-width: 768px) {
@@ -77,6 +67,7 @@
   width: max(100%, calc(max(520px, min(85vh, 720px)) * 16 / 9));
   aspect-ratio: 16 / 9;
   border: 0;
+  background-color: $color-video-bg;
   transform: translate(-50%, -50%) scale(1.2);
   opacity: 0;
   pointer-events: none;
@@ -94,6 +85,25 @@
   width: 100%;
   height: 100%;
   border: 0;
+  background-color: $color-video-bg;
+}
+
+.hero-section--loading {
+  .hero-section__text { animation: none; }
+
+  .hero-section__placeholder {
+    display: block;
+    height: 14px;
+    margin-bottom: $space-1;
+    background: tint($image-text, 0.08);
+    animation: none;
+
+    &:nth-child(1) { width: 34%; height: 22px; margin-bottom: $space-3; }
+    &:nth-child(2) { width: 90%; height: 36px; }
+    &:nth-child(3) { width: 64%; height: 36px; margin-bottom: $space-3; }
+    &:nth-child(4) { width: 100%; }
+    &:nth-child(5) { width: 75%; }
+  }
 }
 
 .hero-section__content {
